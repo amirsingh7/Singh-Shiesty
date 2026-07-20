@@ -107,7 +107,7 @@ export const CORE_TILES: Record<CoreTileId, CoreTile> = {
   vitals: {
     id: 'vitals',
     href: '/app/starter',
-    index: '04',
+    index: '03',
     label: 'Vitals',
     variant: 'live',
     orb: { mode: 'wander' },
@@ -127,7 +127,7 @@ export const CORE_TILES: Record<CoreTileId, CoreTile> = {
   peak: {
     id: 'peak',
     href: '/app/starter',
-    index: '03',
+    index: '04',
     label: 'Peak',
     orb: { mode: 'still', roam: 'ring', pt: '105,125' },
     defaultSize: 'tall',
