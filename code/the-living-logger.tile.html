@@ -938,7 +938,6 @@ async function __bootTile(){
     }
     DATA.days.forEach(d => { if (!Array.isArray(d.lifts)) d.lifts = []; });         // a day always has a lifts array
     if (!DATA.days.find(d => d.id === DATA.activeDayId)) DATA.activeDayId = DATA.days[0].id;
-    if (!Array.isArray(DATA.sessionDates)) DATA.sessionDates = [];   // finished-session dates, for the bridge report only
     LIFTS = activeDay().lifts;
     saveLog();
     return LIFTS;
@@ -1810,15 +1809,8 @@ async function __bootTile(){
       if (isPR) prs.push({ name: lift.name, kg, perHand: lift.perHand });
     });
     if (!lifts) return;
-    const todayKey = offsetDate(0);
-    if (!DATA.sessionDates.includes(todayKey)) DATA.sessionDates.push(todayKey);
     saveLog(); render();
     showCelebration(lifts, totalSets, prs);
-    if (window.Vitality && window.Vitality.report){
-      const weekAgo = offsetDate(-6);
-      const countThisWeek = DATA.sessionDates.filter(d => d >= weekAgo).length;
-      window.Vitality.report({ key: 'workout', label: 'Sessions', value: countThisWeek, date: todayKey, kind: 'count' });
-    }
   }
   function showCelebration(lifts, totalSets, prs){
     const cele = document.getElementById('cele');
