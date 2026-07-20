@@ -751,6 +751,7 @@ export default function DashboardGrid({ userId }: DashboardGridProps) {
             >
               {goal?.id === 'overall' ? '★ ' : ''}
               {goal?.title ?? ''}
+              {goal?.id === 'overall' ? ' ★' : ''}
             </span>
           </div>
 
@@ -800,6 +801,7 @@ export default function DashboardGrid({ userId }: DashboardGridProps) {
                   >
                     {main ? '★ ' : ''}
                     {g.title}
+                    {main ? ' ★' : ''}
                   </button>
                 )
               }

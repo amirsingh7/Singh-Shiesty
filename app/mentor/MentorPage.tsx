@@ -231,6 +231,7 @@ export default function MentorPage({
               >
                 {g.id === 'overall' ? '★ ' : ''}
                 {g.title}
+                {g.id === 'overall' ? ' ★' : ''}
               </button>
             )
           })}

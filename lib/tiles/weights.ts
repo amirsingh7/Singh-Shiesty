@@ -70,7 +70,7 @@ export const DEFAULT_GOALS: Goal[] = [
  *  mentor (Claude Code). Switching it on = top priority — the board goes gold. */
 export const OVERALL_GOAL: Goal = {
   id: 'overall',
-  title: 'A jacked, famous YouTuber',
+  title: 'A jacked, Entrepreneur',
   accent: '#E8C878',
   weights: { brand: 30, train: 25, vitals: 20, fuel: 13, finance: 7, peak: 5 },
   progress: 34,
