@@ -50,8 +50,8 @@ export interface Notice {
 export const DEFAULT_GOALS: Goal[] = [
   {
     id: 'youtube',
-    title: 'Become a famous YouTuber',
-    accent: '#6EE7B7',
+    title: 'Seize Your Moment',
+    accent: '#D21F3C',
     // Train entered this goal when the mentor noticed workouts drive output —
     // see DEFAULT_NOTICED. Before: brand 70 / vitals 20 / finance 10.
     weights: { brand: 62, train: 8, vitals: 20, finance: 10 },
