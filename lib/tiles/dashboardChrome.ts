@@ -44,14 +44,14 @@ export interface DashboardChrome {
   gem: GemConfig
 }
 
-/** The default reproduces today's look exactly: the mint World, the auto
- *  time-of-day greeting with the accented name, the full date, the mint gem.
- *  Existing users see zero change until they touch something. */
+/** Amber & clay: the warm Ember gradient replaces the mint World (no mountains,
+ *  no particles), the auto time-of-day greeting keeps the accented name, the
+ *  full date, the amber gem. */
 export const DEFAULT_CHROME: DashboardChrome = {
-  background: { mode: 'world', accent: '#6EE7B7', particles: 24, mountains: true, speed: 1 },
+  background: { mode: 'gradient', c1: '#241405', c2: '#0c0604', angle: 150 },
   greeting: { mode: 'auto', text: '', showName: true, accentName: true, scale: 1 },
   date: { show: true, format: 'full' },
-  gem: { show: true, tint: 'mint' },
+  gem: { show: true, tint: 'accent' },
 }
 
 /** Wallpaper accent swatches (World tint + Solid + theme-from-wallpaper). */
@@ -146,8 +146,8 @@ function reset(userId: string): DashboardChrome {
 /** The accent a chosen background publishes into --wall-accent (themes the UI). */
 export function backgroundAccent(bg: Background): string {
   if (bg.mode === 'world') return bg.accent
-  if (bg.mode === 'gradient') return '#6EE7B7'
-  return '#6EE7B7'
+  if (bg.mode === 'gradient') return '#D98E4A'
+  return '#D98E4A'
 }
 
 export const dashboardChrome = { get, update, setBackground, reset }

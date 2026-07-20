@@ -36,11 +36,11 @@ function VeeArt() {
     <>
       <div className="disc" />
       <svg className="art" viewBox="0 0 434 250">
-        <path className="wire" style={{ stroke: 'rgba(167,243,208,.2)' }} d="M216 66 V2" />
-        <path className="wire" style={{ stroke: 'rgba(185,163,255,.2)' }} d="M262 96 H300 V40 H760" />
+        <path className="wire" style={{ stroke: 'rgba(217,142,74,.2)' }} d="M216 66 V2" />
+        <path className="wire" style={{ stroke: 'rgba(216,120,87,.2)' }} d="M262 96 H300 V40 H760" />
         <path className="wire" style={{ stroke: 'rgba(232,200,120,.2)' }} d="M262 140 H320 V192 H760" />
-        <path className="wire" style={{ stroke: 'rgba(167,243,208,.2)' }} d="M190 158 V248" />
-        <path className="wire" style={{ stroke: 'rgba(185,163,255,.2)' }} d="M170 140 H114 V192 H-326" />
+        <path className="wire" style={{ stroke: 'rgba(217,142,74,.2)' }} d="M190 158 V248" />
+        <path className="wire" style={{ stroke: 'rgba(216,120,87,.2)' }} d="M170 140 H114 V192 H-326" />
         <path className="wire" style={{ stroke: 'rgba(232,200,120,.2)' }} d="M170 96 H134 V56 H-326" />
         <g className="feedgrp">
           <path className="feed" pathLength="100" d="M216 2 V66" />

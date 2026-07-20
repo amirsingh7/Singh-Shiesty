@@ -143,6 +143,7 @@ export default function DashboardHeaderGem({
 
         <HeroCrystal
           mode="character"
+          tint="amber"
           onHappyStart={firePulse}
           controlRef={gemControl}
         />

@@ -1,25 +1,25 @@
 /* ----- Tokens ----- */
 
 :root {
-  /* Colors */
-  --bg: #000000;
-  --bg-elevated: #0a0a0a;
-  --fg: #ffffff;
-  --mint: #6EE7B7;
-  --mint-hover: #5dd6a6;
-  --mint-deep: #1f4d3d;       /* dark teal partner to mint */
-  --mint-glow: rgba(110, 231, 183, 0.4);
-  --mint-ink: #042a1c;        /* dark foreground for text/icons on a mint fill */
+  /* Colors — amber & clay, warm and grounded */
+  --bg: #14100d;
+  --bg-elevated: #1c1611;
+  --fg: #f5ede2;
+  --mint: #d98e4a;
+  --mint-hover: #c97c3d;
+  --mint-deep: #4a2e18;       /* deep clay partner to the amber accent */
+  --mint-glow: rgba(217, 142, 74, 0.4);
+  --mint-ink: #2b1608;        /* dark coffee-brown foreground for text/icons on the amber fill */
   --amber: #F59E0B;
   --amber-warm: #d97706;      /* deeper amber for duotone gradients */
   --wine: #7c2d12;            /* deep red-brown, partners with amber */
   --red: #EF4444;
-  --muted: rgba(255, 255, 255, 0.5);
-  --muted-strong: rgba(255, 255, 255, 0.7);
-  --border: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.16);
-  --card: rgba(255, 255, 255, 0.02);
-  --card-elevated: rgba(255, 255, 255, 0.04);
+  --muted: rgba(245, 237, 226, 0.5);
+  --muted-strong: rgba(245, 237, 226, 0.7);
+  --border: rgba(245, 237, 226, 0.08);
+  --border-strong: rgba(245, 237, 226, 0.16);
+  --card: rgba(245, 237, 226, 0.03);
+  --card-elevated: rgba(245, 237, 226, 0.05);
 
   /* Spacing */
   --space-1: 0.25rem;
@@ -73,7 +73,7 @@ html, body {
      near-black, never a pure-black band. Tint the root the editorial
      atmosphere's darkest stop (#04060a) so the reveal is seamless, and damp the
      bounce so it barely shows at all. body keeps var(--bg) below. */
-  background: #04060a;
+  background: #0c0805;
   overscroll-behavior-y: none;
 }
 
@@ -104,10 +104,10 @@ select,
    on-brand mint wash, applied site-wide. Inputs are never auto-select()ed
    either, so editing shows the caret line, not a highlighted block. */
 ::selection {
-  background: rgba(110, 231, 183, 0.25);
+  background: rgba(217, 142, 74, 0.25);
 }
 ::-moz-selection {
-  background: rgba(110, 231, 183, 0.25);
+  background: rgba(217, 142, 74, 0.25);
 }
 
 /* App-like selection: UI text can't be accidentally highlighted by a drag or
@@ -453,7 +453,7 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 50%;
   pointer-events: none;
   z-index: 3;
-  box-shadow: 0 0 14px rgba(110, 231, 183, 0.45);
+  box-shadow: 0 0 14px rgba(217, 142, 74, 0.45);
   animation: pkSurgeRing 1.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 @keyframes pkSurgeRing {
@@ -469,7 +469,7 @@ h1, h2, h3, h4, h5, h6 {
   margin: -1.5px 0 0 -1.5px;
   border-radius: 50%;
   background: var(--mint);
-  box-shadow: 0 0 7px rgba(110, 231, 183, 0.9);
+  box-shadow: 0 0 7px rgba(217, 142, 74, 0.9);
   pointer-events: none;
   z-index: 3;
   animation: pkSpark 1.05s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;

@@ -45,11 +45,11 @@ export function initVeeTiles(
     if(!vgrp) return;
     const rnd=(a,b)=>a+Math.random()*(b-a);
     const pick=a=>a[Math.floor(Math.random()*a.length)];
-    const COLORS=['#6EE7B7','#A7F3D0','#b9a3ff','#e8c878','#E8964A','#7fd5e8'];
+    const COLORS=['#D98E4A','#F3C989','#b9a3ff','#e8c878','#E8964A','#7fd5e8'];
 
     let ringAnim=null, lastWire=-1, vAnim=null, vnumRAF=0, sAnims=[], mode='idle', idleTimer=null, nfTimer=null;
 
-    const MINT='#6EE7B7';
+    const MINT='#D98E4A';
     const vpaths=[...vgrp.querySelectorAll('path')];
     let tintAnims=[];
     function ringPulse(color){
