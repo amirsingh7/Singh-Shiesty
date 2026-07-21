@@ -24,6 +24,8 @@ const SHIM = `<script>
     else if (m.type === 'tiktok:error') p.reject(new Error(m.reason || 'tiktok_failed'));
     else if (m.type === 'read:result') p.resolve(m.data);
     else if (m.type === 'read:error') p.reject(new Error(m.reason || 'read_failed'));
+    else if (m.type === 'write:ok') p.resolve(true);
+    else if (m.type === 'write:error') p.reject(new Error(m.reason || 'write_failed'));
     else if (m.type === 'youtube:result') p.resolve(m.count);
     else if (m.type === 'youtube:error') p.reject(new Error(m.reason || 'youtube_failed'));
     else if (m.type === 'stock:result') p.resolve(m.price);
@@ -46,6 +48,18 @@ const SHIM = `<script>
       }, 8000);
     });
   }
+  function callWrite(slot, key, value) {
+    return new Promise(function (resolve, reject) {
+      var id = 'v' + (++seq);
+      pending[id] = { resolve: resolve, reject: reject };
+      parent.postMessage({ source: 'vitality-tile', type: 'write', id: id, slot: slot, key: key, value: value }, '*');
+      setTimeout(function () {
+        if (!pending[id]) return;
+        delete pending[id];
+        reject(new Error('vitality_timeout'));
+      }, 8000);
+    });
+  }
   window.Vitality = {
     save: function (data) { return call('save', { data: data }); },
     load: function () { return call('load', {}); },
@@ -53,6 +67,7 @@ const SHIM = `<script>
     youtube: function (handle) { return call('youtube', { handle: handle }); },
     stock: function (symbol) { return call('stock', { symbol: symbol }); },
     read: function (slot) { return call('read', { slot: slot }); },
+    write: function (slot, key, value) { return callWrite(slot, key, value); },
     report: function (stream) {
       parent.postMessage({ source: 'vitality-tile', type: 'report', stream: stream }, '*');
     }

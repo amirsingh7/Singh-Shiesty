@@ -156,6 +156,44 @@ export function useTileHost(
         return
       }
 
+      // Cross-tile WRITE — a narrow, deliberate expansion of the sealed-tile
+      // model (previously read-only). Velocity's "delete this day" needs to
+      // mutate Train's saved split store. Scoped to WRITABLE only — never a
+      // general capability. Always read-merge-write: Train's saved object
+      // holds several keys in one blob (the split, the unit pref, per-lift
+      // overload caches), so a blind overwrite here would silently wipe
+      // whatever key the caller didn't send.
+      if (msg.type === 'write') {
+        const slot = String(msg.slot || '')
+        const WRITABLE = ['train']
+        if (!WRITABLE.includes(slot)) {
+          src.postMessage({ source: 'vitality-host', type: 'write:error', id: msg.id, reason: 'slot_not_allowed' }, '*')
+          return
+        }
+        const key = typeof msg.key === 'string' ? msg.key : ''
+        if (!key) {
+          src.postMessage({ source: 'vitality-host', type: 'write:error', id: msg.id, reason: 'no_key' }, '*')
+          return
+        }
+        let current = await tileStore.loadData(userId, slot)
+        if (syncEnabled()) {
+          const remote = await syncLoad(slot)
+          if (remote != null) current = remote
+        }
+        const merged: Record<string, unknown> =
+          current && typeof current === 'object' && !Array.isArray(current) ? { ...(current as Record<string, unknown>) } : {}
+        merged[key] = msg.value
+        const result = await tileStore.saveData(userId, slot, merged)
+        if (!result.ok) {
+          src.postMessage({ source: 'vitality-host', type: 'write:error', id: msg.id, reason: result.reason || 'unknown' }, '*')
+          return
+        }
+        src.postMessage({ source: 'vitality-host', type: 'write:ok', id: msg.id }, '*')
+        if (syncEnabled()) void syncSave(slot, merged, new Date().toISOString())
+        activity.current?.({ tileId: slot, type: 'save', count: 0 })
+        return
+      }
+
       const tileId = reg.current.get(src)
       if (!tileId) {
         // Sender is not in our registry (a race, or the registry was reset while

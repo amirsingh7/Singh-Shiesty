@@ -5,19 +5,24 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Velocity</title>
 <!--
-  VELOCITY — a read-only progress view derived entirely from the Train tile's
-  own saved data. It has no data entry of its own: on load it calls
+  VELOCITY — a progress view derived entirely from the Train tile's own saved
+  data. It has no data entry of its own: on load it calls
   window.Vitality.read('train') (cross-tile read, already whitelisted host-side)
   and renders two things from what comes back —
     1. Compound progress: one line per Tier-1 lift (squat/bench/deadlift/OHP/
        weighted dips), indexed to percent change so lifts of very different
        absolute weight can share one axis.
     2. Workout log: the whole split's session history, every lift, grouped by
-       date, newest first.
+       date, newest first — with a "Delete this day" action per date, for
+       relogging an accidentally-entered session.
   Train already persists on "Finish session" — this tile just re-reads that
   save every time it opens, so a finished session shows up here automatically.
-  Sealed tiles can't write into each other's storage; read is the only
-  cross-tile channel that exists, and 'train' is already on the read whitelist.
+  Sealed tiles can't reach each other's storage directly; cross-tile READ and
+  a narrowly host-whitelisted cross-tile WRITE (train only, see
+  useTileHost.ts) are the only channels that exist. The delete writes back
+  through window.Vitality.write('train', 'vitality.logger.v4', <json>) — the
+  host does its own read-merge-write so Train's other saved keys (unit pref,
+  overload caches) are never touched.
 -->
 <style>
   :root{
@@ -83,7 +88,18 @@
   .log{margin-top:26px}
   .log-day{margin-top:20px}
   .log-day:first-child{margin-top:0}
-  .log-date{font-family:var(--mono);text-transform:uppercase;letter-spacing:.14em;font-size:11px;font-weight:600;color:var(--muted);padding-bottom:10px;border-bottom:1px solid var(--rule)}
+  .log-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:10px;border-bottom:1px solid var(--rule)}
+  .log-date{font-family:var(--mono);text-transform:uppercase;letter-spacing:.14em;font-size:11px;font-weight:600;color:var(--muted)}
+  .log-del{background:none;border:none;color:var(--muted);font-family:var(--sans);font-size:11.5px;font-weight:600;cursor:pointer;padding:4px 6px;border-radius:6px;transition:color .2s,background .2s;flex:none}
+  .log-del:hover{color:var(--rose);background:rgba(224,118,123,.1)}
+  .log-confirm{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:8px 10px;font-size:12px}
+  .log-confirm span{color:var(--muted)}
+  .log-confirm .log-err{color:var(--rose)}
+  .log-confirm button{background:none;border:1px solid var(--rule-strong);color:var(--fg);font-family:var(--sans);font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:7px;cursor:pointer;transition:background .2s,border-color .2s;flex:none}
+  .log-confirm .log-yes{border-color:rgba(224,118,123,.5);color:var(--rose)}
+  .log-confirm .log-yes:hover{background:rgba(224,118,123,.12)}
+  .log-confirm .log-cancel:hover{background:rgba(255,255,255,.06)}
+  .log-confirm.busy button{opacity:.5;pointer-events:none}
   .log-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid var(--rule)}
   .log-row:last-child{border-bottom:none}
   .log-name{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500}
@@ -117,7 +133,7 @@
     <div id="logBody" style="margin-top:18px"></div>
   </div>
 
-  <p class="footnote">Read-only &middot; mirrors Train's saved data</p>
+  <p class="footnote">Mirrors Train's saved data &middot; deleting a day writes back to Train</p>
 </div>
 
 <script>
@@ -140,7 +156,7 @@
   const uLabel = perHand => UNIT + (perHand ? '/ea' : '');
 
   let SPLIT = null; // { days: [...], activeDayId } from Train, or null if unavailable
-  let STATE = { active: 'ALL' };
+  let STATE = { active: 'ALL', confirmDate: null, busy: false, err: null };
 
   async function loadTrain(){
     try {
@@ -283,6 +299,37 @@
   }
 
   // ---------- Workout log ----------
+  // Deleting a day writes back into Train's own store (cross-tile WRITE, a
+  // narrow host-whitelisted exception to the normal read-only rule — see
+  // useTileHost.ts). Train's saved blob holds several keys in one object (the
+  // split, the unit pref, per-lift overload caches), so the host does the
+  // read-merge-write; this tile only ever sends the ONE key it's allowed to
+  // touch (vitality.logger.v4) with every history entry for that date
+  // stripped from every lift, across every day of the split — a lift can only
+  // belong to one day in practice, but this stays correct even if that ever
+  // changes.
+  async function deleteDay(dateKey){
+    if (!SPLIT || STATE.busy) return;
+    STATE.busy = true; STATE.err = null; renderLog();
+    const mutated = {
+      ...SPLIT,
+      days: (SPLIT.days || []).map(d => ({
+        ...d,
+        lifts: (d.lifts || []).map(l => ({ ...l, history: (l.history || []).filter(h => h.date !== dateKey) })),
+      })),
+    };
+    try {
+      await window.Vitality.write('train', 'vitality.logger.v4', JSON.stringify(mutated));
+      SPLIT = mutated;
+      STATE.confirmDate = null; STATE.busy = false; STATE.err = null;
+      renderPlot(); renderLog();
+    } catch (e) {
+      STATE.busy = false;
+      STATE.err = 'Couldn’t delete' + (e && e.message ? ' (' + e.message + ')' : '') + ' — try again';
+      renderLog();
+    }
+  }
+
   function renderLog(){
     const body = document.getElementById('logBody');
     const lifts = allLifts();
@@ -312,8 +359,20 @@
           esc(e.name) + '</span>' +
         '<span class="log-val"><b>' + wDisp(e.kg) + ' ' + uLabel(e.perHand) + '</b> &times; ' + e.reps + ' &middot; ' + e.sets + ' set' + (e.sets > 1 ? 's' : '') + '</span></div>'
       ).join('');
-      return '<div class="log-day"><div class="log-date">' + esc(dateHeading(date)) + '</div>' + rows + '</div>';
+      const head = STATE.confirmDate === date
+        ? '<div class="log-head"><span class="log-date">' + esc(dateHeading(date)) + '</span>' +
+          '<div class="log-confirm' + (STATE.busy ? ' busy' : '') + '">' +
+            (STATE.err ? '<span class="log-err">' + esc(STATE.err) + '</span>' : '<span>Delete this day?</span>') +
+            '<button class="log-cancel" data-cancel="' + esc(date) + '">Cancel</button>' +
+            '<button class="log-yes" data-del="' + esc(date) + '">' + (STATE.busy ? 'Deleting…' : 'Yes, delete') + '</button>' +
+          '</div></div>'
+        : '<div class="log-head"><span class="log-date">' + esc(dateHeading(date)) + '</span>' +
+          '<button class="log-del" data-ask="' + esc(date) + '">Delete</button></div>';
+      return '<div class="log-day">' + head + rows + '</div>';
     }).join('');
+    body.querySelectorAll('[data-ask]').forEach(b => b.onclick = () => { STATE.confirmDate = b.dataset.ask; STATE.err = null; renderLog(); });
+    body.querySelectorAll('[data-cancel]').forEach(b => b.onclick = () => { STATE.confirmDate = null; STATE.err = null; renderLog(); });
+    body.querySelectorAll('[data-del]').forEach(b => b.onclick = () => deleteDay(b.dataset.del));
   }
 
   await loadTrain();
