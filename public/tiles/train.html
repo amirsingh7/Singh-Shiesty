@@ -177,6 +177,10 @@
   .restore:hover{border-color:var(--mint)}
 
   .footnote{text-align:center;color:var(--muted);font-size:11.5px;margin-top:26px;opacity:.8}
+  .save-state{margin-left:5px;font-weight:600;letter-spacing:.02em}
+  .save-state.pending{color:var(--muted)}
+  .save-state.saved{color:var(--mint)}
+  .save-state.error{color:var(--rose)}
 
   /* modal (info card) */
   .modal{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;padding:22px;
@@ -539,6 +543,7 @@
     --mint:#d98e4a; --gold:#F59E0B; --rose:#EF4444;
     --bg:#14100d; --fg:#f5ede2; --card:rgba(245,237,226,.03);
     --muted:rgba(245,237,226,.5); --rule:rgba(245,237,226,.08); --rule-strong:rgba(245,237,226,.16);
+    --cp1:#3987e5; --cp2:#199e70; --cp3:#c98500; --cp4:#d55181; --cp5:#9085e9;
     background:
       radial-gradient(ellipse 70% 40% at 50% -4%, rgba(217,142,74,.16), transparent 60%),
       linear-gradient(180deg,#1c1611 0%,#14100d 32%,#0d0906 64%,#000 100%)}
@@ -788,11 +793,12 @@
 
   <div class="actions" id="actions">
     <button class="act-btn" id="libOpen"><svg viewBox="0 0 24 24"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg> Add a lift</button>
+    <button class="act-btn" id="cpOpen"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16"/><path d="M7 15l4-4 3 3 5-6"/></svg> Compound progress</button>
   </div>
 
   <div id="hidden"></div>
 
-  <p class="footnote">Saved on this device. Log a set, close the tab, it is still here.</p>
+  <p class="footnote">Saved on this device. Log a set, close the tab, it is still here.<span class="save-state" id="saveState"></span></p>
 </div>
 
 <!-- @episode-start:session -->
@@ -819,6 +825,16 @@
 </div>
 <!-- @episode-end:chart -->
 
+<!-- Custom addition (not an arsenal episode): the compound-lift progress
+     overview. One line per Tier-1 lift across the whole split, indexed to
+     percent change so squat/bench/deadlift/OHP share one axis. Reuses the
+     chart episode's .ch-shell/.ch-sheet/.ch-range/.ch-plot styling for a
+     consistent look; its own markup and JS. -->
+<div class="ep1-overlay" id="cpOverlay">
+  <button class="ep1-close" id="cpClose" aria-label="Back to session"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg> session</button>
+  <div class="ch-shell" id="cpShell"></div>
+</div>
+
 <!-- @episode-start:rest-timer -->
 <!-- Episode 4 markup: the rest coach. A floating card that appears when you log a set:
      a countdown ring, the set you just did, and what is next. -->
@@ -836,11 +852,44 @@
 <script>
 let MEM = {};
 let __t = null;
+let __retryT = null;
+let __saveRetries = 0;
 const __hasLS = (function(){ try { window.localStorage.setItem('__vt','1'); window.localStorage.removeItem('__vt'); return true; } catch(e){ return false; } })();
 function __persist(){ clearTimeout(__t); __t = setTimeout(__flush, 400); }
+// __setSaveState paints the small status word next to the "Saved on this
+// device" footnote, so a failed save is SEEN instead of silently dropped —
+// window.Vitality.save() returns a promise, and the old code fired it without
+// a .catch(), so a rejection (oversized payload, quota, a lost postMessage
+// reply) just vanished and the workout was gone with no sign anything was wrong.
+function __setSaveState(s){
+  __saveState = s;
+  const el = document.getElementById('saveState');
+  if (!el) return;
+  if (s === 'pending'){ el.textContent = ' Saving…'; el.className = 'save-state pending'; }
+  else if (s === 'saved'){ el.textContent = ' Saved'; el.className = 'save-state saved'; }
+  else if (s === 'error'){ el.textContent = ' Couldn’t save — retrying'; el.className = 'save-state error'; }
+  else { el.textContent = ''; el.className = 'save-state'; }
+}
+let __saveState = 'idle';
 function __flush(){
-  if (window.Vitality && window.Vitality.save) { try { window.Vitality.save(MEM); } catch(e){} }
-  else if (__hasLS) { try { window.localStorage.setItem('vitality.train.tile', JSON.stringify(MEM)); } catch(e){} }
+  clearTimeout(__retryT);
+  if (window.Vitality && window.Vitality.save) {
+    __setSaveState('pending');
+    window.Vitality.save(MEM).then(function(){
+      __saveRetries = 0;
+      __setSaveState('saved');
+    }).catch(function(){
+      __saveRetries++;
+      __setSaveState('error');
+      // back off, but never give up silently: keep retrying so a closed tab
+      // isn't the only thing standing between a logged workout and losing it.
+      if (__saveRetries <= 8) __retryT = setTimeout(__flush, Math.min(3000 * __saveRetries, 20000));
+    });
+  }
+  else if (__hasLS) {
+    try { window.localStorage.setItem('vitality.train.tile', JSON.stringify(MEM)); __setSaveState('saved'); }
+    catch(e){ __setSaveState('error'); }
+  }
 }
 addEventListener('pagehide', __flush);
 document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'hidden') __flush(); });
@@ -2302,6 +2351,141 @@ async function __bootTile(){
   function chDeleteDraft(){ if (chEditIndex != null) CHART.LOG.splice(chEditIndex, 1); chCloseEditor(); CHART.setIdx = null; chRender(); }
   // @episode-end:chart
 
+  // Custom addition (not an arsenal episode): the compound-lift progress
+  // overview. Squat/bench/deadlift/OHP/weighted dips live on wildly different
+  // absolute weights, so a shared kg axis would flatten the lighter lifts to
+  // nothing — each line is indexed to percent change from its own first
+  // logged session in the visible range instead. Reuses CH_RANGES/chReals/
+  // chDaysAgo/liftSessions from the chart episode above; touches nothing there.
+  const CP_COLORS = ['#3987e5', '#199e70', '#c98500', '#d55181', '#9085e9'];
+  let CP = { active: 'ALL' };
+  let cpDragging = false;
+  const cpOverlay = document.getElementById('cpOverlay');
+  const cpShell = document.getElementById('cpShell');
+  function cpCompoundLifts(){
+    const seen = new Set(), out = [];
+    (DATA.days || []).forEach(d => (d.lifts || []).forEach(l => {
+      if (l.tier === 1 && !l.hidden && !seen.has(l.id)){ seen.add(l.id); out.push(l); }
+    }));
+    return out;
+  }
+  function openCompound(){ cpDraw(); cpOverlay.classList.add('on'); }
+  function closeCp(){ cpOverlay.classList.remove('on'); }
+  document.getElementById('cpOpen').onclick = openCompound;
+  document.getElementById('cpClose').onclick = closeCp;
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && cpOverlay.classList.contains('on')) closeCp(); });
+
+  function cpDraw(){
+    cpShell.innerHTML =
+      '<div class="ch-sheet">' +
+        '<div class="ch-head"><div><div class="ch-eyebrow">Progress</div><div class="ch-title">Compound lifts</div></div></div>' +
+        '<div class="ch-range" id="cpRange"></div>' +
+        '<div class="ch-plotcard"><div class="ch-plot" id="cpPlot"></div></div>' +
+        '<div class="cp-legend" id="cpLegend"></div>' +
+      '</div>';
+    document.getElementById('cpRange').innerHTML = Object.keys(CH_RANGES).map(k =>
+      '<button class="' + (k === CP.active ? 'on' : '') + '" data-r="' + k + '">' + k + '</button>').join('');
+    document.querySelectorAll('#cpRange button').forEach(b => b.onclick = () => { CP.active = b.dataset.r; cpDraw(); });
+    cpRenderPlot();
+  }
+
+  function cpRenderPlot(){
+    const lifts = cpCompoundLifts();
+    const plot = document.getElementById('cpPlot');
+    const legend = document.getElementById('cpLegend');
+    if (!lifts.length){
+      plot.innerHTML = '<div class="cp-empty">Add a squat, bench, deadlift, overhead press, or weighted dip from the Library to start tracking compound progress.</div>';
+      legend.innerHTML = '';
+      return;
+    }
+    const rangeDays = CH_RANGES[CP.active];
+    const series = lifts.map((lift, i) => {
+      const real = chReals(liftSessions(lift)).filter(p => chDaysAgo(p.date) <= rangeDays).sort((a, b) => a.date.localeCompare(b.date));
+      return { lift, color: CP_COLORS[i % CP_COLORS.length], real };
+    }).filter(s => s.real.length);
+    if (!series.length){
+      plot.innerHTML = '<div class="cp-empty">Log a session on a compound lift to see it here.</div>';
+      legend.innerHTML = '';
+      return;
+    }
+    series.forEach(s => {
+      const base = s.real[0].kg;
+      s.pts = s.real.map(p => ({ date: p.date, kg: p.kg, pct: base ? chR1((p.kg - base) / base * 100) : 0 }));
+    });
+    const allDates = Array.from(new Set(series.flatMap(s => s.pts.map(p => p.date)))).sort();
+    const oldestAgo = Math.max(...allDates.map(chDaysAgo));
+    const domain = CP.active === 'ALL' ? Math.max(oldestAgo, 1) : Math.max(rangeDays, 1);
+    const X = k => CH_PADL + Math.min(1, Math.max(0, 1 - chDaysAgo(k) / domain)) * (CH_VB_W - CH_PADL - CH_PADR);
+    const pcts = series.flatMap(s => s.pts.map(p => p.pct)).concat([0]);
+    let lo = Math.floor(Math.min(...pcts) / 5) * 5, hi = Math.ceil(Math.max(...pcts) / 5) * 5;
+    if (hi - lo < 10){ hi = Math.max(hi, 5); lo = Math.min(lo, -5); }
+    const Y = pct => (CH_VB_H - CH_PADB) - (pct - lo) / (hi - lo) * (CH_VB_H - CH_PADB - CH_PADT);
+    const step = (hi - lo) <= 40 ? 10 : 20;
+    let svg = '<svg viewBox="0 0 ' + CH_VB_W + ' ' + CH_VB_H + '" preserveAspectRatio="none">';
+    for (let p = lo; p <= hi; p += step){
+      svg += '<line class="ch-grid" x1="' + CH_PADL + '" y1="' + Y(p) + '" x2="' + (CH_VB_W - CH_PADR) + '" y2="' + Y(p) + '"/>';
+      svg += '<text class="ch-axis" x="' + (CH_PADL - 10) + '" y="' + (Y(p) + 4) + '" text-anchor="end">' + (p > 0 ? '+' : '') + p + '%</text>';
+    }
+    series.forEach(s => {
+      const pts = s.pts.map(p => X(p.date) + ',' + Y(p.pct));
+      if (s.pts.length > 1) svg += '<polyline class="cp-line" points="' + pts.join(' ') + '" style="fill:none;stroke:' + s.color + ';stroke-width:2;stroke-linecap:round;stroke-linejoin:round"/>';
+      const last = s.pts[s.pts.length - 1];
+      svg += '<circle cx="' + X(last.date) + '" cy="' + Y(last.pct) + '" r="4" style="fill:' + s.color + ';stroke:var(--bg);stroke-width:2"/>';
+    });
+    svg += '<text class="ch-xlab" x="' + CH_PADL + '" y="' + (CH_VB_H - 6) + '" text-anchor="start">' + chLabel(allDates[0]) + '</text>';
+    svg += '<text class="ch-xlab" x="' + (CH_VB_W - CH_PADR) + '" y="' + (CH_VB_H - 6) + '" text-anchor="end">today</text>';
+    svg += '</svg><div class="cp-tip" id="cpTip"></div>';
+    plot.innerHTML = svg;
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!reduce){
+      plot.querySelectorAll('.cp-line').forEach(line => {
+        const L = line.getTotalLength();
+        line.style.strokeDasharray = L; line.style.strokeDashoffset = L;
+        requestAnimationFrame(() => { line.style.transition = 'stroke-dashoffset .85s cubic-bezier(.16,1,.3,1)'; line.style.strokeDashoffset = '0'; });
+      });
+    }
+    legend.innerHTML = series.map(s => {
+      const last = s.pts[s.pts.length - 1];
+      return '<div class="cp-leg-row"><span class="cp-leg-key" style="background:' + s.color + '"></span>' +
+        '<span class="cp-leg-name">' + esc(s.lift.name) + '</span>' +
+        '<span class="cp-leg-val">' + wDisp(last.kg) + ' ' + uLabel(s.lift.perHand) + ' &middot; ' + (last.pct >= 0 ? '+' : '') + last.pct + '%</span></div>';
+    }).join('');
+    cpWireScrub(series, allDates, X);
+  }
+
+  function cpWireScrub(series, allDates, X){
+    const plot = document.getElementById('cpPlot');
+    const scrubAt = clientX => {
+      const svg = plot.querySelector('svg'); if (!svg) return;
+      const r = svg.getBoundingClientRect();
+      const vx = (clientX - r.left) / r.width * CH_VB_W;
+      let best = allDates[0], bd = Infinity;
+      allDates.forEach(d => { const dx = Math.abs(X(d) - vx); if (dx < bd){ bd = dx; best = d; } });
+      cpShowTip(series, best, X);
+    };
+    plot.onpointerdown = e => { cpDragging = true; scrubAt(e.clientX); };
+    plot.onpointermove = e => { if (cpDragging || e.pointerType === 'mouse') scrubAt(e.clientX); };
+    plot.onpointerup = () => { cpDragging = false; };
+    plot.onpointerleave = () => { cpDragging = false; const t = document.getElementById('cpTip'); if (t) t.classList.remove('on'); };
+  }
+  function cpValueAt(pts, dateKey){
+    let v = null;
+    for (const p of pts){ if (p.date <= dateKey) v = p; else break; }
+    return v;
+  }
+  function cpShowTip(series, dateKey, X){
+    const tip = document.getElementById('cpTip'); if (!tip) return;
+    const rows = series.map(s => {
+      const v = cpValueAt(s.pts, dateKey);
+      const val = v ? (v.pct >= 0 ? '+' : '') + v.pct + '%' : '&mdash;';
+      return '<div class="cp-tip-row"><span class="cp-tip-key" style="background:' + s.color + '"></span>' +
+        '<span class="cp-tip-name">' + esc(s.lift.name) + '</span><span class="cp-tip-val">' + val + '</span></div>';
+    }).join('');
+    tip.innerHTML = '<div class="d">' + chLabel(dateKey) + '</div>' + rows;
+    tip.style.left = (X(dateKey) / CH_VB_W * 100) + '%';
+    tip.classList.add('on');
+  }
+
   // @episode-start:session
   // EP4: the customizable SPLIT. The logger used to be one flat list of lifts. Now it
   // is a split: named days, each with its own lifts. DATA holds every day; LIFTS (up in
@@ -2678,6 +2862,25 @@ __loadMem().then(function(m){ MEM = m; __bootTile(); });
   .logbtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:24px;border:1.5px dashed var(--rule-strong);border-radius:14px;padding:15px;background:none;color:var(--mint);font-family:var(--sans);font-size:14.5px;font-weight:500;cursor:pointer;transition:border-color .2s,transform .2s var(--spring)}
   .logbtn:hover{border-color:var(--mint)} .logbtn:active{transform:scale(.99)}
   .confirm-del{margin-top:20px} .confirm-q{display:block;text-align:center;font-size:14px;font-weight:500;color:var(--fg);margin-bottom:12px} .confirm-row{display:flex;gap:10px}
+
+  /* ============================================================= */
+  /*  Compound-lift progress overview (custom addition, not an      */
+  /*  arsenal episode). Reuses .ch-shell/.ch-sheet/.ch-range/.ch-plot */
+  /*  from the chart episode's CSS above; these are its own pieces. */
+  /* ============================================================= */
+  .cp-legend{display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:center;margin-top:20px;padding-top:18px;border-top:1px solid var(--rule)}
+  .cp-leg-row{display:flex;align-items:center;gap:8px;font-size:13px}
+  .cp-leg-key{width:16px;height:2px;border-radius:2px;flex:none}
+  .cp-leg-name{color:var(--fg);font-weight:500}
+  .cp-leg-val{color:var(--muted);font-variant-numeric:tabular-nums}
+  .cp-empty{text-align:center;color:var(--muted);font-size:13.5px;padding:34px 10px;line-height:1.6}
+  .cp-tip{position:absolute;transform:translate(-50%,-8px);top:0;background:var(--bg);border:1px solid var(--rule-strong);border-radius:11px;padding:9px 12px;pointer-events:none;opacity:0;transition:opacity .15s;white-space:nowrap;z-index:5}
+  .cp-tip.on{opacity:1}
+  .cp-tip .d{color:var(--muted);font-size:11px;font-weight:500;margin-bottom:5px}
+  .cp-tip-row{display:flex;align-items:center;gap:7px;font-size:12.5px;margin-top:3px}
+  .cp-tip-key{width:12px;height:2px;border-radius:2px;flex:none}
+  .cp-tip-name{color:var(--muted);flex:1}
+  .cp-tip-val{color:var(--fg);font-weight:700;font-variant-numeric:tabular-nums}
 </style>
 </body>
 </html>
