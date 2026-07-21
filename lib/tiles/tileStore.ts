@@ -232,7 +232,14 @@ function deleteTile(userId: string, id: string) {
   }
 }
 
-const MAX_TILE_DATA = 512 * 1024 // ~512KB per tile, protects the shared localStorage budget
+// 4MB per tile. Most tiles (a supplement stack, a subscriptions list) stay in
+// the tens of KB forever; a per-set workout log is the outlier that actually
+// grows over years of use (~200-250KB/year for an 18-lift split trained 2x/week),
+// so 512KB used to run out in under 2 years. 4MB buys well over a decade of that
+// growth rate while still leaving headroom under the ~5MB/origin floor browsers
+// guarantee for localStorage, alongside the tile index and the small config
+// blobs (weights, profile, skin, chrome) the host itself keeps.
+const MAX_TILE_DATA = 4 * 1024 * 1024
 
 /** Persist a tile's data. Returns whether the write actually landed so callers
  *  never tell the user "Saved" for a payload that was silently dropped (oversized
