@@ -170,11 +170,13 @@ export function useTileHost(
       }
 
       if (msg.type === 'save') {
-        const ok = await tileStore.saveData(userId, tileId, msg.data)
-        if (!ok) {
-          // the write was dropped (over the per-tile cap or the storage quota).
-          // Tell the tile instead of silently letting it believe it saved.
-          src.postMessage({ source: 'vitality-host', type: 'save:error', id: msg.id, reason: 'too_large_or_full' }, '*')
+        const result = await tileStore.saveData(userId, tileId, msg.data)
+        if (!result.ok) {
+          // the write was dropped — could be the per-tile cap, a storage quota,
+          // or (if a Supabase project is configured) the tile_data table not
+          // existing yet. Forward the REAL reason instead of one guessed string,
+          // so a tile's error state can actually say what's wrong.
+          src.postMessage({ source: 'vitality-host', type: 'save:error', id: msg.id, reason: result.reason || 'unknown' }, '*')
           return
         }
         // ack success so a tile's `await window.Vitality.save(...)` resolves truthfully

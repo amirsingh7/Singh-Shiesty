@@ -861,13 +861,13 @@ function __persist(){ clearTimeout(__t); __t = setTimeout(__flush, 400); }
 // window.Vitality.save() returns a promise, and the old code fired it without
 // a .catch(), so a rejection (oversized payload, quota, a lost postMessage
 // reply) just vanished and the workout was gone with no sign anything was wrong.
-function __setSaveState(s){
+function __setSaveState(s, detail){
   __saveState = s;
   const el = document.getElementById('saveState');
   if (!el) return;
   if (s === 'pending'){ el.textContent = ' Saving…'; el.className = 'save-state pending'; }
   else if (s === 'saved'){ el.textContent = ' Saved'; el.className = 'save-state saved'; }
-  else if (s === 'error'){ el.textContent = ' Couldn’t save — retrying'; el.className = 'save-state error'; }
+  else if (s === 'error'){ el.textContent = ' Couldn’t save (' + (detail || 'unknown') + ') — retrying'; el.className = 'save-state error'; }
   else { el.textContent = ''; el.className = 'save-state'; }
 }
 let __saveState = 'idle';
@@ -878,9 +878,13 @@ function __flush(){
     window.Vitality.save(MEM).then(function(){
       __saveRetries = 0;
       __setSaveState('saved');
-    }).catch(function(){
+    }).catch(function(err){
       __saveRetries++;
-      __setSaveState('error');
+      // the reason now comes straight from the host (see tileStore.saveData /
+      // useTileHost) instead of a guessed "too_large_or_full" — a Supabase
+      // table that doesn't exist yet looks completely different from an
+      // oversized payload, and only the real reason tells you which one to fix.
+      __setSaveState('error', err && err.message);
       // back off, but never give up silently: keep retrying so a closed tab
       // isn't the only thing standing between a logged workout and losing it.
       if (__saveRetries <= 8) __retryT = setTimeout(__flush, Math.min(3000 * __saveRetries, 20000));

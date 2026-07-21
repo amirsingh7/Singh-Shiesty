@@ -241,31 +241,44 @@ function deleteTile(userId: string, id: string) {
 // blobs (weights, profile, skin, chrome) the host itself keeps.
 const MAX_TILE_DATA = 4 * 1024 * 1024
 
-/** Persist a tile's data. Returns whether the write actually landed so callers
- *  never tell the user "Saved" for a payload that was silently dropped (oversized
- *  or quota-blocked). When a Supabase project is configured (env vars present) the
- *  write goes there so it syncs across devices; otherwise it stays in localStorage. */
-async function saveData(userId: string, id: string, data: TileData): Promise<boolean> {
+export interface SaveResult {
+  ok: boolean
+  /** Set only when ok is false. A real cause, not a guess — 'too_large' (the
+   *  MAX_TILE_DATA cap), 'db_error:<message>' (Supabase upsert failed — usually
+   *  a missing/misconfigured tile_data table), or 'exception:<message>' (a
+   *  thrown error, e.g. localStorage quota or blocked storage). Every failure
+   *  used to collapse into the same 'too_large_or_full' string regardless of
+   *  which of these it actually was, so raising MAX_TILE_DATA looked like it
+   *  did nothing when the real cause was a Supabase/db problem instead. */
+  reason?: string
+}
+
+/** Persist a tile's data. Returns whether the write actually landed (plus WHY
+ *  not, when it didn't) so callers never tell the user "Saved" for a payload
+ *  that was silently dropped. When a Supabase project is configured (env vars
+ *  present) the write goes there so it syncs across devices; otherwise it
+ *  stays in localStorage. */
+async function saveData(userId: string, id: string, data: TileData): Promise<SaveResult> {
   const db = supa()
   if (db) {
     try {
       const { error } = await db
         .from('tile_data')
         .upsert({ tile_id: `${userId}:${id}`, data, updated_at: new Date().toISOString() })
-      return !error
-    } catch {
-      return false
+      return error ? { ok: false, reason: `db_error:${error.message}` } : { ok: true }
+    } catch (e) {
+      return { ok: false, reason: `db_exception:${e instanceof Error ? e.message : String(e)}` }
     }
   }
-  if (!hasStorage()) return false
+  if (!hasStorage()) return { ok: false, reason: 'no_storage' }
   try {
     const json = JSON.stringify(data)
-    if (json.length > MAX_TILE_DATA) return false // oversized payload, skip rather than blow the quota
+    if (json.length > MAX_TILE_DATA) return { ok: false, reason: `too_large:${json.length}` } // oversized payload, skip rather than blow the quota
     window.localStorage.setItem(dataKey(userId, id), json)
-    return true
-  } catch {
-    /* quota / blocked. fail quiet */
-    return false
+    return { ok: true }
+  } catch (e) {
+    // quota / blocked
+    return { ok: false, reason: `exception:${e instanceof Error ? e.message : String(e)}` }
   }
 }
 
@@ -360,7 +373,7 @@ async function migrateLegacy(userId: string, defaultHtml: string): Promise<Tile 
   const tile = createTile(userId, { name: 'My first tile', html: defaultHtml })
   // Confirm the write landed before dropping the only copy of the legacy data
   // (the Supabase path is a network write, so a fire-and-forget delete could lose it).
-  const ok = await saveData(userId, tile.id, legacyData)
+  const { ok } = await saveData(userId, tile.id, legacyData)
   if (ok) {
     try {
       window.localStorage.removeItem(legacyKey(userId))
