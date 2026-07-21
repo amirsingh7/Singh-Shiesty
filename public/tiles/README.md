@@ -21,6 +21,7 @@ shows the "how to build this" panel instead.
 | `brand`  | Brand    | `public/tiles/brand.html`  |
 | `peak`   | Peak     | `public/tiles/peak.html`   |
 | `finance`| Finance  | `public/tiles/finance.html`|
+| `velocity`| Velocity| `public/tiles/velocity.html`|
 
 ## The tile format
 

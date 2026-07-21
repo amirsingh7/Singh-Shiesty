@@ -34,7 +34,7 @@ import { MCP_SCOPE, mcpResourceUrl, oauthSecret, originOf, resourceMetadataUrl }
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const SLOTS = ['train', 'fuel', 'vitals', 'vee', 'brand', 'peak', 'finance'] as const
+const SLOTS = ['train', 'fuel', 'vitals', 'vee', 'brand', 'peak', 'finance', 'velocity'] as const
 
 const MAX_TILE_HTML = 1024 * 1024 // 1MB — one tile can never be pathological
 const MAX_TILE_DATA = 512 * 1024 // 512KB — mirrors tileStore's cap so a tile can always load what we save
@@ -96,7 +96,7 @@ const mcpHandler = createMcpHandler(
       {
         title: 'List dashboard slots',
         description:
-          'READ. List the seven dashboard tile slots (train, fuel, vitals, vee, brand, peak, finance) and whether each currently holds a tile.',
+          'READ. List the eight dashboard tile slots (train, fuel, vitals, vee, brand, peak, finance, velocity) and whether each currently holds a tile.',
         inputSchema: {},
       },
       async (): Promise<ToolResult> => {

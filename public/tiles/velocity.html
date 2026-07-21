@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Velocity</title>
+<!--
+  VELOCITY — a read-only progress view derived entirely from the Train tile's
+  own saved data. It has no data entry of its own: on load it calls
+  window.Vitality.read('train') (cross-tile read, already whitelisted host-side)
+  and renders two things from what comes back —
+    1. Compound progress: one line per Tier-1 lift (squat/bench/deadlift/OHP/
+       weighted dips), indexed to percent change so lifts of very different
+       absolute weight can share one axis.
+    2. Workout log: the whole split's session history, every lift, grouped by
+       date, newest first.
+  Train already persists on "Finish session" — this tile just re-reads that
+  save every time it opens, so a finished session shows up here automatically.
+  Sealed tiles can't write into each other's storage; read is the only
+  cross-tile channel that exists, and 'train' is already on the read whitelist.
+-->
+<style>
+  :root{
+    --bg:#000; --fg:#fff;
+    --mint:#6EE7B7; --mint-hover:#5dd6a6; --gold:#f1cf7a; --rose:#e0767b;
+    --muted:rgba(255,255,255,.5); --muted-strong:rgba(255,255,255,.72);
+    --rule:rgba(255,255,255,.08); --rule-strong:rgba(255,255,255,.16);
+    --card:rgba(255,255,255,.022);
+    --serif:'Instrument Serif','Newsreader',Georgia,serif;
+    --sans:'Inter',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+    --ease:cubic-bezier(.16,1,.3,1); --spring:cubic-bezier(.34,1.56,.64,1);
+    --c1:#3987e5; --c2:#199e70; --c3:#c98500; --c4:#d55181; --c5:#9085e9;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  ::selection{background:rgba(110,231,183,.25);color:#fff}
+  html,body{background:var(--bg);min-height:100%}
+  body{font-family:var(--sans);color:var(--fg);-webkit-font-smoothing:antialiased;letter-spacing:-.006em;
+    padding:34px 18px 70px}
+  .atmos{position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(ellipse 70% 40% at 50% -4%, rgba(110,231,183,.13), transparent 60%),
+      linear-gradient(180deg, #07140e 0%, #050b08 32%, #020403 64%, #000 100%)}
+  .wrap{position:relative;z-index:1;width:100%;max-width:620px;margin:0 auto}
+
+  .head{margin-bottom:6px}
+  .eyebrow{font-family:var(--mono);text-transform:uppercase;letter-spacing:.2em;font-size:11px;font-weight:600;color:var(--muted)}
+  h1{font-family:var(--serif);font-style:italic;font-size:32px;font-weight:500;letter-spacing:-.01em;margin-top:6px}
+  .sub{color:var(--muted);font-size:13.5px;margin-top:8px;line-height:1.5}
+
+  .sheet{margin-top:26px;background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:22px}
+  .sheet-h{font-size:16px;font-weight:600}
+
+  .range{display:flex;gap:3px;justify-content:center;background:rgba(255,255,255,.03);border:1px solid var(--rule);border-radius:12px;padding:4px;margin:18px auto 0;width:fit-content}
+  .range button{background:none;border:none;color:var(--muted);font-family:var(--sans);font-size:13px;font-weight:600;padding:8px 15px;border-radius:9px;cursor:pointer;transition:color .2s,background .25s}
+  .range button.on{background:var(--mint);color:#042a1c}
+
+  .plotcard{margin-top:18px;border:1px solid var(--rule);border-radius:14px;padding:20px 18px 16px}
+  .plot{position:relative;width:100%;aspect-ratio:600/240;touch-action:pan-y;cursor:crosshair}
+  .plot svg{width:100%;height:100%;display:block;overflow:visible}
+  .grid{stroke:var(--rule);stroke-width:1}
+  .axis{fill:var(--muted);font-family:var(--sans);font-size:11px}
+  .xlab{fill:var(--muted);font-family:var(--sans);font-size:11px}
+  .vline{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .vdot{stroke:var(--bg);stroke-width:2}
+
+  .legend{display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:center;margin-top:20px;padding-top:18px;border-top:1px solid var(--rule)}
+  .leg-row{display:flex;align-items:center;gap:8px;font-size:13px}
+  .leg-key{width:16px;height:2px;border-radius:2px;flex:none}
+  .leg-name{color:var(--fg);font-weight:500}
+  .leg-val{color:var(--muted);font-variant-numeric:tabular-nums}
+
+  .empty{text-align:center;color:var(--muted);font-size:13.5px;padding:34px 10px;line-height:1.6}
+
+  .tip{position:absolute;transform:translate(-50%,-8px);top:0;background:var(--bg);border:1px solid var(--rule-strong);border-radius:11px;padding:9px 12px;pointer-events:none;opacity:0;transition:opacity .15s;white-space:nowrap;z-index:5}
+  .tip.on{opacity:1}
+  .tip .d{color:var(--muted);font-size:11px;font-weight:500;margin-bottom:5px}
+  .tip-row{display:flex;align-items:center;gap:7px;font-size:12.5px;margin-top:3px}
+  .tip-key{width:12px;height:2px;border-radius:2px;flex:none}
+  .tip-name{color:var(--muted);flex:1}
+  .tip-val{color:var(--fg);font-weight:700;font-variant-numeric:tabular-nums}
+
+  .log{margin-top:26px}
+  .log-day{margin-top:20px}
+  .log-day:first-child{margin-top:0}
+  .log-date{font-family:var(--mono);text-transform:uppercase;letter-spacing:.14em;font-size:11px;font-weight:600;color:var(--muted);padding-bottom:10px;border-bottom:1px solid var(--rule)}
+  .log-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid var(--rule)}
+  .log-row:last-child{border-bottom:none}
+  .log-name{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500}
+  .log-tier{width:6px;height:6px;border-radius:50%;background:var(--gold);flex:none}
+  .log-val{font-size:13.5px;color:var(--muted);font-variant-numeric:tabular-nums;text-align:right}
+  .log-val b{color:var(--fg);font-weight:600}
+
+  .footnote{text-align:center;color:var(--muted);font-size:11.5px;margin-top:26px;opacity:.8}
+
+  @media (prefers-reduced-motion: reduce){ .vline{transition:none !important} }
+</style>
+</head>
+<body>
+<div class="atmos"></div>
+<div class="wrap">
+  <div class="head">
+    <div class="eyebrow">Progress</div>
+    <h1>Velocity</h1>
+    <p class="sub">Your compound lifts and full workout log, pulled straight from Train. Finish a session there and it shows up here.</p>
+  </div>
+
+  <div class="sheet">
+    <div class="sheet-h">Compound progress</div>
+    <div class="range" id="range"></div>
+    <div class="plotcard"><div class="plot" id="plot"></div></div>
+    <div class="legend" id="legend"></div>
+  </div>
+
+  <div class="sheet log">
+    <div class="sheet-h">Workout log</div>
+    <div id="logBody" style="margin-top:18px"></div>
+  </div>
+
+  <p class="footnote">Read-only &middot; mirrors Train's saved data</p>
+</div>
+
+<script>
+(async function(){
+  const CH_RANGES = { W: 7, M: 30, '3M': 90, '6M': 180, Y: 365, ALL: 99999 };
+  const CH_VB_W = 600, CH_VB_H = 240, CH_PADL = 46, CH_PADR = 20, CH_PADT = 22, CH_PADB = 36;
+  const COLORS = ['#3987e5', '#199e70', '#c98500', '#d55181', '#9085e9'];
+  const LB = 0.45359237;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const pad2 = n => String(n).padStart(2, '0');
+  const parseDate = k => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); };
+  const daysAgo = k => Math.round((today - parseDate(k)) / 86400000);
+  const label = k => parseDate(k).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const dateHeading = k => parseDate(k).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+  const r1 = n => Math.round(n * 10) / 10;
+  function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+  let UNIT = 'kg';
+  const wDisp = kg => UNIT === 'lb' ? Math.round(kg / LB * 2) / 2 : Math.round(kg * 100) / 100;
+  const uLabel = perHand => UNIT + (perHand ? '/ea' : '');
+
+  let SPLIT = null; // { days: [...], activeDayId } from Train, or null if unavailable
+  let STATE = { active: 'ALL' };
+
+  async function loadTrain(){
+    try {
+      const saved = await window.Vitality.load();
+      if (saved && typeof saved === 'object' && saved.range) STATE.active = saved.range;
+    } catch (e) {}
+    try {
+      const data = await window.Vitality.read('train');
+      if (!data || typeof data !== 'object') return;
+      if (typeof data['vitality.logger.unit'] === 'string') UNIT = data['vitality.logger.unit'];
+      const raw = data['vitality.logger.v4'];
+      if (typeof raw === 'string' && raw){
+        const parsed = JSON.parse(raw);
+        if (parsed && Array.isArray(parsed.days)) SPLIT = parsed;
+      }
+    } catch (e) { SPLIT = null; }
+  }
+
+  function allLifts(){
+    if (!SPLIT) return [];
+    const seen = new Set(), out = [];
+    (SPLIT.days || []).forEach(d => (d.lifts || []).forEach(l => {
+      if (!seen.has(l.id)){ seen.add(l.id); out.push(l); }
+    }));
+    return out;
+  }
+  function compoundLifts(){ return allLifts().filter(l => l.tier === 1 && !l.hidden); }
+
+  // ---------- Compound progress chart ----------
+  function drawRange(){
+    const el = document.getElementById('range');
+    el.innerHTML = Object.keys(CH_RANGES).map(k =>
+      '<button class="' + (k === STATE.active ? 'on' : '') + '" data-r="' + k + '">' + k + '</button>').join('');
+    el.querySelectorAll('button').forEach(b => b.onclick = () => {
+      STATE.active = b.dataset.r;
+      try { window.Vitality.save({ range: STATE.active }); } catch (e) {}
+      drawRange(); renderPlot();
+    });
+  }
+
+  function renderPlot(){
+    const plot = document.getElementById('plot');
+    const legend = document.getElementById('legend');
+    const lifts = compoundLifts();
+    if (!lifts.length){
+      plot.innerHTML = '<div class="empty">' + (SPLIT
+        ? 'Add a squat, bench, deadlift, overhead press, or weighted dip in Train to start tracking compound progress.'
+        : 'Open Train and finish at least one session — Velocity mirrors what Train saves.') + '</div>';
+      legend.innerHTML = '';
+      return;
+    }
+    const rangeDays = CH_RANGES[STATE.active];
+    const series = lifts.map((lift, i) => {
+      const history = (lift.history || []).filter(h => !h.off && daysAgo(h.date) <= rangeDays)
+        .slice().sort((a, b) => a.date.localeCompare(b.date));
+      return { lift, color: COLORS[i % COLORS.length], history };
+    }).filter(s => s.history.length);
+    if (!series.length){
+      plot.innerHTML = '<div class="empty">Log a session on a compound lift in Train to see it here.</div>';
+      legend.innerHTML = '';
+      return;
+    }
+    series.forEach(s => {
+      const base = s.history[0].w;
+      s.pts = s.history.map(h => ({ date: h.date, kg: h.w, pct: base ? r1((h.w - base) / base * 100) : 0 }));
+    });
+    const allDates = Array.from(new Set(series.flatMap(s => s.pts.map(p => p.date)))).sort();
+    const oldestAgo = Math.max(...allDates.map(daysAgo));
+    const domain = STATE.active === 'ALL' ? Math.max(oldestAgo, 1) : Math.max(rangeDays, 1);
+    const X = k => CH_PADL + Math.min(1, Math.max(0, 1 - daysAgo(k) / domain)) * (CH_VB_W - CH_PADL - CH_PADR);
+    const pcts = series.flatMap(s => s.pts.map(p => p.pct)).concat([0]);
+    let lo = Math.floor(Math.min(...pcts) / 5) * 5, hi = Math.ceil(Math.max(...pcts) / 5) * 5;
+    if (hi - lo < 10){ hi = Math.max(hi, 5); lo = Math.min(lo, -5); }
+    const Y = pct => (CH_VB_H - CH_PADB) - (pct - lo) / (hi - lo) * (CH_VB_H - CH_PADB - CH_PADT);
+    const step = (hi - lo) <= 40 ? 10 : 20;
+    let svg = '<svg viewBox="0 0 ' + CH_VB_W + ' ' + CH_VB_H + '" preserveAspectRatio="none">';
+    for (let p = lo; p <= hi; p += step){
+      svg += '<line class="grid" x1="' + CH_PADL + '" y1="' + Y(p) + '" x2="' + (CH_VB_W - CH_PADR) + '" y2="' + Y(p) + '"/>';
+      svg += '<text class="axis" x="' + (CH_PADL - 10) + '" y="' + (Y(p) + 4) + '" text-anchor="end">' + (p > 0 ? '+' : '') + p + '%</text>';
+    }
+    series.forEach(s => {
+      const pts = s.pts.map(p => X(p.date) + ',' + Y(p.pct));
+      if (s.pts.length > 1) svg += '<polyline class="vline" points="' + pts.join(' ') + '" style="stroke:' + s.color + '"/>';
+      const last = s.pts[s.pts.length - 1];
+      svg += '<circle class="vdot" cx="' + X(last.date) + '" cy="' + Y(last.pct) + '" r="4" style="fill:' + s.color + '"/>';
+    });
+    svg += '<text class="xlab" x="' + CH_PADL + '" y="' + (CH_VB_H - 6) + '" text-anchor="start">' + label(allDates[0]) + '</text>';
+    svg += '<text class="xlab" x="' + (CH_VB_W - CH_PADR) + '" y="' + (CH_VB_H - 6) + '" text-anchor="end">today</text>';
+    svg += '</svg><div class="tip" id="tip"></div>';
+    plot.innerHTML = svg;
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!reduce){
+      plot.querySelectorAll('.vline').forEach(line => {
+        const L = line.getTotalLength();
+        line.style.strokeDasharray = L; line.style.strokeDashoffset = L;
+        requestAnimationFrame(() => { line.style.transition = 'stroke-dashoffset .85s cubic-bezier(.16,1,.3,1)'; line.style.strokeDashoffset = '0'; });
+      });
+    }
+    legend.innerHTML = series.map(s => {
+      const last = s.pts[s.pts.length - 1];
+      return '<div class="leg-row"><span class="leg-key" style="background:' + s.color + '"></span>' +
+        '<span class="leg-name">' + esc(s.lift.name) + '</span>' +
+        '<span class="leg-val">' + wDisp(last.kg) + ' ' + uLabel(s.lift.perHand) + ' &middot; ' + (last.pct >= 0 ? '+' : '') + last.pct + '%</span></div>';
+    }).join('');
+    wireScrub(series, allDates, X);
+  }
+
+  let dragging = false;
+  function wireScrub(series, allDates, X){
+    const plot = document.getElementById('plot');
+    const scrubAt = clientX => {
+      const svg = plot.querySelector('svg'); if (!svg) return;
+      const r = svg.getBoundingClientRect();
+      const vx = (clientX - r.left) / r.width * CH_VB_W;
+      let best = allDates[0], bd = Infinity;
+      allDates.forEach(d => { const dx = Math.abs(X(d) - vx); if (dx < bd){ bd = dx; best = d; } });
+      showTip(series, best, X);
+    };
+    plot.onpointerdown = e => { dragging = true; scrubAt(e.clientX); };
+    plot.onpointermove = e => { if (dragging || e.pointerType === 'mouse') scrubAt(e.clientX); };
+    plot.onpointerup = () => { dragging = false; };
+    plot.onpointerleave = () => { dragging = false; const t = document.getElementById('tip'); if (t) t.classList.remove('on'); };
+  }
+  function valueAt(pts, dateKey){
+    let v = null;
+    for (const p of pts){ if (p.date <= dateKey) v = p; else break; }
+    return v;
+  }
+  function showTip(series, dateKey, X){
+    const tip = document.getElementById('tip'); if (!tip) return;
+    const rows = series.map(s => {
+      const v = valueAt(s.pts, dateKey);
+      const val = v ? (v.pct >= 0 ? '+' : '') + v.pct + '%' : '&mdash;';
+      return '<div class="tip-row"><span class="tip-key" style="background:' + s.color + '"></span>' +
+        '<span class="tip-name">' + esc(s.lift.name) + '</span><span class="tip-val">' + val + '</span></div>';
+    }).join('');
+    tip.innerHTML = '<div class="d">' + label(dateKey) + '</div>' + rows;
+    tip.style.left = (X(dateKey) / CH_VB_W * 100) + '%';
+    tip.classList.add('on');
+  }
+
+  // ---------- Workout log ----------
+  function renderLog(){
+    const body = document.getElementById('logBody');
+    const lifts = allLifts();
+    if (!lifts.length){
+      body.innerHTML = '<div class="empty">' + (SPLIT
+        ? 'No sessions logged yet. Finish a session in Train and it lands here.'
+        : 'Open Train and finish at least one session — Velocity mirrors what Train saves.') + '</div>';
+      return;
+    }
+    const byDate = new Map();
+    lifts.forEach(l => (l.history || []).forEach(h => {
+      if (h.off) return;
+      if (!byDate.has(h.date)) byDate.set(h.date, []);
+      const sets = h.sets || [];
+      const topReps = sets.length ? Math.max(...sets.filter(s => !s.fail).map(s => s.r || 0), 0) : (h.r || 0);
+      byDate.get(h.date).push({ name: l.name, tier: l.tier, kg: h.w, reps: topReps, sets: sets.length || 1, perHand: l.perHand });
+    }));
+    const dates = Array.from(byDate.keys()).sort().reverse();
+    if (!dates.length){
+      body.innerHTML = '<div class="empty">No sessions logged yet. Finish a session in Train and it lands here.</div>';
+      return;
+    }
+    body.innerHTML = dates.map(date => {
+      const rows = byDate.get(date).map(e =>
+        '<div class="log-row"><span class="log-name">' +
+          (e.tier === 1 ? '<span class="log-tier"></span>' : '') +
+          esc(e.name) + '</span>' +
+        '<span class="log-val"><b>' + wDisp(e.kg) + ' ' + uLabel(e.perHand) + '</b> &times; ' + e.reps + ' &middot; ' + e.sets + ' set' + (e.sets > 1 ? 's' : '') + '</span></div>'
+      ).join('');
+      return '<div class="log-day"><div class="log-date">' + esc(dateHeading(date)) + '</div>' + rows + '</div>';
+    }).join('');
+  }
+
+  await loadTrain();
+  drawRange();
+  renderPlot();
+  renderLog();
+})();
+</script>
+</body>
+</html>
