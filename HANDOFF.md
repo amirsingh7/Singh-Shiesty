@@ -1,35 +1,27 @@
 # RESUME HERE
-- **Working on:** Reskinning the dashboard from mint/mountains to a user-chosen "amber & clay, warm & grounded" theme, plus small tile tweaks.
-- **Next step:** Task is complete — just visually confirm in the browser (dev server already running on :3000) if the user wants more tweaks. No pending edit queued.
+- **Working on:** Adding a "delete workout" button to the Velocity tile so an accidentally-logged day's session can be removed (to relog it).
+- **Next step:** Before writing any code, cleanly enumerate EVERY `VStore.setItem`/`getItem` key literal Train uses (run `grep -n "VStore\.\(setItem\|getItem\|removeItem\)" public/tiles/train.html` and read each call site) — my last grep was messy and inconclusive. Known so far: `vitality.logger.v4` (the split), `vitality.logger.unit` (kg/lb), and per-lift `'vitality.overload.' + id + '.v3'` keys from `clearOverloadStore`. This list matters because the delete write-back MUST merge onto Train's existing saved keys, never replace the whole object (see Watch out).
 - **Waiting on you:** nothing, keep going.
 
 -----
 
 ## Done so far
-- Interviewed user one question at a time: gem → change, tile orb art → keep, Mentor tile → restyle, background (mountains+particles) → replace, mood → warm & grounded, palette → amber & clay.
-- Retinted global CSS tokens (mint family, bg, muted, border, card) in `app/globals.css` to amber & clay.
-- Replaced the "world" background (mountains + particles) with the existing "Ember" gradient preset in `lib/tiles/dashboardChrome.ts` (`DEFAULT_CHROME.background`), also updated `backgroundAccent()` fallback.
-- Header gem: `app/app/DashboardHeaderGem.tsx` now passes `tint="amber"` to `HeroCrystal` (reused the pre-built amber colorway in `components/HeroCrystal.tsx` — no 3D code changes). Retinted its pulse-burst CSS in `app/app/dashboardHeaderGem.module.css`.
-- Mentor/Vee tile: retinted wire-feed colors in `app/app/DashboardGrid.tsx` (`VeeArt` function) and the `.veeTiles` local color tokens + all literal mint rgba/hex values in `components/veeTiles.css`, plus `MINT`/`COLORS` constants in `components/veeTilesAnim.ts`.
-- Deliberately left untouched: `.fin` (finance) gold/copper styling and goal-accent color-coding (`--gold`/`--iris` tied to `lib/tiles/weights.ts` goal accents) since those are functional, not decorative.
-- Verified with `npx tsc --noEmit` (clean) and confirmed dev server still serving on :3000.
-- Swapped tile index numbers in `lib/tiles/coreTiles.tsx`: Vitals is now `03`, Peak is now `04` (were reversed).
-- Earlier in session (separate task): installed "the Arsenal" workout logger from a user-provided zip URL into `public/tiles/train.html` (bridge-wired, reports `workout` sessions/week), after inspecting the zip contents for safety first. Backend `backend.sql` sits at repo root, unapplied (no Supabase wired yet — no `.env.local`). `.claude/commands/logger.md` etc. landed but are gitignored except tile.md/vitality.md/detonate.md/sweep.md.
-- Also earlier: removed Brand & Finance tiles from the row via the dashboard's built-in edit-mode (✕ badge), not a code change — fully reversible from the Library.
-- Even earlier (prior session, already committed): changed `OVERALL_GOAL.title` in `lib/tiles/weights.ts` to `'A jacked, Entrepreneur'` and added trailing ★ in the three render spots (DashboardGrid.tsx x2, MentorPage.tsx x1).
+- Diagnosed and fixed the earlier "Couldn't save" bug: Supabase env vars were set on Vercel but `tile_data` table never existed. User ran `supabase/sync.sql` in the Supabase SQL editor — confirmed working now, saves succeed.
+- Improved error plumbing: `tileStore.saveData` now returns `{ok, reason}` with a REAL reason (`too_large:<n>`, `db_error:<msg>`, `db_exception:<msg>`, `exception:<msg>`) instead of one hardcoded guess string, threaded through `useTileHost.ts`'s save handler and shown in Train's `#saveState` status text (`public/tiles/train.html`, `__setSaveState`/`__flush`).
+- Built the "Velocity" tile from scratch (new 8th core tile slot): compound-lift % progress chart (multi-line, validated colorblind-safe palette) + a full workout log grouped by date, both read-only, both derived from `window.Vitality.read('train')` (cross-tile READ only — Velocity has no data of its own). Registered in `lib/tiles/coreTiles.tsx`, `public/tiles/README.md`, `.claude/commands/tile.md`, and the MCP connector's `SLOTS` list in `app/api/mcp/[transport]/route.ts`.
+- Raised `MAX_TILE_DATA` in `lib/tiles/tileStore.ts` from 512KB to 4MB (separate, real fix for long-term workout-history growth — unrelated to the Supabase bug but still valid).
+- Saved a standing memory preference: always give ready-to-paste SQL + exact SQL Editor click path for any future Supabase schema change (`~/.claude/projects/.../memory/feedback_supabase_sql_prompts.md`).
 
 ## Key files
-- `app/globals.css` — global color tokens
-- `lib/tiles/dashboardChrome.ts` — background/gem chrome defaults
-- `app/app/DashboardHeaderGem.tsx` + `dashboardHeaderGem.module.css` — header gem
-- `components/HeroCrystal.tsx` — the 3D gem engine (has built-in mint/amber/iris tints, icosahedron/dodecahedron/tetrahedron/octahedron shapes) — untouched structurally, just tint prop used
-- `components/veeTiles.css` + `components/veeTilesAnim.ts` + `app/app/DashboardGrid.tsx` (`VeeArt`) — Mentor tile + all tile orb art coloring
-- `lib/tiles/coreTiles.tsx` — core tile registry (index numbers, labels, art)
-- `public/tiles/train.html` — the installed workout logger tile
+- `public/tiles/velocity.html` — the tile to add the delete button to; needs a "Delete this day" action per date-group in the Workout Log section, with an inline confirm card (mirror Train's existing `chDeleteDraft`/`chConfirmDel` confirm-UI pattern, not a native `confirm()`).
+- `lib/tiles/useTileHost.ts` — host message handler. Only has a `READABLE` whitelist for cross-tile `read`; there is NO write-to-another-slot capability yet. Plan: add a new `'write'` message type gated by a narrow `WRITABLE` whitelist (just `['train']` for now), reusing the `{ok, reason}` SaveResult plumbing already built for `save`.
+- `lib/tiles/tileBridge.ts` — the injected shim (`window.Vitality`). Needs a new `write(slot, data)` method + a `write:ok`/`write:error` reply case in its message listener, mirroring the existing `read`/`save` pattern.
+- `lib/tiles/tileStore.ts` — `saveData` already returns `{ok, reason}` (done). The new write handler should call this after a read-merge, not a blind overwrite.
+- `public/tiles/train.html` — reference only for the confirm-UI pattern (`chDeleteDraft`/`chConfirmDel`/`chOpenEditor` area) and as the source of truth for exact VStore key names.
 
 ## Watch out
-- No wallpaper-editor UI exists yet in the app — `DashboardChrome`/`WALLPAPER_ACCENTS`/`GRADIENT_PRESETS` are scaffolding read via `dashboardChrome.get()` but nothing writes to it yet, so changing `DEFAULT_CHROME` directly is what actually re-themes the live board (no localStorage override exists to fight it, since no UI ever wrote one).
-- `.veeTiles{ --mint:... }` in `veeTiles.css` is a locally-scoped variable block, separate from `app/globals.css`'s `--mint` — both had to be retinted independently.
-- Supabase is not wired for this project (no `.env.local`) — the workout logger currently runs on-device (localStorage bridge) only.
-- Dev server was running on port 3000 (PID seen earlier: 17730) — check before starting a new one.
-- Pre-existing unrelated TS hint about unused `syncSaveTile` in DashboardGrid.tsx — not caused by any of this work, ignore it.
+- **Merge, never replace.** Train's VStore holds MULTIPLE keys in one MEM object (the split, the unit pref, per-lift overload cache keys). The delete-from-Velocity write must read Train's current full saved object first, mutate only the `vitality.logger.v4` split (removing history entries matching the target date across every lift in every day), and write the WHOLE merged object back — never construct a fresh object with just 1-2 keys, or unrelated data gets silently wiped.
+- Cross-tile WRITE is a deliberate, narrow expansion of the sealed-tile security model (previously read-only). Keep `WRITABLE` scoped to just `['train']` — don't make it a general capability without calling that out to the user first.
+- Supabase is now live for this user (`tile_data` table exists, RLS open policy). `tileStore.saveData`'s Supabase branch takes priority whenever `db` is configured — the read-merge-write must go through `tileStore.loadData`/`saveData` (already Supabase-aware), not raw localStorage.
+- Dev server was last confirmed running on `:3000` (PID 17730 in earlier sessions) — verify it's still up before testing; don't blindly start a second one (`EADDRINUSE`).
+- Both `public/tiles/train.html` and `public/tiles/velocity.html` are large single-file sealed tiles — after any edit, sanity-check with the same pattern used all session: extract the `<script>` block and run `node --check` on it, plus verify `{`/`}` brace balance in both `<style>` blocks, before trusting it renders.
