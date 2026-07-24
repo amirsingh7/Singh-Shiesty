@@ -10,8 +10,13 @@
   slept and how you feel. A WHOOP button is here for later (Episode 2 wires the
   real connection). The 7-day line scales your inputs over time.
 
+  Workout numbers (activeCalories, workoutMinutes, avgHeartRate) arrive from
+  outside — an iOS Shortcut POSTs them to /api/vitals/ingest after a workout
+  ends (see that route for the auth + merge). This tile only reads and
+  displays them; it never writes them itself.
+
   Sealed: no network. Saves through window.Vitality.
-  Store: { 'YYYY-MM-DD': { sleepHours, feel, whoopRecovery? } }
+  Store: { 'YYYY-MM-DD': { sleepHours, feel, whoopRecovery?, activeCalories?, workoutMinutes?, avgHeartRate? } }
   Recovery: whoopRecovery wins when a device fills it; else 0.6·feel + 0.4·sleep.
   The SAME formula lives in peak.html (recoveryFromVitals) + docs/THE-MATH.md §5
   + /sweep — change one, change all, so Peak never disagrees.
@@ -51,6 +56,12 @@
   .rec{font-family:var(--serif);font-style:italic;font-size:clamp(66px,16vw,104px);line-height:1;color:#fff;margin-top:8px;text-shadow:0 0 44px rgba(110,231,183,.22)}
   .rec.good{color:var(--good)} .rec.watch{color:var(--watch)} .rec.low{color:var(--low)}
   .recLab{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-top:8px}
+
+  /* workout stats (filed by an iOS Shortcut → /api/vitals/ingest) */
+  .workout{margin-top:22px;display:flex;justify-content:center;gap:28px;flex-wrap:wrap}
+  .wStat{text-align:center}
+  .wVal{font-family:var(--serif);font-style:italic;font-size:22px;color:#fff}
+  .wLab{font-family:var(--mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-top:4px}
 
   /* whoop connect */
   .whoop{margin-top:24px;display:flex;justify-content:center}
@@ -130,11 +141,22 @@ function trend(){
     +'<path d="'+path+'" fill="none" stroke="#6EE7B7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 }
 
+function workoutRow(t){
+  if(!t)return '';
+  const stats=[];
+  if(typeof t.activeCalories==='number')stats.push(['CAL',Math.round(t.activeCalories)]);
+  if(typeof t.workoutMinutes==='number')stats.push(['MIN',Math.round(t.workoutMinutes)]);
+  if(typeof t.avgHeartRate==='number')stats.push(['AVG BPM',Math.round(t.avgHeartRate)]);
+  if(!stats.length)return '';
+  return '<div class="workout">'+stats.map(s=>'<div class="wStat"><div class="wVal">'+s[1]+'</div><div class="wLab">'+s[0]+'</div></div>').join('')+'</div>';
+}
+
 function render(){
   const t=todays(),rec=estRecovery(t),tn=tone(rec);
   const line=trend();
   document.getElementById('app').innerHTML=
     '<div class="hero"><div class="rec '+tn+'">'+(rec!=null?rec+'%':'—')+'</div></div>'
+    +workoutRow(t)
     +'<div class="whoop"><button class="whoopBtn" data-whoop><span class="dot"></span>Connect WHOOP</button></div>'
     +'<div class="card">'
       +'<div class="sleepRow"><button class="step" data-sleep="-0.5">−</button><span class="sleepVal">'+fmtSleep(draft.sleepHours)+'</span><button class="step" data-sleep="0.5">+</button></div>'
