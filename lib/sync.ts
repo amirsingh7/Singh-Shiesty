@@ -25,7 +25,16 @@ export const syncEnabled = (): boolean => !!(url && anonKey)
 
 function syncClient(): SupabaseClient | null {
   if (!url || !anonKey) return null
-  if (!client) client = createClient(url, anonKey)
+  if (!client) {
+    try {
+      client = createClient(url, anonKey)
+    } catch {
+      // Malformed URL/key: stay purely local rather than crash the caller —
+      // an uncaught throw here would abort the tile-discovery effect in
+      // DashboardGrid before setLoaded(true), leaving the whole board blank.
+      return null
+    }
+  }
   return client
 }
 
