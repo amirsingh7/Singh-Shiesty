@@ -24,10 +24,21 @@ export interface Profile {
   sex?: 'male' | 'female'
   /** How to TALK to them about it — storage stays metric. */
   units?: 'metric' | 'imperial'
+  goalShape?: 'bulk' | 'cut' | 'lean-bulk' | 'maintain'
+  /** Daily calorie target for Fuel, from goalShape + Mifflin-St Jeor. */
+  calorieTarget?: number
 }
 
 /** Blank until the mentor asks. Fallbacks live at the call sites. */
-export const DEFAULT_PROFILE: Profile = {}
+export const DEFAULT_PROFILE: Profile = {
+  age: 22,
+  sex: 'male',
+  heightCm: 177.8,
+  weightKg: 82.1,
+  units: 'imperial',
+  goalShape: 'lean-bulk',
+  calorieTarget: 3080,
+}
 
 /** The profile: localStorage override ('vitality:profile') if valid, else defaults. */
 export function profile(): Profile {
