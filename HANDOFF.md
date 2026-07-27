@@ -1,28 +1,33 @@
 # RESUME HERE
-- **Working on:** Wrapping up the Vitality dashboard punch list before the user attaches business context for turning it into a product called "PR Portfolio."
-- **Next step:** Ask the user which is next: verify the vitals sync on a real 2nd workout, decide daily-totals-vs-per-workout scoping, add live data keys (YouTube/Finnhub), or Spotify automation.
-- **Waiting on you:** nothing blocking — just say which punch-list item to do next (see above).
+- **Working on:** Built and shipped "Symphony" — a new Spotify playback-control tile for the Vitality dashboard.
+- **Next step:** Nothing pending — ask the user what's next (Spotify Phase 2 automation, or another punch-list/PR Portfolio item).
+- **Waiting on you:** nothing blocking — just say what to work on next.
 
 -----
 
 ## Done so far (this session)
-- **Fixed the workout-sync accuracy bug**: all three `Find Health Samples` filters in the "Log Workout To VS/Vercel" iOS Shortcut changed from "1 day" to **"0.083 days"** (~2hr rolling window) — a decimal-day trick instead of an unsupported Hours unit. Tried and abandoned two dead ends first: dynamic "is between" + magic-variable dates (this Shortcuts version's Date filter UI has no variable insertion) and a "Filter Files" post-filter (it only sees generic file metadata, not a Health Sample's real Start Date). Confirmed working via test run + Supabase check.
-- **Fixed the timezone bug**: `app/api/vitals/ingest/route.ts` `todayKey()` now computes the date via `Intl.DateTimeFormat` in `America/Los_Angeles` instead of raw server UTC. Committed (repo has an auto-commit hook — "auto: update from Claude Code") and pushed; confirmed live (a `2026-07-26` entry landed under the correct local date after deploy).
-- **Cleared bad Supabase test data**: in `tile_data` (`tile_id` `vitals` and `me:vitals`), removed `activeCalories`/`workoutMinutes`/`avgHeartRate` from `2026-07-24` (kept `feel`/`sleepHours`), deleted `2026-07-25` entirely (unrecoverable swapped/day-shifted test data, nothing else worth keeping).
-- **Completed body profile intake**: `lib/tiles/profile.ts` `DEFAULT_PROFILE` now has age 22, male, 177.8cm, 82.1kg, units imperial, `goalShape: 'lean-bulk'`, `calorieTarget: 3080` (Mifflin-St Jeor + moderate activity + ~250cal surplus). Added `goalShape`/`calorieTarget` to the `Profile` interface.
-- **Set up the MCP connector**: generated `MCP_TOKEN`, set in `.env.local` and Vercel env vars, redeployed. Installed the `claude` CLI (`npm install -g @anthropic-ai/claude-code --allow-scripts=@anthropic-ai/claude-code` — user's npm blocks install scripts by default). Ran `claude mcp add --transport http vitality https://singh-shiesty.vercel.app/api/mcp/mcp --header "Authorization: Bearer <token>"` — confirmed registered in `~/.claude.json`. **New MCP tools only show up in a fresh session, not the one that ran the add command** — this new session should have them.
-- User revealed the long-term plan: this dashboard is becoming a product called **PR Portfolio** — full business context to come later, once the punch list below is done. Saved to memory (`project_pr_portfolio.md`) so it isn't lost.
+- **Vitals tile**: added a "Workout History" day-by-day section (bar chart + range toggle + tooltip) below the existing recovery trend, sourced from the same per-date store the iOS Shortcut already writes to. Verified live via a flagged temp Supabase entry, then cleaned up.
+- **Punch list groomed**: live data keys (YouTube/Finnhub) dropped at user's request; MCP connector confirmed already done. See memory `project_pr_portfolio.md` for the full current list.
+- **Built Symphony (Spotify control tile), Phase 1 — fully shipped and confirmed working on BOTH local dev and production (`singh-shiesty.vercel.app`)**, via a real saved Supabase token on each:
+  - New tile `public/tiles/symphony.html` (connect button → full player: art/title/artist/progress, play/pause/skip, volume, shuffle/repeat, device selector).
+  - Registered in `lib/tiles/coreTiles.tsx` (slot `symphony`, index '09', tall) — no `weights.ts` entry, it's a utility tile like Velocity, not a goal input.
+  - Bridge extended: `lib/tiles/tileBridge.ts` (`window.Vitality.spotify(action, extra)`) + `lib/tiles/useTileHost.ts` (proxies every action to `/api/spotify/player`; 'connect' opens a real OAuth popup since sealed tiles can't).
+  - New routes: `app/api/spotify/{authorize,callback,player}/route.ts` + shared `app/api/spotify/shared.ts` (redirect_uri helper).
+  - Tokens stored in existing `tile_data` table, `tile_id: 'spotify_auth'` — no new SQL.
+  - `.env.local`/`.env.example`/Vercel all have `SPOTIFY_CLIENT_ID`/`SPOTIFY_CLIENT_SECRET`. Spotify app ("Fitness Dashboard (Vercel)") has both redirect URIs registered (127.0.0.1 local + production).
+  - Also fixed a latent unrelated bug: `DashboardGrid.tsx` `TileFace` showed a misleading red "0%" on any tile absent from the active goal's weights (Velocity had it too) — now shows the tile's own glyph via a new `noWeight` prop.
+- Full plan for Symphony is saved at `/Users/asunderrex92679/.claude/plans/merry-brewing-gray.md` if deeper rationale is ever needed.
 
 ## Key files
-- `app/api/vitals/ingest/route.ts` — `todayKey()` ~line 52-55, now Pacific-time based.
-- `lib/tiles/profile.ts` — `DEFAULT_PROFILE` filled in, `Profile` interface extended.
-- `.env.local` — `MCP_TOKEN` set (gitignored); `VITALS_INGEST_TOKEN` and Supabase keys also set. `YOUTUBE_API_KEY`/`FINNHUB_API_KEY` still empty.
-- (On user's iPhone, not in repo) — "Log Workout To VS/Vercel" Shortcut, all three `Find Health Samples` filters now `0.083 days`.
+- `public/tiles/symphony.html` — the tile UI.
+- `app/api/spotify/authorize/route.ts`, `callback/route.ts`, `player/route.ts`, `shared.ts` — OAuth + playback proxy.
+- `lib/tiles/tileBridge.ts`, `lib/tiles/useTileHost.ts` — bridge/host `spotify` message handling.
+- `lib/tiles/coreTiles.tsx` — tile registration (`symphony` in `CoreTileId`, `CORE_TILES`, `DEFAULT_HOME_ORDER`).
+- `app/app/DashboardGrid.tsx` — `noWeight` prop / glyph-instead-of-0% fix.
+- `public/tiles/vitals.html` — new Workout History section.
 
 ## Watch out
-- `MCP_TOKEN` = `078291b7e283e07222e4e5a1f748464b48d14ddd4dceeb1a6d21e7a7a57b3a18` (also in Vercel, already redeployed) — don't regenerate, just reuse if needed.
-- Supabase check command: `set -a && source .env.local && set +a && curl -s "${NEXT_PUBLIC_SUPABASE_URL}/rest/v1/tile_data?tile_id=eq.vitals&select=tile_id,data,updated_at" -H "apikey: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}" -H "Authorization: Bearer ${NEXT_PUBLIC_SUPABASE_ANON_KEY}" | python3 -m json.tool`
-- The `0.083`-day window is a stopgap since neither `Find Workouts` nor a "Workouts" sample type exist in this user's Shortcuts version — the real "daily totals vs per workout" design decision is still open, this just gets closer numbers.
-- Remaining punch list, user's own words: verify automation on a real 2nd workout, decide daily-totals-vs-per-workout, live data keys (YouTube via console.cloud.google.com, Finnhub via finnhub.io — write both to `.env.local` + Vercel), Spotify automation (not yet scoped).
-- Supabase `tiles` table already exists (confirmed via a schema-error probe) — `supabase/tiles.sql` was already run in an earlier session, no need to redo it.
-- `SETUP.md` still does not exist — CLAUDE.md calls for one; never created.
+- **Spotify Phase 2 (workout-linked automation)** — per-lift playlists, volume ducking, auto pause/resume — is deliberately NOT built. Train (the workout tile) only reports data once, on "Finish session"; it has no live set/rest event stream today. That's its own scoped change if the user wants to continue this.
+- **OAuth gotchas** (already fixed in code, but relevant if building the next OAuth integration, e.g. WHOOP): Spotify's dashboard rejects `http://localhost` as insecure — only literal `127.0.0.1` passes, so local dev must be browsed at `http://127.0.0.1:3000`, not `localhost:3000`. Also, a `Secure` cookie flag is silently dropped on non-`https` origins — `authorize/route.ts` only sets it conditionally now.
+- Spotify app is in "Development mode" (max 25 allowlisted users) — fine for personal use, would need Spotify's extension request process to go beyond that.
+- Full context/rationale saved in memory `project_pr_portfolio.md` and `feedback_ui_verification.md` (the latter: never screenshot the user's live desktop to verify UI — curl the deploy + ask the user to check, or use a flagged temp Supabase entry).
