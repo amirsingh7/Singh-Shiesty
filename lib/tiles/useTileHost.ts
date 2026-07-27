@@ -136,6 +136,49 @@ export function useTileHost(
         return
       }
 
+      // Spotify — the tile has no network (opaque-origin sandboxed iframe), so
+      // both OAuth and every playback call are proxied through the host, same
+      // shape as tiktok/youtube/stock above.
+      //
+      // 'connect' is different from a normal proxy call: it has no `id` (the
+      // tile sent it one-way, see tileBridge.ts) because completing an OAuth
+      // login can take as long as the user takes on Spotify's site — far
+      // longer than the bridge's 8s call() timeout. The host opens the OAuth
+      // popup itself (only a real, non-sandboxed window can), polls for it to
+      // close, then pushes an unsolicited `spotify:connected` message back
+      // into the SAME tile window that asked (`src`, captured from this very
+      // message event) so the tile knows to re-check its status.
+      if (msg.type === 'spotify') {
+        if (msg.action === 'connect') {
+          const popup = window.open('/api/spotify/authorize', 'spotify-connect', 'width=480,height=720')
+          if (!popup) return
+          const iv = setInterval(() => {
+            if (popup.closed) {
+              clearInterval(iv)
+              src.postMessage({ source: 'vitality-host', type: 'spotify:connected' }, '*')
+            }
+          }, 500)
+          return
+        }
+        const { source: _s, type: _t, id, action, ...extra } = msg
+        try {
+          const r = await fetch('/api/spotify/player', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action, ...extra }),
+          })
+          const j = await r.json()
+          if (r.ok) {
+            src.postMessage({ source: 'vitality-host', type: 'spotify:result', id: msg.id, data: j }, '*')
+          } else {
+            src.postMessage({ source: 'vitality-host', type: 'spotify:error', id: msg.id, reason: String(j?.error || 'spotify_failed') }, '*')
+          }
+        } catch {
+          src.postMessage({ source: 'vitality-host', type: 'spotify:error', id: msg.id, reason: 'fetch_failed' }, '*')
+        }
+        return
+      }
+
       // Cross-tile READ — the host hands a tile another slot's saved data so
       // tiles can react to each other client-side (e.g. Peak reshaping from the
       // Vitals recovery) with no /sweep and no connector. Read-only, the user's

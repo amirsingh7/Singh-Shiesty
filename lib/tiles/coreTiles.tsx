@@ -28,6 +28,7 @@ export type CoreTileId =
   | 'brand'
   | 'finance'
   | 'velocity'
+  | 'symphony'
 
 /** A single live metric to surface on a tile (Train day, Fuel kcal). */
 export interface CoreStat {
@@ -212,6 +213,28 @@ export const CORE_TILES: Record<CoreTileId, CoreTile> = {
       </svg>
     ),
   },
+  symphony: {
+    id: 'symphony',
+    href: '/app/starter',
+    index: '09',
+    label: 'Symphony',
+    variant: 'live',
+    orb: { mode: 'wander' },
+    defaultSize: 'tall',
+    glyph: (
+      <svg viewBox="-12 -12 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M-4 8a3 3 0 100-6 3 3 0 000 6z" />
+        <path d="M-1 2V-8l8-2v8" />
+        <path d="M7 -2a3 3 0 100 6 3 3 0 000-6z" />
+      </svg>
+    ),
+    art: (
+      <svg className="art" viewBox="0 0 210 250">
+        <path className="mot" d="M30 140 Q52 100 74 140 T118 140 T162 140 T182 140" />
+        <g className="orb"><circle className="glow" r="10" /><circle className="node" r="3.4" /></g>
+      </svg>
+    ),
+  },
 }
 
 /**
@@ -283,6 +306,7 @@ export const DEFAULT_HOME_ORDER: HomeTileId[] = [
   'peak',
   'finance',
   'velocity',
+  'symphony',
 ]
 
 /** Is this id one of the pre-installed core tiles (incl. Vee)? */

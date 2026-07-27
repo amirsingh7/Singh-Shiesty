@@ -11,9 +11,18 @@
 const SHIM = `<script>
 (function () {
   var pending = {}, seq = 0;
+  var spotifyConnectedHandlers = [];
   window.addEventListener('message', function (e) {
     var m = e.data;
     if (!m || m.source !== 'vitality-host') return;
+    // Unsolicited host->tile push (not a reply to any pending call): fires once
+    // an OAuth popup the host opened on our behalf has closed, so the tile can
+    // re-check connection status. Handled before the pending-id lookup below
+    // since it carries no id.
+    if (m.type === 'spotify:connected') {
+      spotifyConnectedHandlers.forEach(function (fn) { try { fn(); } catch (err) {} });
+      return;
+    }
     var p = pending[m.id];
     if (!p) return;
     delete pending[m.id];
@@ -30,6 +39,8 @@ const SHIM = `<script>
     else if (m.type === 'youtube:error') p.reject(new Error(m.reason || 'youtube_failed'));
     else if (m.type === 'stock:result') p.resolve(m.price);
     else if (m.type === 'stock:error') p.reject(new Error(m.reason || 'stock_failed'));
+    else if (m.type === 'spotify:result') p.resolve(m.data);
+    else if (m.type === 'spotify:error') p.reject(new Error(m.reason || 'spotify_failed'));
   });
   function call(type, extra) {
     return new Promise(function (resolve, reject) {
@@ -70,7 +81,25 @@ const SHIM = `<script>
     write: function (slot, key, value) { return callWrite(slot, key, value); },
     report: function (stream) {
       parent.postMessage({ source: 'vitality-tile', type: 'report', stream: stream }, '*');
-    }
+    },
+    // One consolidated method for every Spotify action, mirroring youtube/stock's
+    // proxy shape but avoiding a bespoke bridge method per action (play, pause,
+    // next, previous, volume, shuffle, repeat, devices, transfer, status,
+    // disconnect). 'connect' is special: it opens a real OAuth popup the host
+    // manages, which can take as long as the user takes on Spotify's login
+    // screen, so it's one-way (no pending promise, no 8s timeout) rather than a
+    // call() that could time out mid-login. Completion arrives later via
+    // onSpotifyConnected.
+    spotify: function (action, extra) {
+      if (action === 'connect') {
+        parent.postMessage({ source: 'vitality-tile', type: 'spotify', action: 'connect' }, '*');
+        return;
+      }
+      var msg = { action: action };
+      if (extra) for (var k in extra) msg[k] = extra[k];
+      return call('spotify', msg);
+    },
+    onSpotifyConnected: function (fn) { spotifyConnectedHandlers.push(fn); }
   };
 })();
 </script>`
