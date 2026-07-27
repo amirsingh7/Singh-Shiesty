@@ -44,8 +44,14 @@
   align-items: flex-end;
   gap: 16px;
   flex-wrap: wrap;
-  margin-top: -44px;
+  margin-top: 22px;
   padding: 0 4px;
+}
+/* Pulled up to overlap the cover image's bottom edge — only applies when a
+   cover image is actually shown, so there's no empty placeholder box (and
+   no awkward negative margin) when the owner hasn't set one yet. */
+.headerRowOverCover {
+  margin-top: -44px;
 }
 
 .avatar {

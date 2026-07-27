@@ -234,14 +234,14 @@ export default function ProfilePage() {
           ← Dashboard
         </a>
 
-        <div className={c('cover')}>
-          {p.coverUrl && !coverBroken && (
-            // eslint-disable-next-line @next/next/no-img-element
+        {p.coverUrl && !coverBroken && (
+          <div className={c('cover')}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={p.coverUrl} alt="" className={c('coverImg')} onError={() => setCoverBroken(true)} />
-          )}
-        </div>
+          </div>
+        )}
 
-        <div className={c('headerRow')}>
+        <div className={c('headerRow') + (p.coverUrl && !coverBroken ? ' ' + c('headerRowOverCover') : '')}>
           <div className={c('avatar')}>
             {p.photoUrl && !photoBroken ? (
               // eslint-disable-next-line @next/next/no-img-element
