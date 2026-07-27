@@ -49,9 +49,10 @@ function db(): SupabaseClient | null {
   }
 }
 
+const USER_TIMEZONE = 'America/Los_Angeles'
+
 function todayKey(): string {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  return new Intl.DateTimeFormat('en-CA', { timeZone: USER_TIMEZONE }).format(new Date())
 }
 
 function num(v: unknown): number | undefined {
