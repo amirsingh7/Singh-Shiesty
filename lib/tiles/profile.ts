@@ -79,6 +79,8 @@ export const DEFAULT_PROFILE: Profile = {
   calorieTarget: 3080,
 
   // Founder background, as given directly by the owner (business-context doc).
+  // Placeholder photo, per the owner — will be swapped for a professional one.
+  founderPhotoUrl: '/IMG_9505.jpeg',
   founderEducation: 'B.S. in Business',
   founderAdjacentKnowledge: 'Kinesiology and Exercise Science (college exposure)',
   founderIndustryExperience: 'Worked at a campus recreation center',
