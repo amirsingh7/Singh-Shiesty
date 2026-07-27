@@ -172,6 +172,63 @@
   color: var(--muted);
   margin-top: 4px;
 }
+.editSubhead {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--muted);
+  margin-top: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.founderWrap {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+.founderPhoto {
+  flex: 0 0 auto;
+  width: 84px;
+  height: 84px;
+  border-radius: var(--radius-lg);
+  background: radial-gradient(120% 120% at 35% 25%, var(--mint-glow), transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 28px;
+  color: var(--mint);
+  overflow: hidden;
+}
+.founderPhotoImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.founderFacts {
+  flex: 1 1 220px;
+  min-width: 200px;
+}
+.founderRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+}
+.founderRow:first-child {
+  border-top: none;
+}
+.founderLabel {
+  color: var(--muted);
+  flex: 0 0 auto;
+}
 
 .prGrid {
   display: grid;

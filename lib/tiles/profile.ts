@@ -44,6 +44,17 @@ export interface Profile {
   /** UI concept only — no real access control, there's one owner. */
   visibility?: 'public' | 'private'
   personalStatement?: string
+
+  // ── Founder background (business-context doc, section 2) — the story
+  // behind the product, shown on the profile alongside the athlete data. ──
+  founderPhotoUrl?: string
+  founderEducation?: string
+  founderAdjacentKnowledge?: string
+  founderIndustryExperience?: string
+  founderPersonalBackground?: string
+  founderFoundingCommunity?: string
+  founderTechnicalCapability?: string
+  founderNarrative?: string
 }
 
 /**
@@ -66,16 +77,32 @@ export const DEFAULT_PROFILE: Profile = {
   units: 'imperial',
   goalShape: 'lean-bulk',
   calorieTarget: 3080,
+
+  // Founder background, as given directly by the owner (business-context doc).
+  founderEducation: 'B.S. in Business',
+  founderAdjacentKnowledge: 'Kinesiology and Exercise Science (college exposure)',
+  founderIndustryExperience: 'Worked at a campus recreation center',
+  founderPersonalBackground: 'Active lifter, deeply embedded in gym and bodybuilding culture',
+  founderFoundingCommunity: 'Friends and training partners from college gym',
+  founderTechnicalCapability: 'Non-technical founder — recruiting a developer is a current priority',
+  founderNarrative:
+    "The founder's combination of business education, exercise science exposure, hands-on experience at a campus rec center, and genuine passion for the lifting community positions them as an authentic insider building for a community they actually belong to. This is a meaningful competitive advantage: the target user is not an abstraction; they are the founder's training partners.",
 }
 
-/** The profile: localStorage override ('vitality:profile') if valid, else defaults. */
+/**
+ * The profile: DEFAULT_PROFILE, with any localStorage override
+ * ('vitality:profile') layered on top field-by-field. Merged (not
+ * replaced) so a new default field the mentor adds later — like the
+ * founder-background fields — still surfaces for someone who already
+ * saved a profile blob before that field existed.
+ */
 export function profile(): Profile {
   if (typeof window !== 'undefined') {
     try {
       const raw = window.localStorage.getItem('vitality:profile')
       if (raw) {
         const o = JSON.parse(raw)
-        if (o && typeof o === 'object' && !Array.isArray(o)) return o as Profile
+        if (o && typeof o === 'object' && !Array.isArray(o)) return { ...DEFAULT_PROFILE, ...(o as Profile) }
       }
     } catch {
       /* fall through */
@@ -113,5 +140,7 @@ export async function loadProfileFromCloud(): Promise<Profile | null> {
   const { syncEnabled, syncLoad } = await import('../sync')
   if (!syncEnabled()) return null
   const remote = await syncLoad('profile')
-  return remote && typeof remote === 'object' && !Array.isArray(remote) ? (remote as Profile) : null
+  return remote && typeof remote === 'object' && !Array.isArray(remote)
+    ? { ...DEFAULT_PROFILE, ...(remote as Profile) }
+    : null
 }

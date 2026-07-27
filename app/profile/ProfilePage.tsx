@@ -119,6 +119,15 @@ const initials = (name?: string) =>
 
 type TrainState = 'loading' | 'ready' | 'empty' | 'error'
 
+const FOUNDER_FACTS: [keyof Profile, string][] = [
+  ['founderEducation', 'Education'],
+  ['founderAdjacentKnowledge', 'Adjacent knowledge'],
+  ['founderIndustryExperience', 'Industry experience'],
+  ['founderPersonalBackground', 'Personal background'],
+  ['founderFoundingCommunity', 'Founding community'],
+  ['founderTechnicalCapability', 'Technical capability'],
+]
+
 export default function ProfilePage() {
   const [mounted, setMounted] = useState(false)
   const [p, setP] = useState<Profile>({})
@@ -135,6 +144,7 @@ export default function ProfilePage() {
   const [copied, setCopied] = useState(false)
   const [photoBroken, setPhotoBroken] = useState(false)
   const [coverBroken, setCoverBroken] = useState(false)
+  const [founderPhotoBroken, setFounderPhotoBroken] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -175,6 +185,7 @@ export default function ProfilePage() {
     setGoalsText(joinList(p.primaryGoals))
     setPhotoBroken(false)
     setCoverBroken(false)
+    setFounderPhotoBroken(false)
     setEditing(true)
   }
 
@@ -392,6 +403,79 @@ export default function ProfilePage() {
                 <label className="label">Age division</label>
                 <input className="input" value={field('ageDivision')} onChange={(e) => set('ageDivision', e.target.value)} />
               </div>
+
+              <div className={`${c('full')} ${c('editSubhead')}`}>Founder story</div>
+              <div className={`field ${c('full')}`}>
+                <label className="label">Founder photo URL</label>
+                <input
+                  className="input"
+                  type="url"
+                  placeholder="https://…"
+                  value={field('founderPhotoUrl')}
+                  onChange={(e) => {
+                    set('founderPhotoUrl', e.target.value)
+                    setFounderPhotoBroken(false)
+                  }}
+                />
+                <div className={c('hint')}>Paste an image URL — file upload comes later.</div>
+              </div>
+              <div className="field">
+                <label className="label">Education</label>
+                <input
+                  className="input"
+                  value={field('founderEducation')}
+                  onChange={(e) => set('founderEducation', e.target.value)}
+                />
+              </div>
+              <div className="field">
+                <label className="label">Adjacent knowledge</label>
+                <input
+                  className="input"
+                  value={field('founderAdjacentKnowledge')}
+                  onChange={(e) => set('founderAdjacentKnowledge', e.target.value)}
+                />
+              </div>
+              <div className="field">
+                <label className="label">Industry experience</label>
+                <input
+                  className="input"
+                  value={field('founderIndustryExperience')}
+                  onChange={(e) => set('founderIndustryExperience', e.target.value)}
+                />
+              </div>
+              <div className="field">
+                <label className="label">Personal background</label>
+                <input
+                  className="input"
+                  value={field('founderPersonalBackground')}
+                  onChange={(e) => set('founderPersonalBackground', e.target.value)}
+                />
+              </div>
+              <div className="field">
+                <label className="label">Founding community</label>
+                <input
+                  className="input"
+                  value={field('founderFoundingCommunity')}
+                  onChange={(e) => set('founderFoundingCommunity', e.target.value)}
+                />
+              </div>
+              <div className="field">
+                <label className="label">Technical capability</label>
+                <input
+                  className="input"
+                  value={field('founderTechnicalCapability')}
+                  onChange={(e) => set('founderTechnicalCapability', e.target.value)}
+                />
+              </div>
+              <div className={`field ${c('full')}`}>
+                <label className="label">Founder narrative</label>
+                <textarea
+                  className="input"
+                  rows={4}
+                  value={field('founderNarrative')}
+                  onChange={(e) => set('founderNarrative', e.target.value)}
+                />
+              </div>
             </div>
             <div className={c('editActions')}>
               <button type="button" className="btn btn-primary" onClick={commit} disabled={saving}>
@@ -408,6 +492,38 @@ export default function ProfilePage() {
           <div className={c('section')}>
             {p.personalStatement && <p className={c('statement')}>&ldquo;{p.personalStatement}&rdquo;</p>}
             {p.bio && <p className={c('bio')}>{p.bio}</p>}
+          </div>
+        )}
+
+        {(p.founderNarrative || FOUNDER_FACTS.some(([k]) => p[k])) && (
+          <div className={c('section')}>
+            <div className={c('sectionHead')}>Founder story</div>
+            <div className={c('founderWrap')}>
+              <div className={c('founderPhoto')}>
+                {p.founderPhotoUrl && !founderPhotoBroken ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={p.founderPhotoUrl}
+                    alt=""
+                    className={c('founderPhotoImg')}
+                    onError={() => setFounderPhotoBroken(true)}
+                  />
+                ) : (
+                  initials(p.name)
+                )}
+              </div>
+              <div className={c('founderFacts')}>
+                {FOUNDER_FACTS.map(([key, label]) =>
+                  p[key] ? (
+                    <div key={key} className={c('founderRow')}>
+                      <span className={c('founderLabel')}>{label}</span>
+                      <span>{p[key] as string}</span>
+                    </div>
+                  ) : null,
+                )}
+              </div>
+            </div>
+            {p.founderNarrative && <p className={c('bio')}>{p.founderNarrative}</p>}
           </div>
         )}
 
