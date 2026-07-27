@@ -105,6 +105,43 @@
   display: block;
 }
 
+/* Profile entry point — real navigation to /profile (the Athletic Profile
+   page), sitting in the icon slot .profileAvatar's own offset math already
+   reserves for a second top-right icon. Same box/position language as
+   .settingsBtn, kept as its own class so the gear's existing meaning isn't
+   repurposed. */
+.profileLink {
+  position: absolute;
+  top: calc(var(--space-6) + env(safe-area-inset-top));
+  right: var(--space-6);
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  color: var(--mint);
+  background: var(--card);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  transition:
+    color var(--duration) var(--ease),
+    border-color var(--duration) var(--ease),
+    background var(--duration) var(--ease),
+    transform var(--duration) var(--ease);
+}
+.profileLink:hover {
+  color: var(--mint-hover);
+  border-color: var(--mint);
+  background: var(--card-elevated);
+  transform: translateY(-1px);
+}
+.profileLink:focus-visible {
+  outline: 2px solid var(--mint);
+  outline-offset: 2px;
+}
+
 .page::before {
   content: '';
   position: absolute;
@@ -623,6 +660,16 @@
     height: 36px;
   }
   .profileAvatar + .settingsBtn {
+    margin-left: var(--space-3);
+  }
+  .profileLink {
+    position: static;
+    flex: 0 0 auto;
+    align-self: center;
+    width: 36px;
+    height: 36px;
+  }
+  .profileAvatar + .profileLink {
     margin-left: var(--space-3);
   }
 }

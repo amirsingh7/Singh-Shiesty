@@ -27,7 +27,35 @@ export interface Profile {
   goalShape?: 'bulk' | 'cut' | 'lean-bulk' | 'maintain'
   /** Daily calorie target for Fuel, from goalShape + Mifflin-St Jeor. */
   calorieTarget?: number
+
+  // ── Athletic Profile (PR Portfolio) — all optional, all additive ──
+  username?: string
+  photoUrl?: string
+  coverUrl?: string
+  location?: string
+  schoolOrGym?: string
+  headline?: string
+  bio?: string
+  disciplines?: string[]
+  experienceLevel?: 'beginner' | 'intermediate' | 'advanced' | 'competitive'
+  weightClass?: string
+  ageDivision?: string
+  primaryGoals?: string[]
+  /** UI concept only — no real access control, there's one owner. */
+  visibility?: 'public' | 'private'
+  personalStatement?: string
 }
+
+/**
+ * How a performance record's credibility is presented — never "verified,"
+ * never trainer-adjacent. Evidence and endorsements add context; they are
+ * not certification.
+ */
+export type RecordStatus =
+  | 'self-reported'
+  | 'evidence-attached'
+  | 'competition-result'
+  | 'community-endorsed'
 
 /** Blank until the mentor asks. Fallbacks live at the call sites. */
 export const DEFAULT_PROFILE: Profile = {
@@ -67,4 +95,23 @@ export function saveProfile(p: Profile): void {
 /** Bodyweight for tile math (peak PK etc.) — 75 kg until they've been asked. */
 export function bodyWeightKg(): number {
   return profile().weightKg ?? 75
+}
+
+/**
+ * Cross-device mirror for the profile, same pattern tile data already uses
+ * (lib/sync.ts's syncSave/syncLoad against the tile_data table, keyed by a
+ * bare id — here 'profile'). No-ops if the owner hasn't configured Supabase.
+ * Additive: profile() / saveProfile() above stay localStorage-only and
+ * unchanged; callers that want the cloud copy opt in explicitly.
+ */
+export async function syncProfileToCloud(p: Profile): Promise<void> {
+  const { syncEnabled, syncSave } = await import('../sync')
+  if (syncEnabled()) await syncSave('profile', p, new Date().toISOString())
+}
+
+export async function loadProfileFromCloud(): Promise<Profile | null> {
+  const { syncEnabled, syncLoad } = await import('../sync')
+  if (!syncEnabled()) return null
+  const remote = await syncLoad('profile')
+  return remote && typeof remote === 'object' && !Array.isArray(remote) ? (remote as Profile) : null
 }
