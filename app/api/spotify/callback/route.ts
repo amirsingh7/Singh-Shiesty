@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { spotifyRedirectUri } from '../shared'
 
 /**
  * Step 2 of Spotify's Authorization Code flow — this is where the OAuth
@@ -60,7 +61,7 @@ export async function GET(req: Request): Promise<Response> {
     return closePage('Spotify is not configured on this server.')
   }
 
-  const redirectUri = `${url.origin}/api/spotify/callback`
+  const redirectUri = spotifyRedirectUri(req)
   const basic = Buffer.from(`${clientId}:${clientSecret}`).toString('base64')
 
   let tokenJson: { access_token?: string; refresh_token?: string; expires_in?: number }

@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto'
+import { spotifyRedirectUri } from '../shared'
 
 /**
  * Step 1 of Spotify's Authorization Code flow. The Symphony tile can't do
@@ -26,8 +27,7 @@ export async function GET(req: Request): Promise<Response> {
     return new Response('Spotify is not configured. Set SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET.', { status: 503 })
   }
 
-  const origin = new URL(req.url).origin
-  const redirectUri = `${origin}/api/spotify/callback`
+  const redirectUri = spotifyRedirectUri(req)
   const state = randomBytes(16).toString('base64url')
 
   const authorizeUrl = new URL('https://accounts.spotify.com/authorize')
