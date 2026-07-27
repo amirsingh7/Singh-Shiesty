@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { Fragment, cloneElement, isValidElement, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { CORE_TILES, VEE_TILE, DEFAULT_HOME_ORDER, coreDefaultSize, type CoreTile } from '@/lib/tiles/coreTiles'
 import dynamic from 'next/dynamic'
 import { activeGoal as readActiveGoal, allGoals, setActiveGoalId, tileWeights, type Goal } from '@/lib/tiles/weights'
@@ -123,6 +123,7 @@ function TileFace({
   editable,
   onRemove,
   weight,
+  noWeight,
   accent,
   kicker,
   onOpen,
@@ -138,6 +139,10 @@ function TileFace({
   onRemove?: () => void
   /** This input's share of the active goal — big, centered, no border. */
   weight?: number
+  /** True for a tile that isn't part of any goal's equation (a utility tile
+   *  like Velocity or Symphony, not a weighted x) — shows its own glyph in
+   *  the stat spot instead of a misleading "0%". */
+  noWeight?: boolean
   /** The active goal's color: mint by default, gold for the main goal. */
   accent?: string
   /** Mentor only: the active goal title, shown as the kicker. */
@@ -175,7 +180,26 @@ function TileFace({
       )}
       <span className="arrow">→</span>
 
-      {weight != null && <RollPct value={weight} color={accent ?? '#6EE7B7'} />}
+      {!isVee && core && noWeight ? (
+        <span
+          aria-hidden
+          style={{
+            position: 'absolute',
+            top: 52,
+            left: 0,
+            right: 0,
+            zIndex: 5,
+            display: 'flex',
+            justifyContent: 'center',
+            pointerEvents: 'none',
+            color: 'rgba(255,255,255,.22)',
+          }}
+        >
+          {isValidElement(core.glyph) ? cloneElement(core.glyph as React.ReactElement<{ width?: number; height?: number }>, { width: 44, height: 44 }) : null}
+        </span>
+      ) : (
+        weight != null && <RollPct value={weight} color={accent ?? '#6EE7B7'} />
+      )}
 
       {/* Inert: clicking opens the slot (filled tile or connector), never navigates. */}
       <button type="button" className="hit" aria-label={`Open ${label}`} onClick={onOpen} />
@@ -926,6 +950,7 @@ export default function DashboardGrid({ userId }: DashboardGridProps) {
                   editable
                   onRemove={editing ? () => saveRemoved([...removed, id]) : undefined}
                   weight={weights[id] ?? 0}
+                  noWeight={!(id in weights)}
                   accent={goal?.accent}
                   onOpen={() => openSlot(id)}
                 />
