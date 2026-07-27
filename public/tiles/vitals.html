@@ -92,6 +92,30 @@
   .trend{margin-top:26px}
   .trendHd{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
   .tEmpty{padding:20px 0;text-align:center;color:var(--muted);font-size:12px}
+
+  /* workout history */
+  .wHist{margin-top:26px}
+  .wHistHd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+  .wHistTitle{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+  .wRange{display:flex;gap:3px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:3px}
+  .wRange button{background:none;border:none;color:var(--muted);font-family:var(--font);font-size:11px;font-weight:600;padding:6px 10px;border-radius:7px;cursor:pointer;transition:color .2s,background .2s}
+  .wRange button.on{background:var(--brand);color:#04140d}
+  .wStats{display:flex;gap:28px;margin-bottom:16px}
+  .wStatBig .v{font-family:var(--serif);font-style:italic;font-size:26px;color:#fff}
+  .wStatBig .v span{font-size:13px;font-style:normal;color:var(--muted-strong);margin-left:3px}
+  .wStatBig .l{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+  .wChart{position:relative;width:100%}
+  .wChart svg{width:100%;display:block}
+  .wBar{fill:var(--border-strong);transition:fill .15s}
+  .wBar.today{fill:var(--brand)}
+  .wBar:hover{fill:var(--muted-strong)}
+  .wAxis{fill:var(--muted);font-family:var(--mono);font-size:9px}
+  .wTip{position:absolute;transform:translate(-50%,-8px);top:0;background:#0c0c0f;border:1px solid var(--border-strong);border-radius:10px;padding:8px 11px;pointer-events:none;opacity:0;transition:opacity .15s;white-space:nowrap;z-index:5}
+  .wTip.on{opacity:1}
+  .wTip .d{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+  .wTip .r{font-size:12px;color:#fff;margin-top:2px}
+  .wTip .r b{color:var(--brand)}
+  .wEmpty{padding:20px 0;text-align:center;color:var(--muted);font-size:12px}
   .foot{font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-top:24px;text-align:center}
   .starterTag{width:max-content;max-width:92%;margin:0 auto 20px;padding:6px 14px;border:1px solid rgba(110,231,183,.25);border-radius:999px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#84848c;text-align:center}
   .starterTag,.starterTag *{line-height:1.6}
@@ -151,6 +175,80 @@ function workoutRow(t){
   return '<div class="workout">'+stats.map(s=>'<div class="wStat"><div class="wVal">'+s[1]+'</div><div class="wLab">'+s[0]+'</div></div>').join('')+'</div>';
 }
 
+/* day-by-day workout history — separate from the today-only hero row above.
+   Bars are activeCalories (the one metric every workout reliably has); minutes
+   + avg heart rate ride along in the hover tooltip since they don't fit as a
+   second bar height. */
+let wRange='7D';
+const W_RANGES={'7D':7,'30D':30,'ALL':99999};
+function workoutEntries(){
+  return Object.keys(store).filter(k=>/^\d{4}-\d{2}-\d{2}$/.test(k))
+    .map(k=>Object.assign({date:k},store[k]))
+    .filter(e=>typeof e.activeCalories==='number'||typeof e.workoutMinutes==='number'||typeof e.avgHeartRate==='number')
+    .sort((a,b)=>a.date.localeCompare(b.date));
+}
+function daysAgoW(k){const p=k.split('-').map(Number),dt=new Date(p[0],p[1]-1,p[2]),t=new Date();t.setHours(0,0,0,0);return Math.round((t-dt)/86400000);}
+function fmtDateShort(k){const p=k.split('-').map(Number);return new Date(p[0],p[1]-1,p[2]).toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+function fmtDateLong(k){const p=k.split('-').map(Number);return new Date(p[0],p[1]-1,p[2]).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});}
+function rangeButtons(){
+  return '<div class="wRange">'+Object.keys(W_RANGES).map(r=>'<button data-wr="'+r+'" class="'+(r===wRange?'on':'')+'">'+r+'</button>').join('')+'</div>';
+}
+function workoutHistory(){
+  const all=workoutEntries();
+  if(!all.length)return '';
+  const es=all.filter(e=>daysAgoW(e.date)<=W_RANGES[wRange]);
+  const head='<div class="wHistHd"><span class="wHistTitle">Workout History</span>'+rangeButtons()+'</div>';
+  if(!es.length)return '<div class="wHist">'+head+'<div class="wEmpty">Nothing in this range yet.</div></div>';
+  const withCal=es.filter(e=>typeof e.activeCalories==='number');
+  const last=es[es.length-1];
+  const avg=withCal.length?Math.round(withCal.reduce((a,e)=>a+e.activeCalories,0)/withCal.length):null;
+  const W=480,H=120,PAD=20,BOTTOM=18;
+  const maxCal=Math.max.apply(null,withCal.map(e=>e.activeCalories).concat([1]));
+  const step=(W-PAD*2)/es.length,bw=Math.min(28,step-6);
+  const todayK=todayKey();
+  let bars='';
+  es.forEach((e,i)=>{
+    const cal=typeof e.activeCalories==='number'?e.activeCalories:0;
+    const h=cal?Math.max(4,(cal/maxCal)*(H-BOTTOM-10)):3;
+    const x=PAD+i*step+(step-bw)/2,y=H-BOTTOM-h;
+    bars+='<rect class="wBar'+(e.date===todayK?' today':'')+'" data-i="'+i+'" x="'+x+'" y="'+y+'" width="'+bw+'" height="'+h+'" rx="3"/>';
+  });
+  const labelEvery=Math.ceil(es.length/5)||1;
+  let axis='';
+  es.forEach((e,i)=>{
+    if(i%labelEvery===0||i===es.length-1)axis+='<text class="wAxis" x="'+(PAD+i*step+step/2)+'" y="'+(H-4)+'" text-anchor="middle">'+fmtDateShort(e.date)+'</text>';
+  });
+  return '<div class="wHist">'+head
+    +'<div class="wStats">'
+      +(typeof last.activeCalories==='number'?'<div class="wStatBig"><div class="v">'+Math.round(last.activeCalories)+'<span>cal</span></div><div class="l">Last Workout</div></div>':'')
+      +(avg!=null?'<div class="wStatBig"><div class="v">'+avg+'<span>cal</span></div><div class="l">Avg / Workout</div></div>':'')
+    +'</div>'
+    +'<div class="wChart" data-w><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">'+bars+axis+'</svg><div class="wTip" id="wTip"></div></div>'
+  +'</div>';
+}
+function wireWorkoutChart(){
+  const wrap=document.querySelector('[data-w]');
+  if(!wrap)return;
+  const es=workoutEntries().filter(e=>daysAgoW(e.date)<=W_RANGES[wRange]);
+  const tip=document.getElementById('wTip');
+  wrap.querySelectorAll('.wBar').forEach(bar=>{
+    const e=es[Number(bar.getAttribute('data-i'))];
+    if(!e)return;
+    const show=()=>{
+      const rows=[];
+      if(typeof e.activeCalories==='number')rows.push('<div class="r">'+Math.round(e.activeCalories)+' <b>cal</b></div>');
+      if(typeof e.workoutMinutes==='number')rows.push('<div class="r">'+Math.round(e.workoutMinutes)+' <b>min</b></div>');
+      if(typeof e.avgHeartRate==='number')rows.push('<div class="r">'+Math.round(e.avgHeartRate)+' <b>bpm</b></div>');
+      tip.innerHTML='<div class="d">'+fmtDateLong(e.date)+'</div>'+rows.join('');
+      const bx=Number(bar.getAttribute('x'))+Number(bar.getAttribute('width'))/2;
+      tip.style.left=(bx/480*100)+'%';
+      tip.classList.add('on');
+    };
+    bar.addEventListener('pointerenter',show);
+    bar.addEventListener('pointerleave',()=>tip.classList.remove('on'));
+  });
+}
+
 function render(){
   const t=todays(),rec=estRecovery(t),tn=tone(rec);
   const line=trend();
@@ -163,10 +261,14 @@ function render(){
       +'<div class="feelRow" style="margin-top:20px">'+FEEL.map((f)=>'<button class="feel'+(draft.feel===f[1]?' on':'')+'" data-feel="'+f[1]+'">'+f[0]+'</button>').join('')+'</div>'
       +'<button class="saveBtn" data-save '+(draft.feel==null?'disabled':'')+' aria-label="Save">✓</button>'
     +'</div>'
-    +(line?'<div class="trend">'+line+'</div>':'');
+    +(line?'<div class="trend">'+line+'</div>':'')
+    +workoutHistory();
+  wireWorkoutChart();
 }
 
 document.addEventListener('click',e=>{
+  const wr=e.target.closest('[data-wr]');
+  if(wr){wRange=wr.getAttribute('data-wr');render();return}
   const s=e.target.closest('[data-sleep]');
   if(s){draft.sleepHours=Math.max(0,Math.min(14,draft.sleepHours+parseFloat(s.getAttribute('data-sleep'))));render();return}
   const f=e.target.closest('[data-feel]');
