@@ -37,8 +37,13 @@ export async function GET(req: Request): Promise<Response> {
   authorizeUrl.searchParams.set('scope', SCOPES)
   authorizeUrl.searchParams.set('state', state)
 
+  // Secure only over https — browsers silently refuse to store a Secure
+  // cookie on plain http, and Spotify's own redirect-URI rules force local
+  // dev onto http://127.0.0.1 (no https), so a hardcoded Secure would have
+  // meant the cookie never gets set locally at all.
+  const secure = req.url.startsWith('https://') ? '; Secure' : ''
   const headers = new Headers({ Location: authorizeUrl.toString() })
-  headers.append('Set-Cookie', `spotify_state=${state}; Path=/api/spotify; Max-Age=600; HttpOnly; SameSite=Lax; Secure`)
+  headers.append('Set-Cookie', `spotify_state=${state}; Path=/api/spotify; Max-Age=600; HttpOnly; SameSite=Lax${secure}`)
 
   return new Response(null, { status: 302, headers })
 }
