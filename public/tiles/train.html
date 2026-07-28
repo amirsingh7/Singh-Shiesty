@@ -1339,10 +1339,14 @@ async function __bootTile(){
     row.innerHTML =
       '<span class="pillIdx">' + roman + '</span>' +
       '<span class="pillValue">' +
-        '<input class="pillInput' + (weightWord ? ' pillInputWord' : '') + '" type="text" inputmode="decimal" value="' + (weightWord || wDisp(w)) + '" aria-label="weight"' + (weightWord ? ' readonly tabindex="-1"' : '') + '>' +
+        (weightWord
+          ? '<span class="pillInput pillInputWord" data-role="w">' + weightWord + '</span>'
+          : '<input class="pillInput" data-role="w" type="text" inputmode="decimal" value="' + wDisp(w) + '" aria-label="weight">') +
         (weightWord ? '' : '<span class="pillUnit">' + unit + '</span>') +
         '<span class="pillTimes">&times;</span>' +
-        '<input class="pillInput' + (repsWord ? ' pillInputWord' : '') + '" type="text" inputmode="numeric" value="' + (repsWord || r) + '" aria-label="reps"' + (repsWord ? ' readonly tabindex="-1"' : '') + '>' +
+        (repsWord
+          ? '<span class="pillInput pillInputWord" data-role="r">' + repsWord + '</span>'
+          : '<input class="pillInput" data-role="r" type="text" inputmode="numeric" value="' + r + '" aria-label="reps">') +
       '</span>' +
       '<span class="pillSpacer"></span>' +
       '<div class="pillGroup"></div>' +
@@ -1351,11 +1355,12 @@ async function __bootTile(){
         '<button class="tagToggle' + (set.bw ? ' on' : '') + '" data-k="bw" type="button">bodyweight</button>' +
         '<button class="tagToggle' + (set.toFailure ? ' on' : '') + '" data-k="toFailure" type="button">to failure</button>' +
       '</div>';
-    const [wIn, rIn] = row.querySelectorAll('.pillInput');
+    // null when that slot is masked by a tag word (a <span>, not an <input>)
+    const wIn = weightWord ? null : row.querySelector('[data-role="w"]');
+    const rIn = repsWord ? null : row.querySelector('[data-role="r"]');
     const fit = el => el.setAttribute('size', Math.max(1, el.value.length));
-    fit(wIn); fit(rIn);
-    wIn.addEventListener('input', () => fit(wIn));
-    rIn.addEventListener('input', () => fit(rIn));
+    if (wIn){ fit(wIn); wIn.addEventListener('input', () => fit(wIn)); }
+    if (rIn){ fit(rIn); rIn.addEventListener('input', () => fit(rIn)); }
     row.querySelectorAll('.tagToggle').forEach(btn => {
       btn.onclick = () => { const k = btn.dataset.k; set[k] = !set[k]; saveLog(); render(); };
     });
@@ -1388,7 +1393,9 @@ async function __bootTile(){
       group.querySelector('.pillHit').onclick = () => commit(true);
       group.querySelector('.pillMiss').onclick = () => { set.failed=true; set.done=false; saveLog(); render(); };
     }
-    wIn.onkeydown = rIn.onkeydown = e => { if (e.key === 'Enter'){ e.preventDefault(); commit(true); } };
+    const onEnter = e => { if (e.key === 'Enter'){ e.preventDefault(); commit(true); } };
+    if (wIn) wIn.onkeydown = onEnter;
+    if (rIn) rIn.onkeydown = onEnter;
     return row;
   }
 
