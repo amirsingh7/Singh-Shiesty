@@ -90,8 +90,11 @@
   .log-day:first-child{margin-top:0}
   .log-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:10px;border-bottom:1px solid var(--rule)}
   .log-date{font-family:var(--mono);text-transform:uppercase;letter-spacing:.14em;font-size:11px;font-weight:600;color:var(--muted)}
+  .log-actions{display:flex;align-items:center;gap:4px;flex:none}
   .log-del{background:none;border:none;color:var(--muted);font-family:var(--sans);font-size:11.5px;font-weight:600;cursor:pointer;padding:4px 6px;border-radius:6px;transition:color .2s,background .2s;flex:none}
   .log-del:hover{color:var(--rose);background:rgba(224,118,123,.1)}
+  .log-edit{background:none;border:none;color:var(--muted);font-family:var(--sans);font-size:11.5px;font-weight:600;cursor:pointer;padding:4px 6px;border-radius:6px;transition:color .2s,background .2s;flex:none}
+  .log-edit:hover{color:var(--mint);background:rgba(110,231,183,.1)}
   .log-confirm{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:8px 10px;font-size:12px}
   .log-confirm span{color:var(--muted)}
   .log-confirm .log-err{color:var(--rose)}
@@ -106,6 +109,11 @@
   .log-tier{width:6px;height:6px;border-radius:50%;background:var(--gold);flex:none}
   .log-val{font-size:13.5px;color:var(--muted);font-variant-numeric:tabular-nums;text-align:right}
   .log-val b{color:var(--fg);font-weight:600}
+  .log-editvals{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+  .edit-inp{width:54px;background:rgba(255,255,255,.04);border:1px solid var(--rule-strong);border-radius:6px;color:var(--fg);font-family:var(--sans);font-size:13px;font-variant-numeric:tabular-nums;padding:5px 6px;text-align:right}
+  .edit-inp:focus{outline:none;border-color:var(--mint)}
+  .edit-inp-r{width:38px}
+  .edit-unit,.edit-x,.edit-sets{color:var(--muted);font-size:12px}
 
   .footnote{text-align:center;color:var(--muted);font-size:11.5px;margin-top:26px;opacity:.8}
 
@@ -153,10 +161,11 @@
 
   let UNIT = 'kg';
   const wDisp = kg => UNIT === 'lb' ? Math.round(kg / LB * 2) / 2 : Math.round(kg * 100) / 100;
+  const wFromDisp = v => UNIT === 'lb' ? Math.round(v * LB * 100) / 100 : Math.round(v * 100) / 100;
   const uLabel = perHand => UNIT + (perHand ? '/ea' : '');
 
   let SPLIT = null; // { days: [...], activeDayId } from Train, or null if unavailable
-  let STATE = { active: 'ALL', confirmDate: null, busy: false, err: null };
+  let STATE = { active: 'ALL', confirmDate: null, editDate: null, editRows: null, busy: false, err: null };
 
   async function loadTrain(){
     try {
@@ -330,6 +339,60 @@
     }
   }
 
+  // Edit writes back the same way delete does — one lift's history entry for
+  // the given date gets its weight/top-reps corrected, then the whole
+  // vitality.logger.v4 blob is resaved to Train. Since this view already
+  // collapses each lift+date down to one weight and one top-rep number
+  // (sets folded together), an edit is necessarily that same resolution: it
+  // overwrites every non-failed set's reps to match, rather than trying to
+  // reconstruct per-set detail Velocity never displayed in the first place.
+  function startEdit(date){
+    const rows = [];
+    allLifts().forEach(l => (l.history || []).forEach(h => {
+      if (h.off || h.date !== date) return;
+      const sets = h.sets || [];
+      const topReps = sets.length ? Math.max(...sets.filter(s => !s.fail).map(s => s.r || 0), 0) : (h.r || 0);
+      rows.push({ liftId: l.id, name: l.name, tier: l.tier, perHand: l.perHand, w: wDisp(h.w), r: topReps, sets: sets.length || 1 });
+    }));
+    STATE.editDate = date; STATE.editRows = rows; STATE.confirmDate = null; STATE.err = null;
+    renderLog();
+  }
+  function cancelEdit(){ STATE.editDate = null; STATE.editRows = null; STATE.err = null; renderLog(); }
+  async function saveDayEdit(date){
+    if (!SPLIT || STATE.busy) return;
+    STATE.busy = true; STATE.err = null; renderLog();
+    const rows = STATE.editRows || [];
+    const mutated = {
+      ...SPLIT,
+      days: (SPLIT.days || []).map(d => ({
+        ...d,
+        lifts: (d.lifts || []).map(l => {
+          const row = rows.find(r => r.liftId === l.id);
+          if (!row) return l;
+          const newKg = wFromDisp(row.w);
+          return {
+            ...l,
+            history: (l.history || []).map(h => {
+              if (h.date !== date) return h;
+              const sets = (h.sets && h.sets.length ? h.sets : [{ r: h.r || 0, fail: false }]).map(s => s.fail ? s : { ...s, r: row.r });
+              return { ...h, w: newKg, r: row.r, sets };
+            }),
+          };
+        }),
+      })),
+    };
+    try {
+      await window.Vitality.write('train', 'vitality.logger.v4', JSON.stringify(mutated));
+      SPLIT = mutated;
+      STATE.editDate = null; STATE.editRows = null; STATE.busy = false; STATE.err = null;
+      renderPlot(); renderLog();
+    } catch (e) {
+      STATE.busy = false;
+      STATE.err = 'Couldn’t save' + (e && e.message ? ' (' + e.message + ')' : '') + ' — try again';
+      renderLog();
+    }
+  }
+
   function renderLog(){
     const body = document.getElementById('logBody');
     const lifts = allLifts();
@@ -353,26 +416,60 @@
       return;
     }
     body.innerHTML = dates.map(date => {
-      const rows = byDate.get(date).map(e =>
-        '<div class="log-row"><span class="log-name">' +
-          (e.tier === 1 ? '<span class="log-tier"></span>' : '') +
-          esc(e.name) + '</span>' +
-        '<span class="log-val"><b>' + wDisp(e.kg) + ' ' + uLabel(e.perHand) + '</b> &times; ' + e.reps + ' &middot; ' + e.sets + ' set' + (e.sets > 1 ? 's' : '') + '</span></div>'
-      ).join('');
-      const head = STATE.confirmDate === date
-        ? '<div class="log-head"><span class="log-date">' + esc(dateHeading(date)) + '</span>' +
+      const editing = STATE.editDate === date;
+      const rows = editing
+        ? STATE.editRows.map((row, i) =>
+            '<div class="log-row"><span class="log-name">' +
+              (row.tier === 1 ? '<span class="log-tier"></span>' : '') +
+              esc(row.name) + '</span>' +
+            '<span class="log-editvals">' +
+              '<input class="edit-inp" type="number" step="any" inputmode="decimal" data-idx="' + i + '" data-f="w" value="' + row.w + '">' +
+              '<span class="edit-unit">' + esc(uLabel(row.perHand)) + '</span>' +
+              '<span class="edit-x">&times;</span>' +
+              '<input class="edit-inp edit-inp-r" type="number" step="1" inputmode="numeric" data-idx="' + i + '" data-f="r" value="' + row.r + '">' +
+              '<span class="edit-sets">&middot; ' + row.sets + ' set' + (row.sets > 1 ? 's' : '') + '</span>' +
+            '</span></div>'
+          ).join('')
+        : byDate.get(date).map(e =>
+            '<div class="log-row"><span class="log-name">' +
+              (e.tier === 1 ? '<span class="log-tier"></span>' : '') +
+              esc(e.name) + '</span>' +
+            '<span class="log-val"><b>' + wDisp(e.kg) + ' ' + uLabel(e.perHand) + '</b> &times; ' + e.reps + ' &middot; ' + e.sets + ' set' + (e.sets > 1 ? 's' : '') + '</span></div>'
+          ).join('');
+      let head;
+      if (editing){
+        head = '<div class="log-head"><span class="log-date">' + esc(dateHeading(date)) + '</span>' +
+          '<div class="log-confirm' + (STATE.busy ? ' busy' : '') + '">' +
+            (STATE.err ? '<span class="log-err">' + esc(STATE.err) + '</span>' : '') +
+            '<button class="log-cancel" data-editcancel="' + esc(date) + '">Cancel</button>' +
+            '<button class="log-yes" data-editsave="' + esc(date) + '">' + (STATE.busy ? 'Saving…' : 'Save') + '</button>' +
+          '</div></div>';
+      } else if (STATE.confirmDate === date){
+        head = '<div class="log-head"><span class="log-date">' + esc(dateHeading(date)) + '</span>' +
           '<div class="log-confirm' + (STATE.busy ? ' busy' : '') + '">' +
             (STATE.err ? '<span class="log-err">' + esc(STATE.err) + '</span>' : '<span>Delete this day?</span>') +
             '<button class="log-cancel" data-cancel="' + esc(date) + '">Cancel</button>' +
             '<button class="log-yes" data-del="' + esc(date) + '">' + (STATE.busy ? 'Deleting…' : 'Yes, delete') + '</button>' +
-          '</div></div>'
-        : '<div class="log-head"><span class="log-date">' + esc(dateHeading(date)) + '</span>' +
-          '<button class="log-del" data-ask="' + esc(date) + '">Delete</button></div>';
+          '</div></div>';
+      } else {
+        head = '<div class="log-head"><span class="log-date">' + esc(dateHeading(date)) + '</span>' +
+          '<div class="log-actions">' +
+            '<button class="log-edit" data-edit="' + esc(date) + '">Edit</button>' +
+            '<button class="log-del" data-ask="' + esc(date) + '">Delete</button>' +
+          '</div></div>';
+      }
       return '<div class="log-day">' + head + rows + '</div>';
     }).join('');
-    body.querySelectorAll('[data-ask]').forEach(b => b.onclick = () => { STATE.confirmDate = b.dataset.ask; STATE.err = null; renderLog(); });
+    body.querySelectorAll('[data-ask]').forEach(b => b.onclick = () => { STATE.confirmDate = b.dataset.ask; STATE.editDate = null; STATE.editRows = null; STATE.err = null; renderLog(); });
     body.querySelectorAll('[data-cancel]').forEach(b => b.onclick = () => { STATE.confirmDate = null; STATE.err = null; renderLog(); });
     body.querySelectorAll('[data-del]').forEach(b => b.onclick = () => deleteDay(b.dataset.del));
+    body.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => startEdit(b.dataset.edit));
+    body.querySelectorAll('[data-editcancel]').forEach(b => b.onclick = () => cancelEdit());
+    body.querySelectorAll('[data-editsave]').forEach(b => b.onclick = () => saveDayEdit(b.dataset.editsave));
+    body.querySelectorAll('.edit-inp').forEach(inp => inp.oninput = () => {
+      const idx = +inp.dataset.idx, f = inp.dataset.f, v = parseFloat(inp.value);
+      if (STATE.editRows && STATE.editRows[idx]) STATE.editRows[idx][f] = isNaN(v) ? 0 : v;
+    });
   }
 
   await loadTrain();
