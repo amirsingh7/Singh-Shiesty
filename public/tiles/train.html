@@ -121,7 +121,7 @@
   .rows{display:flex;flex-direction:column;gap:9px}
 
   /* the set pill (real Vitality row) */
-  .pill{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:16px;border:1px solid var(--rule);
+  .pill{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:14px 16px;border-radius:16px;border:1px solid var(--rule);
     background:var(--card);position:relative;overflow:hidden;min-width:0;
     transition:background .4s var(--ease),border-color .4s var(--ease),color .4s var(--ease)}
   .pillIdx{font-family:var(--serif);font-style:italic;font-size:16px;color:var(--muted);width:20px;flex:none}
@@ -153,6 +153,17 @@
   .pill.failed{background:rgba(224,118,123,.12);border-color:var(--rose);color:var(--fg)}
   .pill.failed .pillIdx,.pill.failed .pillStatus{color:var(--rose)}
   .pill.failed .pillValue{text-decoration:line-through;color:var(--muted-strong)}
+
+  /* per-set training tags: AMRAP / bodyweight / to failure. Optional, tappable,
+     independent of the hit/miss grade above them. */
+  .pillTags{display:flex;flex-wrap:wrap;gap:6px;flex-basis:100%;order:5}
+  .tagToggle{display:inline-flex;align-items:center;border:1px solid var(--rule-strong);border-radius:999px;
+    background:transparent;color:var(--muted);font-family:var(--serif);font-style:italic;font-size:11px;
+    padding:3px 10px;cursor:pointer;transition:border-color .2s,background .2s,color .2s;white-space:nowrap}
+  .tagToggle:hover{border-color:rgba(110,231,183,.4);color:var(--muted-strong)}
+  .tagToggle.on{border-color:rgba(110,231,183,.5);color:var(--mint);background:rgba(110,231,183,.08)}
+  .pill.clean .tagToggle,.pill.over .tagToggle{border-color:rgba(0,0,0,.25);color:rgba(0,0,0,.55)}
+  .pill.clean .tagToggle.on,.pill.over .tagToggle.on{border-color:rgba(0,0,0,.45);color:#000;background:rgba(0,0,0,.08)}
 
   /* add a lift */
   .add{display:flex;flex-direction:column;align-items:center;gap:9px;margin:34px 0 8px}
@@ -1012,7 +1023,7 @@ async function __bootTile(){
   }
 
   const uid = () => 'l' + Math.random().toString(36).slice(2,9);
-  const blankSets = n => Array.from({length:n}, () => ({ weight:null, reps:null, done:false, failed:false }));
+  const blankSets = n => Array.from({length:n}, () => ({ weight:null, reps:null, done:false, failed:false, amrap:false, bw:false, toFailure:false }));
   // a few past sessions so "history" has a real line to draw (top-set weight)
   const hist = (base, step, reps) => Array.from({length:6}, (_,i) => ({ w: base + i*step, r: reps }));
 
@@ -1326,32 +1337,47 @@ async function __bootTile(){
         '<input class="pillInput" type="text" inputmode="numeric" value="' + r + '" aria-label="reps">' +
       '</span>' +
       '<span class="pillSpacer"></span>' +
-      '<div class="pillGroup"></div>';
+      '<div class="pillGroup"></div>' +
+      '<div class="pillTags">' +
+        '<button class="tagToggle' + (set.amrap ? ' on' : '') + '" data-k="amrap" type="button">amrap</button>' +
+        '<button class="tagToggle' + (set.bw ? ' on' : '') + '" data-k="bw" type="button">bodyweight</button>' +
+        '<button class="tagToggle' + (set.toFailure ? ' on' : '') + '" data-k="toFailure" type="button">to failure</button>' +
+      '</div>';
     const [wIn, rIn] = row.querySelectorAll('.pillInput');
     const fit = el => el.setAttribute('size', Math.max(1, el.value.length));
     fit(wIn); fit(rIn);
     wIn.addEventListener('input', () => fit(wIn));
     rIn.addEventListener('input', () => fit(rIn));
+    row.querySelectorAll('.tagToggle').forEach(btn => {
+      btn.onclick = () => { const k = btn.dataset.k; set[k] = !set[k]; saveLog(); render(); };
+    });
     const group = row.querySelector('.pillGroup');
-    const commit = () => {
+    // startRest: false when this is a silent re-save of an already-logged set
+    // (tapping away from an edited weight/reps), so editing a past set doesn't
+    // restart the rest timer.
+    const commit = (startRest) => {
       const wv = wKg(parseFloat(wIn.value)), rv = Math.round(parseFloat(rIn.value));
       if (!isFinite(wv) || wv < 0 || wv > 1000) return;
       if (!isFinite(rv) || rv <= 0 || rv > 100) return;
       set.weight = wv; set.reps = rv; set.done = true; set.failed = false;
       saveLog(); render();
-      if (typeof restCoachStart === 'function') restCoachStart(lift, set);  // ep4: start the rest clock
+      if (startRest && typeof restCoachStart === 'function') restCoachStart(lift, set);  // ep4: start the rest clock
     };
     if (logged){
       const word = statusWord(lift, set, kind);
       group.innerHTML = '<span class="pillStatus">' + (kind==='over' ? '<span class="pillPr">&#9733; </span>' : '') + word + '</span>' +
         '<button class="pillReset" title="Reset this set"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 5.5 A4 4 0 1 0 5.5 2.5"/><polyline points="2 2 3.5 5.5 7 4.5"/></svg></button>';
-      group.querySelector('.pillReset').onclick = () => { set.done=false; set.failed=false; set.weight=null; set.reps=null; saveLog(); render(); if (typeof rcOnSetReset === 'function') rcOnSetReset(set); };
+      group.querySelector('.pillReset').onclick = () => { set.done=false; set.failed=false; set.weight=null; set.reps=null; set.amrap=false; set.bw=false; set.toFailure=false; saveLog(); render(); if (typeof rcOnSetReset === 'function') rcOnSetReset(set); };
+      // already logged: tapping the weight/reps to fix a typo saves on blur,
+      // same as tapping away from any other field.
+      wIn.addEventListener('blur', () => commit(false));
+      rIn.addEventListener('blur', () => commit(false));
     } else {
       group.innerHTML = '<button class="pillHit">hit it &rarr;</button><button class="pillMiss">miss</button>';
-      group.querySelector('.pillHit').onclick = commit;
+      group.querySelector('.pillHit').onclick = () => commit(true);
       group.querySelector('.pillMiss').onclick = () => { set.failed=true; set.done=false; saveLog(); render(); };
     }
-    wIn.onkeydown = rIn.onkeydown = e => { if (e.key === 'Enter'){ e.preventDefault(); commit(); } };
+    wIn.onkeydown = rIn.onkeydown = e => { if (e.key === 'Enter'){ e.preventDefault(); commit(true); } };
     return row;
   }
 
@@ -1858,7 +1884,7 @@ async function __bootTile(){
       const kg = top.length ? Math.max(...top.map(s => s.weight)) : lift.weight;
       const reps = top.length ? Math.max(...top.map(s => s.reps)) : 0;
       const isPR = lift.sets.some(s => s.done && !s.failed && beatsPrevBest(lift, s));
-      lift.history = (lift.history || []).concat({ w: kg, r: reps, date: offsetDate(0), sets: logged.map(s => ({ r: s.reps || 0, fail: !!s.failed })) });
+      lift.history = (lift.history || []).concat({ w: kg, r: reps, date: offsetDate(0), sets: logged.map(s => ({ r: s.reps || 0, fail: !!s.failed, amrap: !!s.amrap, bw: !!s.bw, toFailure: !!s.toFailure })) });
       if (top.length) lift.weight = kg;
       lift.overload = null;
       lift.sets = blankSets(lift.targetSets);
@@ -2081,7 +2107,7 @@ async function __bootTile(){
       sessions.push({
         date: offsetDate(0),
         kg: top.length ? Math.max(...top.map(s => s.weight)) : lift.weight,
-        sets: logged.map(s => ({ r: s.reps || 0, fail: !!s.failed }))
+        sets: logged.map(s => ({ r: s.reps || 0, fail: !!s.failed, amrap: !!s.amrap, bw: !!s.bw, toFailure: !!s.toFailure }))
       });
     }
     return sessions;
@@ -2136,7 +2162,7 @@ async function __bootTile(){
     const lift = getLift(CHART.liftId); if (!lift) return;
     // only sessions strictly before today are real history; today is live logging
     const past = CHART.LOG.filter(p => p.date !== offsetDate(0));
-    lift.history = past.map(p => ({ w: p.kg, r: chTopReps(p), date: p.date, sets: (p.sets || []).map(s => ({ r: s.r, fail: !!s.fail })), ...(p.off ? { off: p.off } : {}) }));
+    lift.history = past.map(p => ({ w: p.kg, r: chTopReps(p), date: p.date, sets: (p.sets || []).map(s => ({ r: s.r, fail: !!s.fail, amrap: !!s.amrap, bw: !!s.bw, toFailure: !!s.toFailure })), ...(p.off ? { off: p.off } : {}) }));
     saveLog();
   }
 
@@ -2309,7 +2335,7 @@ async function __bootTile(){
   function chOpenEditor(index){
     chEditIndex = index; chConfirmDel = false;
     if (index == null){ const base = chBestSession() ? chBestSession().kg : 60; chDraft = { date: chYmd(chToday), kg: base, target: 5, sets: [{ r: 5 }, { r: 5 }, { r: 5 }], off: false }; }
-    else { const p = CHART.LOG[index]; chDraft = { date: p.date, kg: p.kg, target: chTopReps(p) || 5, sets: (p.sets || []).map(s => ({ r: s.r, fail: !!s.fail })), off: !!p.off }; }
+    else { const p = CHART.LOG[index]; chDraft = { date: p.date, kg: p.kg, target: chTopReps(p) || 5, sets: (p.sets || []).map(s => ({ r: s.r, fail: !!s.fail, amrap: !!s.amrap, bw: !!s.bw, toFailure: !!s.toFailure })), off: !!p.off }; }
     chDrawEditor(); const ed = document.getElementById('chEditor'); ed.classList.add('on'); ed.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
   function chCloseEditor(){ const ed = document.getElementById('chEditor'); if (ed) ed.classList.remove('on'); chDraft = null; chEditIndex = null; chConfirmDel = false; }
@@ -2318,13 +2344,22 @@ async function __bootTile(){
     const actions = chConfirmDel
       ? '<div class="confirm-del"><span class="confirm-q">Delete this session?</span><div class="confirm-row"><button class="obtn ghost" id="chf-cancel">Keep it</button><button class="obtn danger" id="chf-yes">Delete</button></div></div>'
       : '<div class="editor-actions">' + (adding ? '' : '<button class="obtn del" id="chf-del" title="delete"><svg viewBox="0 0 24 24"><path d="M5 7h14M10 11v6M14 11v6M6 7l1 12h10l1-12M9 7V4h6v3"/></svg></button>') + '<button class="obtn save" id="chf-save">' + (adding ? 'Save session' : 'Save changes') + '</button></div>';
-    const setBoxes = chDraft.sets.map((s, i) => '<button class="eset' + (s.fail ? ' fail' : '') + '" data-i="' + i + '">' + s.r + '</button>').join('');
+    const setBoxes = chDraft.sets.map((s, i) =>
+      '<div class="esetCol">' +
+        '<button class="eset' + (s.fail ? ' fail' : '') + '" data-i="' + i + '">' + s.r + '</button>' +
+        '<div class="esetTags">' +
+          '<button class="etag' + (s.amrap ? ' on' : '') + '" data-i="' + i + '" data-k="amrap" title="AMRAP">A</button>' +
+          '<button class="etag' + (s.bw ? ' on' : '') + '" data-i="' + i + '" data-k="bw" title="Bodyweight">B</button>' +
+          '<button class="etag' + (s.toFailure ? ' on' : '') + '" data-i="' + i + '" data-k="toFailure" title="To failure">F</button>' +
+        '</div>' +
+      '</div>'
+    ).join('');
     ed.innerHTML = '<div class="editor-in"><div class="editor-h">' + (adding ? 'Log a session' : 'Edit ' + chLabel(chDraft.date)) + '</div>' +
       '<div class="field"><span class="lbl">Date</span><input type="date" id="chf-date" value="' + chDraft.date + '" max="' + chYmd(chToday) + '"></div>' +
       '<div class="field"><span class="lbl">Weight</span><div class="stepper"><button class="step minus" data-k="kg" data-d="-1">&minus;</button><span class="val"><input class="wnum" id="chf-kg" inputmode="decimal" value="' + chWD(chDraft.kg) + '"> <small>' + CHART.U + '</small></span><button class="step" data-k="kg" data-d="1">+</button></div></div>' +
       chStepperRow('Reps', '<span class="val">' + chDraft.target + '</span>', 'reps') +
       chStepperRow('Sets', '<span class="val">' + chDraft.sets.length + '</span>', 'sets') +
-      '<div class="setedit">' + setBoxes + '</div><div class="setedit-hint">Tap a set to lower its reps. Tap past 1 to mark it missed.</div>' +
+      '<div class="setedit">' + setBoxes + '</div><div class="setedit-hint">Tap a set to lower its reps. Tap past 1 to mark it missed. A / B / F tag a set AMRAP, bodyweight, or to failure.</div>' +
       '<div class="resttoggle' + (chDraft.off ? ' on' : '') + '" id="chf-rest"><span class="pip"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg></span><span class="txt">Rest or deload day</span></div>' +
       actions + '</div>';
     ed.querySelector('#chf-date').onchange = e => { chDraft.date = e.target.value; };
@@ -2333,6 +2368,7 @@ async function __bootTile(){
                kgIn.onkeydown = e => { if (e.key === 'Enter'){ e.preventDefault(); kgIn.blur(); } }; }
     ed.querySelectorAll('.step').forEach(b => b.onclick = () => chBump(b.dataset.k, +b.dataset.d));
     ed.querySelectorAll('.eset').forEach(b => b.onclick = () => chTapSet(+b.dataset.i));
+    ed.querySelectorAll('.etag').forEach(b => b.onclick = () => { const s = chDraft.sets[+b.dataset.i]; s[b.dataset.k] = !s[b.dataset.k]; chDrawEditor(); });
     ed.querySelector('#chf-rest').onclick = () => { chDraft.off = !chDraft.off; chDrawEditor(); };
     if (chConfirmDel){ ed.querySelector('#chf-cancel').onclick = () => { chConfirmDel = false; chDrawEditor(); }; ed.querySelector('#chf-yes').onclick = chDeleteDraft; }
     else { ed.querySelector('#chf-save').onclick = chSaveDraft; const del = ed.querySelector('#chf-del'); if (del) del.onclick = () => { chConfirmDel = true; chDrawEditor(); }; }
@@ -2346,7 +2382,14 @@ async function __bootTile(){
   }
   function chTapSet(i){ const s = chDraft.sets[i]; if (s.fail){ s.fail = false; s.r = chDraft.target; } else if (s.r > 1) s.r -= 1; else s.fail = true; chDrawEditor(); }
   function chSaveDraft(){
-    const sets = chDraft.sets.map(s => s.fail ? { r: s.r, fail: true } : { r: s.r });
+    const sets = chDraft.sets.map(s => {
+      const o = { r: s.r };
+      if (s.fail) o.fail = true;
+      if (s.amrap) o.amrap = true;
+      if (s.bw) o.bw = true;
+      if (s.toFailure) o.toFailure = true;
+      return o;
+    });
     const entry = { date: chDraft.date, kg: chDraft.kg, sets };
     if (chDraft.off) entry.off = 'deload';
     if (chEditIndex == null) CHART.LOG.push(entry); else CHART.LOG[chEditIndex] = entry;
@@ -2846,6 +2889,12 @@ __loadMem().then(function(m){ MEM = m; __bootTile(); });
   .eset:hover{border-color:var(--mint)} .eset:active{transform:scale(.88)}
   .eset.fail{border-color:var(--rose);color:var(--rose);text-decoration:line-through;text-decoration-thickness:2px;background:rgba(239,68,68,.08)}
   .setedit-hint{color:var(--muted);font-size:12px;margin-top:9px}
+  .esetCol{display:inline-flex;flex-direction:column;align-items:center;gap:5px}
+  .esetTags{display:flex;gap:3px}
+  .etag{width:16px;height:16px;border-radius:50%;border:1px solid var(--rule-strong);background:transparent;color:var(--muted);
+    font-size:9px;line-height:1;font-family:var(--sans);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
+    padding:0;transition:border-color .18s,color .18s,background .18s}
+  .etag.on{border-color:var(--mint);color:var(--mint);background:rgba(110,231,183,.12)}
   .resttoggle{display:flex;align-items:center;gap:9px;margin-top:16px;padding:12px 13px;border:1px solid var(--rule);border-radius:12px;cursor:pointer;transition:border-color .2s,background .2s}
   .resttoggle.on{border-color:var(--muted);background:rgba(245,237,226,.04)}
   .resttoggle .pip{width:18px;height:18px;border-radius:6px;border:1.5px solid var(--rule-strong);flex:none;display:flex;align-items:center;justify-content:center}
