@@ -142,6 +142,9 @@
   .pillReset{background:none;border:none;color:currentColor;cursor:pointer;opacity:.6;padding:5px;border-radius:50%;display:inline-flex;transition:opacity .2s,background .2s}
   .pillReset:hover{opacity:1;background:rgba(0,0,0,.12)} .pillReset svg{width:13px;height:13px;display:block}
   .pillPr{font-family:var(--serif);font-style:italic;color:#a87f12}
+  /* a tag word standing in for the number it replaced (e.g. "failure" instead of a rep count) */
+  .pillInputWord{font-style:italic;font-family:var(--serif);cursor:default}
+  .pill:hover .pillInputWord,.pillInputWord:focus{border-bottom-color:transparent!important;color:inherit!important}
 
   .pill.clean,.pill.over{background:var(--mint);border-color:var(--mint);color:#000}
   .pill.clean .pillIdx,.pill.over .pillIdx,.pill.clean .pillTimes,.pill.over .pillTimes{color:rgba(0,0,0,.55)}
@@ -1326,15 +1329,20 @@ async function __bootTile(){
     const w = set.weight ?? (lift.weight + (bump ? (bump.weightKg || 0) : 0));
     const r = set.reps ?? (lift.targetReps + (bump ? (bump.reps || 0) : 0));
     const roman = ['i','ii','iii','iv','v','vi','vii','viii','ix','x'][i] || (i+1);
+    // once a tag is on, its word fills the slot it belongs to instead of the
+    // number: amrap/to failure replace the rep count, bodyweight replaces the
+    // weight. Untag it to get the editable number back.
+    const repsWord = (set.amrap && set.toFailure) ? 'amrap · failure' : set.amrap ? 'amrap' : set.toFailure ? 'failure' : null;
+    const weightWord = set.bw ? 'bodyweight' : null;
     const row = document.createElement('div');
     row.className = 'pill ' + kind;
     row.innerHTML =
       '<span class="pillIdx">' + roman + '</span>' +
       '<span class="pillValue">' +
-        '<input class="pillInput" type="text" inputmode="decimal" value="' + wDisp(w) + '" aria-label="weight">' +
-        '<span class="pillUnit">' + unit + '</span>' +
+        '<input class="pillInput' + (weightWord ? ' pillInputWord' : '') + '" type="text" inputmode="decimal" value="' + (weightWord || wDisp(w)) + '" aria-label="weight"' + (weightWord ? ' readonly tabindex="-1"' : '') + '>' +
+        (weightWord ? '' : '<span class="pillUnit">' + unit + '</span>') +
         '<span class="pillTimes">&times;</span>' +
-        '<input class="pillInput" type="text" inputmode="numeric" value="' + r + '" aria-label="reps">' +
+        '<input class="pillInput' + (repsWord ? ' pillInputWord' : '') + '" type="text" inputmode="numeric" value="' + (repsWord || r) + '" aria-label="reps"' + (repsWord ? ' readonly tabindex="-1"' : '') + '>' +
       '</span>' +
       '<span class="pillSpacer"></span>' +
       '<div class="pillGroup"></div>' +
@@ -1354,9 +1362,11 @@ async function __bootTile(){
     const group = row.querySelector('.pillGroup');
     // startRest: false when this is a silent re-save of an already-logged set
     // (tapping away from an edited weight/reps), so editing a past set doesn't
-    // restart the rest timer.
+    // restart the rest timer. A masked field (showing a tag word) has no number
+    // to read, so it keeps the value it already had instead of parsing the input.
     const commit = (startRest) => {
-      const wv = wKg(parseFloat(wIn.value)), rv = Math.round(parseFloat(rIn.value));
+      const wv = weightWord ? w : wKg(parseFloat(wIn.value));
+      const rv = repsWord ? r : Math.round(parseFloat(rIn.value));
       if (!isFinite(wv) || wv < 0 || wv > 1000) return;
       if (!isFinite(rv) || rv <= 0 || rv > 100) return;
       set.weight = wv; set.reps = rv; set.done = true; set.failed = false;
@@ -1369,9 +1379,10 @@ async function __bootTile(){
         '<button class="pillReset" title="Reset this set"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 5.5 A4 4 0 1 0 5.5 2.5"/><polyline points="2 2 3.5 5.5 7 4.5"/></svg></button>';
       group.querySelector('.pillReset').onclick = () => { set.done=false; set.failed=false; set.weight=null; set.reps=null; set.amrap=false; set.bw=false; set.toFailure=false; saveLog(); render(); if (typeof rcOnSetReset === 'function') rcOnSetReset(set); };
       // already logged: tapping the weight/reps to fix a typo saves on blur,
-      // same as tapping away from any other field.
-      wIn.addEventListener('blur', () => commit(false));
-      rIn.addEventListener('blur', () => commit(false));
+      // same as tapping away from any other field. A masked field is read-only —
+      // untag it (below) to edit the number again.
+      if (!weightWord) wIn.addEventListener('blur', () => commit(false));
+      if (!repsWord) rIn.addEventListener('blur', () => commit(false));
     } else {
       group.innerHTML = '<button class="pillHit">hit it &rarr;</button><button class="pillMiss">miss</button>';
       group.querySelector('.pillHit').onclick = () => commit(true);
