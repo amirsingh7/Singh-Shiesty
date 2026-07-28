@@ -61,6 +61,15 @@
     font-weight:700;font-size:16px;cursor:pointer;box-shadow:0 10px 34px -12px var(--brand);transition:transform .15s var(--ease)}
   .glass:hover{transform:translateY(-1px)}
   .glass:active{transform:scale(.97)}
+  .mlRow{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px}
+  .mlInput{width:112px;padding:9px 14px;border-radius:999px;border:1px solid var(--border);background:transparent;color:var(--fg);
+    font-family:var(--font);font-size:13px;text-align:center;-moz-appearance:textfield}
+  .mlInput::-webkit-outer-spin-button,.mlInput::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .mlInput::placeholder{color:var(--muted)}
+  .mlInput:focus{outline:none;border-color:var(--brand)}
+  .mlSubmit{padding:9px 18px;border-radius:999px;border:1px solid var(--brand);background:transparent;color:var(--brand);
+    font-weight:600;font-size:13px;cursor:pointer;transition:all .15s}
+  .mlSubmit:hover{background:var(--brand);color:#04140d}
 
   .gallonWrap{width:60px;margin:14px auto 2px}
   .gallonWrap svg{display:block;image-rendering:pixelated}
@@ -125,7 +134,7 @@ function today(){if(!store.water||typeof store.water!=='object')store.water={};r
 function toUnit(cups,u){
   if(u==='ml')return Math.round(cups*CUP_ML);
   if(u==='gallon')return Math.round(cups/GAL_CUPS*100)/100;
-  return cups;
+  return Math.round(cups*10)/10;
 }
 function unitLabel(u){return u==='ml'?'ml':u==='gallon'?'gal':'cups';}
 function goalRange(u){
@@ -151,11 +160,23 @@ function render(){
     +'<div class="count">'+toUnit(cups,unit)+'</div>'
     +'<div class="of">'+unitLabel(unit)+' today · aim for '+goalRange(unit)+'</div>'
     +'<div class="btnRow"><button class="minus" data-d="-1" aria-label="Remove one">−</button><button class="glass" data-d="1">+ Log a cup</button></div>'
+    +'<div class="mlRow"><input type="number" id="mlInput" class="mlInput" placeholder="mL drank" min="0" inputmode="decimal"><button class="mlSubmit" id="mlSubmit">Add to gallon</button></div>'
     +'<div class="week">'+bars+'</div>'
+    +'<p class="hydrateNote"><b>The Gallon</b></p>'
     +'<p class="hydrateNote"><b>70%</b> of your body is water. Hydration matters — especially when you’re taking <b>creatine</b>.</p>'
     +'<p class="foot">feeds your peak score · the mentor notices the pattern</p>';
 }
+function addMl(){
+  const inp=document.getElementById('mlInput');
+  const ml=parseFloat(inp&&inp.value);
+  if(!ml||ml<=0)return;
+  const w=today(),k=key();
+  w[k]=Math.max(0,(w[k]||0)+ml/CUP_ML);
+  justLogged=true;
+  persist();render();
+}
 document.addEventListener('click',e=>{
+  if(e.target.closest('#mlSubmit')){addMl();return;}
   const u=e.target.closest('[data-u]');
   if(u){unit=u.getAttribute('data-u');store.waterUnit=unit;persist();render();return;}
   const b=e.target.closest('[data-d]');if(!b)return;
@@ -163,6 +184,9 @@ document.addEventListener('click',e=>{
   w[k]=Math.max(0,(w[k]||0)+delta);
   if(delta>0)justLogged=true;
   persist();render();
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&e.target&&e.target.id==='mlInput'){addMl();}
 });
 if(!window.Vitality){window.Vitality={save:function(d){try{localStorage.setItem('v:prev:fuel',JSON.stringify(d));}catch(e){}return Promise.resolve(true);},load:function(){try{return Promise.resolve(JSON.parse(localStorage.getItem('v:prev:fuel')||'{}'));}catch(e){return Promise.resolve({});}}};}
 (async()=>{
