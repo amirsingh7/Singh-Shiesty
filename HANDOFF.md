@@ -1,32 +1,31 @@
 # RESUME HERE
-- **Working on:** PR Portfolio Phase 1 — the new Athletic Profile page (`/profile`) on top of the single-user Vitality dashboard.
-- **Next step:** Nothing pending — ask the user what's next (continue the business-doc priority order: discipline-specific record entry, evidence attachments, goals/milestones, community feed, discovery — or Spotify Phase 2, still open from before this).
+- **Working on:** Train tile and Fuel tile add-ons (per-set training tags, editable done-sets, water unit calculator).
+- **Next step:** Nothing pending — ask the user what's next (they said "good" on the last Fuel change with no follow-up ask yet).
 - **Waiting on you:** nothing blocking — just say what to work on next.
 
 -----
 
 ## Done so far (this session)
-- User pasted the full "PR Portfolio" business-context doc (a two-sided social/professional network vision). Flagged a real mismatch: this repo (`vitality-base`) has zero auth/multi-user infra — single owner by construction (`userId="me"` hardcoded, `tile_data` table keyed by tile id only, no user column). User confirmed: **stay single-user for now** — this is a showcase prototype for a specific audience before any real accounts get built.
-- Planned and shipped **Phase 1: Athletic Profile page**, scoped via Explore + Plan agents and an approved plan (saved at `/Users/asunderrex92679/.claude/plans/stateless-cuddling-clock.md`).
-- Built `/profile`:
-  - Header (photo/cover via paste-a-URL, name, username, headline, location, school/gym, experience level, disciplines/tags), bio + "Seize Your Moment" personal statement, current goals.
-  - **Featured Personal Records** + **Recent achievements** — both derived live, read-only, from Train's real saved lift history (no new data entity, no writes back to Train). Every record tagged **Self-Reported** (the only status vocabulary allowed — no "verified"/trainer language, ever, per explicit business-doc restriction).
-  - Share button (copies URL), Download résumé button (`window.print()` + a scoped `@media print` block — no new dependency).
-  - **Founder Story** section (business-doc section 2): Education / Adjacent knowledge / Industry experience / Personal background / Founding community / Technical capability + narrative paragraph, all pre-filled with what the user gave directly, all editable. Founder photo wired to `/public/IMG_9505.jpeg` (a placeholder gym photo the user dragged into VS Code themselves since I have no filesystem access to pasted chat images — resized from 5.1MB/5712x4284 down to 216KB/900x675 for a small avatar).
-  - Fixed a bug the user caught via screenshot: an empty cover-image placeholder box rendered even with no `coverUrl` set. Now the `.cover` div only renders when a cover image exists; `.headerRow`'s overlap offset became a separate `.headerRowOverCover` modifier class applied conditionally.
-- Small entry point added: a new profile icon next to the existing settings gear on the dashboard (`app/app/Dashboard.tsx`), linking to `/profile` — the gear's own click handler/behavior is untouched.
-- Fixed a latent bug in `lib/tiles/profile.ts`'s `profile()`/`loadProfileFromCloud()`: they used to fully replace defaults with any saved blob (all-or-nothing) instead of merging, so a newly-added default field (like the founder bio) would never surface for someone who'd already saved a profile once. Now both merge `{ ...DEFAULT_PROFILE, ...saved }`.
-- Verified via `npm run build` + `tsc --noEmit` + `next lint` (all clean) and dev-server curl checks on `/`, `/mentor`, `/profile` (all 200, no console errors). `git status` confirmed only the intended files changed each step.
+- **Train tile** (`public/tiles/train.html`):
+  - Added per-set training tags — `amrap`, `bodyweight` (`bw`), `to failure` (`toFailure`) — as tappable toggle chips under every set pill (live logger `setRow()`), carried into history via `finishSession()`/`liftSessions()`, and into the past-session editor (`chOpenEditor`/`chDrawEditor`/`chSaveDraft`/`chWriteBack`) with small A/B/F dot toggles per set.
+  - Fixed done-set editing: tapping a logged set's weight/reps now saves on blur (previously only worked via Enter key, which mobile keyboards don't reliably fire). Added `commit(startRest)` param so editing an already-done set doesn't restart the rest timer.
+  - Tag "fill-in": selecting a tag now replaces the number itself (e.g. `195 lb × failure` instead of `195 lb × 3`), not just showing a badge underneath. Implemented as read-only `<span>` swapped in for the `<input>` (NOT an `<input readonly>` — that clipped text on Safari because `field-sizing:content` isn't supported there; had to switch to plain spans with `data-role="w"/"r"` lookups instead of positional `.pillInput` destructuring).
+  - `blankSets()` now defaults `amrap:false, bw:false, toFailure:false`.
+  - Did NOT touch `tiles-library/train.html` — it's a stale, much smaller (953 vs ~2940 lines) snapshot, already out of sync with `public/tiles/train.html` before this session. Flagged to user, not fixed (separate job).
+- **Fuel tile** (`public/tiles/fuel.html`, mirrored to `tiles-library/fuel.html` since those two started identical):
+  - Added "the gallon": a Cups/mL/Gallon unit toggle (`.uTabs`) that re-expresses the water count and week-bar tooltips in the selected unit (stored internally as whole cups always, `waterUnit` persisted in store).
+  - Daily minimum shown as a range "aim for 8–10 cups" (`GOAL_LO=8, GOAL_HI=10`), converted per unit; week-bar scaling still uses the 8-cup floor internally regardless of display unit.
+  - Added hydration description text under the tracker: "70% of your body is water. Hydration matters — especially when you're taking creatine." (flat/universal copy, not personalized to bodyweight — user asked for a flat 8-10 cup minimum, not a bodyweight formula).
+  - Confirmed via `.claude/commands/fuel.md` that the `/fuel` skill is for a *different* thing (a supplement-stack checklist, e.g. creatine/protein) — did not run it, this was a direct hand-build on top of the existing minimal water tracker instead.
+- Verified both tiles via `node -e "new Function(...)"` syntax-check on the extracted `<script>` block, plus `npm run dev` + curl checks on `/` and `/tiles/train.html` / `/tiles/fuel.html` (200s, new markup present in response body) each time, then killed the dev server after.
 
 ## Key files
-- `app/profile/page.tsx`, `app/profile/ProfilePage.tsx`, `app/profile/profile.module.css` — the new page, all new this session.
-- `lib/tiles/profile.ts` — extended `Profile` interface (athletic + founder fields), `RecordStatus` type, `syncProfileToCloud`/`loadProfileFromCloud` (mirrors to the existing `tile_data` table under `tile_id: 'profile'`, zero schema migration), merged `profile()`.
-- `app/app/Dashboard.tsx` / `app/app/dashboard.module.css` — new `.profileLink` entry-point icon, sibling to the existing `.profileAvatar` (settings gear).
-- `public/IMG_9505.jpeg` — placeholder founder photo (real file, dragged in by the user, resized by me).
+- `public/tiles/train.html` — the live Train tile (single large self-contained HTML file, ~2940 lines). All Train work happened here.
+- `public/tiles/fuel.html` + `tiles-library/fuel.html` — the Fuel tile (kept in sync, both ~140 lines now).
+- `tiles-library/train.html` — stale/smaller, intentionally left untouched this session.
 
 ## Watch out
-- **Photo/cover fields are paste-a-URL only** — no upload infra exists yet (explicit v1 assumption in the approved plan). If the user wants real file upload, that's new scope (likely Supabase Storage).
-- **I have no way to pull raw bytes out of a pasted chat image** — confirmed by searching all the usual temp/paste locations (Downloads, Desktop, VS Code storage, system temp dirs) and finding nothing. The working pattern that succeeded: ask the user to drag the file into VS Code's `public/` folder themselves, then tell me the filename.
-- Everything in this phase is read-only against Train's data — no schema change to `vitality.logger.v4`, no per-record status field written anywhere (badges are hardcoded to "Self-Reported" since nothing has evidence/competition/endorsement data yet — that's a later phase).
-- Full context on the single-user-prototype decision and the business doc's priority order lives in memory `project_pr_portfolio.md` (should be updated next session to reflect Phase 1 shipping — wasn't updated yet this session, still says "don't start building PR Portfolio yet").
-- Spotify Phase 2 (workout-linked automation) is still separately open from a prior session — see memory `project_pr_portfolio.md` for that thread if the user asks about it instead.
+- This repo's tiles are sealed, self-contained HTML files loaded via sandboxed `<iframe>` (see `app/app/DashboardGrid.tsx`) — no build step, no TS. Verification = syntax-check the inline `<script>` with Node + curl the dev server, not `tsc`/`next lint` (those don't touch `public/`).
+- `public/tiles/*.html` vs `tiles-library/*.html` can silently diverge (Train did, Fuel didn't as of this session). Before editing a tile, diff the two — if they match, mirror the edit into both like Fuel; if they've already diverged (like Train), only touch `public/tiles/` and flag the mismatch rather than guessing which is authoritative.
+- Safari does not support the `field-sizing:content` CSS property — don't rely on it for auto-width inputs; a read-only `<span>` is the safe pattern for "text that fills in and must always show in full."
+- Always kill the background dev server (`pkill -f "next dev"`) after a curl verification pass — don't leave it running.
