@@ -5,11 +5,15 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Fuel</title>
 <!--
-  FUEL — almost nothing, on purpose. One number (water today), one button.
-  The week draws itself underneath. Everything else this tile could become
-  (macros, meals, caffeine) gets built WITH the mentor, on top of this.
-  Store: { water: { 'YYYY-MM-DD': count } } — /sweep and save_data can file
-  straight into it.
+  FUEL — one number (water today), one button, three ways to read it. The
+  gallon: pick cups, mL, or gallon and the count + the week bars re-express
+  in that unit. Minimum recommended intake is 8-10 cups a day; the bars still
+  scale off 8 (the floor) so "full" reads the same regardless of unit.
+  Everything else this tile could become (macros, meals, caffeine) gets built
+  WITH the mentor, on top of this.
+  Store: { water: { 'YYYY-MM-DD': count } } (count is always whole cups,
+  regardless of display unit), waterUnit: 'cups'|'ml'|'gallon' — /sweep and
+  save_data can file straight into it.
 -->
 <style>
   :root{
@@ -40,9 +44,16 @@
 
   .well{margin-top:44px}
   .kick{font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--brand)}
+  .uTabs{display:flex;justify-content:center;gap:6px;margin:16px 0 2px}
+  .uTabs button{background:none;border:1px solid var(--border);color:var(--muted);font-family:var(--font);font-size:11px;
+    font-weight:600;padding:7px 14px;border-radius:999px;cursor:pointer;transition:color .2s,background .2s,border-color .2s}
+  .uTabs button:hover{color:#fff;border-color:var(--muted)}
+  .uTabs button.on{background:var(--brand);color:#04140d;border-color:var(--brand)}
   .count{font-family:var(--serif);font-style:italic;font-size:clamp(72px,18vw,110px);line-height:1;color:#fff;margin-top:10px;
     text-shadow:0 0 44px rgba(110,231,183,.25)}
   .of{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-top:8px}
+  .hydrateNote{margin:26px auto 0;max-width:38ch;text-align:center;color:var(--muted);font-size:12px;line-height:1.55}
+  .hydrateNote b{color:var(--brand)}
   .btnRow{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:30px}
   .minus{width:46px;height:46px;border-radius:999px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:20px;cursor:pointer;transition:all .15s}
   .minus:hover{color:#fff;border-color:var(--muted)}
@@ -66,40 +77,64 @@
 <div class="shell">
 <div class="starterTag">✦ starter — the value is what you build · the videos show how</div>
   <h1>Fuel</h1>
-  <p class="sub">water today · that's it — build the rest with your mentor</p>
+  <p class="sub">water today, in your units · build the rest with your mentor</p>
   <div class="well" id="app"></div>
 </div>
 <script>
-const GOAL=8;
+/* internal count is always whole cups; GOAL_LO/HI is the 8-10 cup daily
+   minimum the tile recommends. Every display unit is derived from cups. */
+const GOAL_LO=8, GOAL_HI=10, CUP_ML=237, GAL_CUPS=16;
+const UNITS=[['cups','Cups'],['ml','mL'],['gallon','Gallon']];
 let store={};
+let unit='cups';
 function key(d){const x=d||new Date();return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');}
 function persist(){window.Vitality.save(store)}
 function today(){if(!store.water||typeof store.water!=='object')store.water={};return store.water}
+function toUnit(cups,u){
+  if(u==='ml')return Math.round(cups*CUP_ML);
+  if(u==='gallon')return Math.round(cups/GAL_CUPS*100)/100;
+  return cups;
+}
+function unitLabel(u){return u==='ml'?'ml':u==='gallon'?'gal':'cups';}
+function goalRange(u){
+  if(u==='ml')return Math.round(GOAL_LO*CUP_ML)+'–'+Math.round(GOAL_HI*CUP_ML)+' ml';
+  if(u==='gallon')return toUnit(GOAL_LO,'gallon')+'–'+toUnit(GOAL_HI,'gallon')+' gal';
+  return GOAL_LO+'–'+GOAL_HI+' cups';
+}
 function render(){
-  const w=today(),n=w[key()]||0;
+  const w=today(),cups=w[key()]||0;
   let bars='';
   for(let i=6;i>=0;i--){
     const d=new Date();d.setDate(d.getDate()-i);
-    const c=w[key(d)]||0,h=Math.max(3,Math.min(64,(c/GOAL)*64));
+    const c=w[key(d)]||0,h=Math.max(3,Math.min(64,(c/GOAL_LO)*64));
     const lab=i===0?'today':['SU','MO','TU','WE','TH','FR','SA'][d.getDay()];
-    bars+='<div class="day"><div class="bar'+(c?'':' zero')+'" style="height:'+h+'px" title="'+c+'"></div><span class="dLab'+(i===0?' today':'')+'">'+lab+'</span></div>';
+    bars+='<div class="day"><div class="bar'+(c?'':' zero')+'" style="height:'+h+'px" title="'+toUnit(c,unit)+' '+unitLabel(unit)+'"></div><span class="dLab'+(i===0?' today':'')+'">'+lab+'</span></div>';
   }
   document.getElementById('app').innerHTML=
     '<div class="kick">✦ water</div>'
-    +'<div class="count">'+n+'</div>'
-    +'<div class="of">of '+GOAL+' today</div>'
-    +'<div class="btnRow"><button class="minus" data-d="-1" aria-label="Remove one">−</button><button class="glass" data-d="1">+ Log a glass</button></div>'
+    +'<div class="uTabs">'+UNITS.map(u=>'<button data-u="'+u[0]+'" class="'+(u[0]===unit?'on':'')+'">'+u[1]+'</button>').join('')+'</div>'
+    +'<div class="count">'+toUnit(cups,unit)+'</div>'
+    +'<div class="of">'+unitLabel(unit)+' today · aim for '+goalRange(unit)+'</div>'
+    +'<div class="btnRow"><button class="minus" data-d="-1" aria-label="Remove one">−</button><button class="glass" data-d="1">+ Log a cup</button></div>'
     +'<div class="week">'+bars+'</div>'
+    +'<p class="hydrateNote"><b>70%</b> of your body is water. Hydration matters — especially when you’re taking <b>creatine</b>.</p>'
     +'<p class="foot">feeds your peak score · the mentor notices the pattern</p>';
 }
 document.addEventListener('click',e=>{
+  const u=e.target.closest('[data-u]');
+  if(u){unit=u.getAttribute('data-u');store.waterUnit=unit;persist();render();return;}
   const b=e.target.closest('[data-d]');if(!b)return;
   const w=today(),k=key();
   w[k]=Math.max(0,(w[k]||0)+parseInt(b.getAttribute('data-d'),10));
   persist();render();
 });
 if(!window.Vitality){window.Vitality={save:function(d){try{localStorage.setItem('v:prev:fuel',JSON.stringify(d));}catch(e){}return Promise.resolve(true);},load:function(){try{return Promise.resolve(JSON.parse(localStorage.getItem('v:prev:fuel')||'{}'));}catch(e){return Promise.resolve({});}}};}
-(async()=>{const d=await window.Vitality.load();store=(d&&typeof d==='object'&&!Array.isArray(d))?d:{};render();})();
+(async()=>{
+  const d=await window.Vitality.load();
+  store=(d&&typeof d==='object'&&!Array.isArray(d))?d:{};
+  if(UNITS.some(u=>u[0]===store.waterUnit))unit=store.waterUnit;
+  render();
+})();
 </script>
 </body>
 </html>
