@@ -1966,6 +1966,7 @@ async function __bootTile(){
   const GROUP_ORDER = [['chest','Chest'],['back','Back'],['shoulders','Shoulders'],['arms','Arms'],['legs','Legs'],['core','Core']];
   let libMode = 'add';
   let libSwapTarget = null;
+  let libSwapPending = null; // { kind:'entry', entry } | { kind:'custom', raw } — set when the chosen replacement would wipe libSwapTarget's logged history, cleared once the user confirms or cancels
   function inSession(e){ return LIFTS.some(l => !l.hidden && (l.libKey === e.key || l.name === e.name)); }
   function addFromLibrary(e){
     const existing = LIFTS.find(l => l.libKey === e.key || l.name === e.name);
@@ -1980,10 +1981,18 @@ async function __bootTile(){
     saveLog(); render();
   }
   function clearOverloadStore(id){ try { VStore.removeItem('vitality.overload.' + id + '.v3'); } catch(e){} }
+  // Swapping a lift's identity always wipes that slot's history (an entry named
+  // "Flat bench press" shouldn't inherit sessions logged under whatever it used
+  // to be) — but if there IS history there, that's real logged work about to be
+  // discarded for good, so it gets a confirmation instead of vanishing silently.
   function swapForLibrary(entry){
     if (!libSwapTarget) return;
     const dup = LIFTS.find(l => !l.hidden && l.id !== libSwapTarget.id && (l.libKey === entry.key || l.name === entry.name));
     if (dup){ clearOverloadStore(libSwapTarget.id); updateLift(libSwapTarget.id, { hidden: true }); render(); closeLibrary(); return; }
+    if ((libSwapTarget.history || []).length){ libSwapPending = { kind: 'entry', entry }; renderSwapWarn(); return; }
+    doSwapForLibrary(entry);
+  }
+  function doSwapForLibrary(entry){
     const d = tierDefaults(entry.tier);
     const newPerHand = entry.equip === 'dumbbell';
     clearOverloadStore(libSwapTarget.id);
@@ -1998,10 +2007,32 @@ async function __bootTile(){
     });
     render(); closeLibrary();
   }
+  function doSwapCustom(raw){
+    clearOverloadStore(libSwapTarget.id);
+    updateLift(libSwapTarget.id, l => ({ name: raw, muscle: guessMuscle(raw) || 'chest', libKey: null, perHand: l.perHand,
+      history:[], overload:null, sets: blankSets(l.targetSets) }));
+    render(); closeLibrary();
+  }
+  function renderSwapWarn(){
+    const box = document.getElementById('libSwapWarn');
+    if (!box) return;
+    if (!libSwapPending || !libSwapTarget){ box.innerHTML = ''; return; }
+    const n = (libSwapTarget.history || []).length;
+    const newName = libSwapPending.kind === 'entry' ? libSwapPending.entry.name : libSwapPending.raw;
+    box.innerHTML = '<div class="confirm-del"><span class="confirm-q">' + esc(libSwapTarget.name) + ' has ' + n + ' logged session' + (n > 1 ? 's' : '') +
+      '. Swapping to “' + esc(newName) + '” erases that history for good.</span>' +
+      '<div class="confirm-row"><button class="obtn ghost" id="libSwapCancel">Keep ' + esc(libSwapTarget.name) + '</button>' +
+      '<button class="obtn danger" id="libSwapYes">Swap anyway</button></div></div>';
+    document.getElementById('libSwapCancel').onclick = () => { libSwapPending = null; renderSwapWarn(); };
+    document.getElementById('libSwapYes').onclick = () => {
+      const p = libSwapPending; libSwapPending = null;
+      if (p.kind === 'entry') doSwapForLibrary(p.entry); else doSwapCustom(p.raw);
+    };
+  }
   let libAnimOnce = false;
-  function openLibrary(){ libMode='add'; libSwapTarget=null; buildLibraryShell(); libAnimOnce = true; renderLibRows(''); document.body.classList.add('lib-browsing'); libOverlay.classList.add('on'); }
-  function openLibrarySwap(lift){ libMode='swap'; libSwapTarget=lift; buildLibraryShell(); libAnimOnce = true; renderLibRows(''); document.body.classList.add('lib-browsing'); libOverlay.classList.add('on'); }
-  function closeLibrary(){ libOverlay.classList.remove('on'); document.body.classList.remove('lib-browsing'); libMode='add'; libSwapTarget=null; }
+  function openLibrary(){ libMode='add'; libSwapTarget=null; libSwapPending=null; buildLibraryShell(); libAnimOnce = true; renderLibRows(''); document.body.classList.add('lib-browsing'); libOverlay.classList.add('on'); }
+  function openLibrarySwap(lift){ libMode='swap'; libSwapTarget=lift; libSwapPending=null; buildLibraryShell(); libAnimOnce = true; renderLibRows(''); document.body.classList.add('lib-browsing'); libOverlay.classList.add('on'); }
+  function closeLibrary(){ libOverlay.classList.remove('on'); document.body.classList.remove('lib-browsing'); libMode='add'; libSwapTarget=null; libSwapPending=null; }
   function buildLibraryShell(){
     const swap = libMode === 'swap';
     libOverlay.innerHTML =
@@ -2019,11 +2050,12 @@ async function __bootTile(){
         (swap ? '<p class="lib-sub">Pick a replacement for ' + esc(libSwapTarget ? libSwapTarget.name : '') + '. Your weight carries over.</p>' : '') +
         '<div class="lib-search">' + SVG('<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>') +
           '<input id="libSearch" placeholder="Search any exercise..." autocomplete="off"></div>' +
+        '<div id="libSwapWarn"></div>' +
         '<div id="libList"></div>' +
       '</div>';
     document.getElementById('libBack').onclick = closeLibrary;
     const search = document.getElementById('libSearch');
-    search.oninput = () => renderLibRows(search.value);
+    search.oninput = () => { libSwapPending = null; renderSwapWarn(); renderLibRows(search.value); };
   }
   function renderLibRows(q){
     const raw = (q || '').trim();
@@ -2062,10 +2094,8 @@ async function __bootTile(){
       if (swap && libSwapTarget){
         const dupN = LIFTS.find(l => !l.hidden && l.id !== libSwapTarget.id && l.name.toLowerCase() === raw.toLowerCase());
         if (dupN){ clearOverloadStore(libSwapTarget.id); updateLift(libSwapTarget.id, { hidden: true }); render(); closeLibrary(); return; }
-        clearOverloadStore(libSwapTarget.id);
-        updateLift(libSwapTarget.id, l => ({ name: raw, muscle: guessMuscle(raw) || 'chest', libKey: null, perHand: l.perHand,
-          history:[], overload:null, sets: blankSets(l.targetSets) }));
-        render(); closeLibrary();
+        if ((libSwapTarget.history || []).length){ libSwapPending = { kind: 'custom', raw }; renderSwapWarn(); return; }
+        doSwapCustom(raw);
       }
       else { quickAddLift(raw); closeLibrary(); }
     };
