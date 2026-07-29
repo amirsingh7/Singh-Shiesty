@@ -1950,7 +1950,10 @@ async function __bootTile(){
       const kg = top.length ? Math.max(...top.map(s => s.weight)) : lift.weight;
       const reps = top.length ? Math.max(...top.map(s => s.reps)) : 0;
       const isPR = lift.sets.some(s => s.done && !s.failed && beatsPrevBest(lift, s));
-      lift.history = (lift.history || []).concat({ w: kg, r: reps, date: offsetDate(0), sets: logged.map(s => ({ r: s.reps || 0, fail: !!s.failed, amrap: !!s.amrap, bw: !!s.bw, toFailure: !!s.toFailure, rpe: s.rpe ?? null, notes: s.notes || '', restActual: s.restActual ?? null })) });
+      // per-set weight is saved here (not just the session-level "top" w/r above)
+      // so PR/1RM detection downstream can pair the right weight with the right
+      // rep count instead of guessing they came from the same set.
+      lift.history = (lift.history || []).concat({ w: kg, r: reps, date: offsetDate(0), sets: logged.map(s => ({ w: s.weight ?? null, r: s.reps || 0, fail: !!s.failed, amrap: !!s.amrap, bw: !!s.bw, toFailure: !!s.toFailure, rpe: s.rpe ?? null, notes: s.notes || '', restActual: s.restActual ?? null })) });
       if (top.length) lift.weight = kg;
       lift.overload = null;
       lift.sets = blankSets(lift.targetSets);

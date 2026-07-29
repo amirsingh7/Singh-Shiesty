@@ -115,6 +115,22 @@
   .edit-inp-r{width:38px}
   .edit-unit,.edit-x,.edit-sets{color:var(--muted);font-size:12px}
 
+  .pr-row{padding:14px 0;border-bottom:1px solid var(--rule);cursor:pointer}
+  .pr-row:last-child{border-bottom:none}
+  .pr-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .pr-name{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500}
+  .pr-tier{width:6px;height:6px;border-radius:50%;background:var(--gold);flex:none}
+  .pr-main{text-align:right;font-size:13.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .pr-main b{color:var(--fg);font-weight:600}
+  .pr-sub{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:6px;font-size:12px;color:var(--muted)}
+  .pr-delta{font-weight:600}
+  .pr-delta.up{color:var(--mint)}
+  .pr-est{font-variant-numeric:tabular-nums}
+  .pr-hist{margin-top:10px;padding-top:10px;border-top:1px solid var(--rule);display:flex;flex-direction:column;gap:6px}
+  .pr-hist-row{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--muted)}
+  .pr-hist-row b{color:var(--fg);font-weight:600;font-variant-numeric:tabular-nums}
+  .pr-hint{font-size:11px;color:var(--muted);margin-top:8px;opacity:.75}
+
   .footnote{text-align:center;color:var(--muted);font-size:11.5px;margin-top:26px;opacity:.8}
 
   @media (prefers-reduced-motion: reduce){ .vline{transition:none !important} }
@@ -134,6 +150,12 @@
     <div class="range" id="range"></div>
     <div class="plotcard"><div class="plot" id="plot"></div></div>
     <div class="legend" id="legend"></div>
+  </div>
+
+  <div class="sheet">
+    <div class="sheet-h">Personal records</div>
+    <p class="sub" style="margin-top:4px">Verified PR is the heaviest weight you've actually logged. Estimated 1RM is a formula guess from your best sets &mdash; never a number to attempt cold.</p>
+    <div id="prBody" style="margin-top:14px"></div>
   </div>
 
   <div class="sheet log">
@@ -165,7 +187,7 @@
   const uLabel = perHand => UNIT + (perHand ? '/ea' : '');
 
   let SPLIT = null; // { days: [...], activeDayId } from Train, or null if unavailable
-  let STATE = { active: 'ALL', confirmDate: null, editDate: null, editRows: null, busy: false, err: null };
+  let STATE = { active: 'ALL', confirmDate: null, editDate: null, editRows: null, busy: false, err: null, prOpen: new Set() };
 
   async function loadTrain(){
     try {
@@ -307,6 +329,90 @@
     tip.classList.add('on');
   }
 
+  // ---------- Personal records ----------
+  // A "PR" here means the same thing Train's own overload star means: heavier
+  // wins outright, and an equal weight with more reps wins the tiebreak. Every
+  // completed (non-failed) set across every session gets flattened into one
+  // list, so a PR set buried in set 3 of a session counts the same as set 1.
+  const EPLEY_MAX_REPS = 12;   // the Epley formula gets unreliable past here — those sets don't count toward the 1RM estimate
+  const est1RM = (w, r) => r <= 1 ? w : w * (1 + r / 30);
+
+  function liftPRStats(lift){
+    const rows = [];
+    (lift.history || []).forEach(h => {
+      if (h.off) return;
+      (h.sets && h.sets.length ? h.sets : [{ w: h.w, r: h.r, fail: false }]).forEach(s => {
+        if (s.fail) return;
+        // older sessions logged before per-set weight existed only have the
+        // session's single top weight (h.w) — fall back to that rather than
+        // dropping the set entirely.
+        const w = s.w != null ? s.w : h.w;
+        const r = s.r || 0;
+        if (!w || !r) return;
+        rows.push({ date: h.date, w, r });
+      });
+    });
+    if (!rows.length) return null;
+    rows.sort((a, b) => a.date.localeCompare(b.date) || a.w - b.w);
+    let pr = null, prevPr = null;
+    const timeline = [];
+    rows.forEach(row => {
+      if (!pr || row.w > pr.w || (row.w === pr.w && row.r > pr.r)){
+        if (pr) prevPr = pr;
+        pr = row;
+        timeline.push(row);
+      }
+    });
+    let est = null;
+    rows.forEach(row => {
+      if (row.r > EPLEY_MAX_REPS) return;
+      const e = est1RM(row.w, row.r);
+      if (!est || e > est.e) est = { e, date: row.date, w: row.w, r: row.r };
+    });
+    return { pr, prevPr, timeline: timeline.slice(-6).reverse(), est };
+  }
+
+  function renderPR(){
+    const body = document.getElementById('prBody');
+    const lifts = allLifts().slice().sort((a, b) => (a.tier - b.tier) || a.name.localeCompare(b.name));
+    const entries = lifts.map(l => ({ lift: l, stats: liftPRStats(l) })).filter(e => e.stats);
+    if (!entries.length){
+      body.innerHTML = '<div class="empty">' + (SPLIT
+        ? 'Log and finish a session in Train to start tracking PRs here.'
+        : 'Open Train and finish at least one session — Velocity mirrors what Train saves.') + '</div>';
+      return;
+    }
+    body.innerHTML = entries.map(({ lift, stats }) => {
+      const u = uLabel(lift.perHand);
+      const { pr, prevPr, timeline, est } = stats;
+      const open = STATE.prOpen.has(lift.id);
+      let delta = '<span class="pr-delta">first logged PR</span>';
+      if (prevPr){
+        const absD = r1(wDisp(pr.w) - wDisp(prevPr.w));
+        const pctD = r1((pr.w - prevPr.w) / prevPr.w * 100);
+        if (absD > 0) delta = '<span class="pr-delta up">&#9650; +' + absD + ' ' + u + ' (+' + pctD + '%)</span> since ' + label(prevPr.date);
+        else delta = '<span class="pr-delta">tied at ' + wDisp(pr.w) + ' ' + u + '</span>, more reps than before, since ' + label(prevPr.date);
+      }
+      const histRows = timeline.length > 1 ? timeline.map(t =>
+        '<div class="pr-hist-row"><span>' + label(t.date) + '</span><b>' + wDisp(t.w) + ' ' + u + ' &times; ' + t.r + '</b></div>'
+      ).join('') : '';
+      return '<div class="pr-row" data-toggle="' + lift.id + '">' +
+        '<div class="pr-top"><span class="pr-name">' + (lift.tier === 1 ? '<span class="pr-tier"></span>' : '') + esc(lift.name) + '</span>' +
+          '<span class="pr-main"><b>' + wDisp(pr.w) + ' ' + u + '</b> &times; ' + pr.r + ' &middot; ' + label(pr.date) + '</span></div>' +
+        '<div class="pr-sub">' + delta +
+          (est ? '<span class="pr-est">est. 1RM ~' + wDisp(est.e) + ' ' + u + '</span>' : '') +
+        '</div>' +
+        (open && histRows ? '<div class="pr-hist">' + histRows + '</div>' : '') +
+        (histRows && !open ? '<div class="pr-hint">tap for PR history</div>' : '') +
+      '</div>';
+    }).join('');
+    body.querySelectorAll('[data-toggle]').forEach(row => row.onclick = () => {
+      const id = row.dataset.toggle;
+      if (STATE.prOpen.has(id)) STATE.prOpen.delete(id); else STATE.prOpen.add(id);
+      renderPR();
+    });
+  }
+
   // ---------- Workout log ----------
   // Deleting a day writes back into Train's own store (cross-tile WRITE, a
   // narrow host-whitelisted exception to the normal read-only rule — see
@@ -331,7 +437,7 @@
       await window.Vitality.write('train', 'vitality.logger.v4', JSON.stringify(mutated));
       SPLIT = mutated;
       STATE.confirmDate = null; STATE.busy = false; STATE.err = null;
-      renderPlot(); renderLog();
+      renderPlot(); renderPR(); renderLog();
     } catch (e) {
       STATE.busy = false;
       STATE.err = 'Couldn’t delete' + (e && e.message ? ' (' + e.message + ')' : '') + ' — try again';
@@ -385,7 +491,7 @@
       await window.Vitality.write('train', 'vitality.logger.v4', JSON.stringify(mutated));
       SPLIT = mutated;
       STATE.editDate = null; STATE.editRows = null; STATE.busy = false; STATE.err = null;
-      renderPlot(); renderLog();
+      renderPlot(); renderPR(); renderLog();
     } catch (e) {
       STATE.busy = false;
       STATE.err = 'Couldn’t save' + (e && e.message ? ' (' + e.message + ')' : '') + ' — try again';
@@ -475,6 +581,7 @@
   await loadTrain();
   drawRange();
   renderPlot();
+  renderPR();
   renderLog();
 })();
 </script>
