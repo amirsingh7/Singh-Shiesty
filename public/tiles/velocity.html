@@ -130,6 +130,25 @@
   .pr-hist-row{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--muted)}
   .pr-hist-row b{color:var(--fg);font-weight:600;font-variant-numeric:tabular-nums}
   .pr-hint{font-size:11px;color:var(--muted);margin-top:8px;opacity:.75}
+  .pr-flags{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+  .pr-flag{font-size:12px;padding:8px 10px;border-radius:9px;line-height:1.45}
+  .pr-flag.warn{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:var(--muted-strong)}
+  .pr-flag.alert{background:rgba(224,118,123,.12);border:1px solid rgba(224,118,123,.4);color:var(--muted-strong)}
+  .pr-flag.info{background:rgba(110,231,183,.08);border:1px solid rgba(110,231,183,.25);color:var(--muted-strong)}
+  .pr-flag b{color:var(--fg)}
+
+  .vol-stats{display:flex;gap:14px;flex-wrap:wrap}
+  .vol-stat{flex:1;min-width:130px;background:rgba(255,255,255,.03);border:1px solid var(--rule);border-radius:12px;padding:14px}
+  .vol-stat-k{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .vol-stat-v{font-family:var(--serif);font-size:22px;margin-top:6px}
+  .vol-stat-d{font-size:12px;color:var(--muted);margin-top:4px}
+  .vol-stat-d.up{color:var(--mint)}
+  .vol-stat-d.down{color:var(--rose)}
+  .vol-bars{display:flex;align-items:flex-end;gap:6px;height:86px;margin-top:22px}
+  .vol-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+  .vol-bar{width:100%;max-width:24px;background:var(--mint);border-radius:4px 4px 0 0;min-height:2px;transition:height .6s var(--ease)}
+  .vol-bar-col.now .vol-bar{background:var(--gold)}
+  .vol-bar-lab{margin-top:7px;font-size:9.5px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.04em}
 
   .footnote{text-align:center;color:var(--muted);font-size:11.5px;margin-top:26px;opacity:.8}
 
@@ -154,8 +173,14 @@
 
   <div class="sheet">
     <div class="sheet-h">Personal records</div>
-    <p class="sub" style="margin-top:4px">Verified PR is the heaviest weight you've actually logged. Estimated 1RM is a formula guess from your best sets &mdash; never a number to attempt cold.</p>
+    <p class="sub" style="margin-top:4px">Verified PR is the heaviest weight you've actually logged. Estimated 1RM is a formula guess from your best sets &mdash; never a number to attempt cold. Plateau, fatigue, and projection calls are pattern reads from your own numbers, not diagnoses.</p>
     <div id="prBody" style="margin-top:14px"></div>
+  </div>
+
+  <div class="sheet">
+    <div class="sheet-h">Training volume</div>
+    <p class="sub" style="margin-top:4px">Total weight moved (weight &times; reps, every completed set, every lift).</p>
+    <div id="volBody" style="margin-top:16px"></div>
   </div>
 
   <div class="sheet log">
@@ -179,6 +204,8 @@
   const label = k => parseDate(k).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   const dateHeading = k => parseDate(k).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
   const r1 = n => Math.round(n * 10) / 10;
+  const dateKeyOf = d => d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+  const dateKeyOffset = n => { const d = new Date(today); d.setDate(d.getDate() - n); return dateKeyOf(d); };
   function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
   let UNIT = 'kg';
@@ -372,6 +399,92 @@
     return { pr, prevPr, timeline: timeline.slice(-6).reverse(), est };
   }
 
+  // Plateau/fatigue/regression/safety are deterministic reads of the numbers
+  // already logged — no AI call, no diagnosis, just the same "did this beat
+  // the last one" arithmetic Train's own overload star runs, applied across
+  // sessions instead of within one. A projected PR is a plain straight-line
+  // extrapolation of the PR timeline, always labeled an estimate.
+  const PAIN_WORDS = ['sharp pain', 'dizzy', 'dizziness', 'numb', 'chest pain', 'faint', 'pain'];
+
+  function sessionTop(h){
+    const sets = (h.sets && h.sets.length) ? h.sets.filter(s => !s.fail) : (h.r ? [{ w: h.w, r: h.r }] : []);
+    let best = null;
+    sets.forEach(s => {
+      const w = s.w != null ? s.w : h.w, r = s.r || 0;
+      if (!w || !r) return;
+      if (!best || w > best.w || (w === best.w && r > best.r)) best = { w, r };
+    });
+    return best;
+  }
+  const sessionAvgRpe = h => {
+    const rated = (h.sets || []).filter(s => !s.fail && s.rpe != null);
+    return rated.length ? rated.reduce((a, s) => a + s.rpe, 0) / rated.length : null;
+  };
+
+  function liftInsights(lift, stats){
+    const sessions = (lift.history || []).filter(h => !h.off).slice().sort((a, b) => a.date.localeCompare(b.date));
+    if (!stats || !stats.pr || sessions.length < 2) return null;
+    const flags = [];
+
+    // safety: a red-flag word in a recent set note always comes first and never
+    // gets crowded out by plateau/fatigue chatter — see it, stop, get it checked.
+    const recent3 = sessions.slice(-3);
+    outer: for (let i = recent3.length - 1; i >= 0; i--){
+      for (const s of (recent3[i].sets || [])){
+        if (!s.notes) continue;
+        const low = s.notes.toLowerCase();
+        const hit = PAIN_WORDS.find(w => low.includes(w));
+        if (hit){
+          flags.push({ kind: 'alert', text: 'You noted <b>' + esc(hit) + '</b> on ' + label(recent3[i].date) + '. If that\'s sharp pain, dizziness, or chest pain, stop and get it checked before pushing this lift &mdash; this isn\'t medical advice, just your own words read back.' });
+          break outer;
+        }
+      }
+    }
+
+    // regression: the most recent session's best set is strictly worse than the one before it
+    const last = sessions[sessions.length - 1], prev = sessions[sessions.length - 2];
+    const lastTop = sessionTop(last), prevTop = sessionTop(prev);
+    let regressed = false;
+    if (lastTop && prevTop) regressed = (lastTop.w < prevTop.w) || (lastTop.w === prevTop.w && lastTop.r < prevTop.r);
+    if (regressed){
+      flags.push({ kind: 'alert', text: '<b>Down</b> from last session &mdash; ' + wDisp(prevTop.w) + ' ' + uLabel(lift.perHand) + ' &times; ' + prevTop.r + ' on ' + label(prev.date) + ' to ' + wDisp(lastTop.w) + ' ' + uLabel(lift.perHand) + ' &times; ' + lastTop.r + ' on ' + label(last.date) + '.' });
+    } else if (sessions.length >= 3 && !sessions.slice(-3).map(h => h.date).includes(stats.pr.date)){
+      // plateau: none of the last 3 sessions produced a new verified PR
+      flags.push({ kind: 'warn', text: '<b>Plateau</b> &mdash; no new PR across your last 3 sessions here. Might be time for a deload, a rep-range change, or just more recovery.' });
+    }
+
+    // fatigue: last session's average RPE ran meaningfully hotter than the
+    // sessions before it, for the same or less weight — working harder for less.
+    const withRpe = sessions.filter(h => sessionAvgRpe(h) != null);
+    if (withRpe.length >= 3){
+      const lastR = withRpe[withRpe.length - 1];
+      const priors = withRpe.slice(0, -1).slice(-3);
+      const priorAvg = priors.reduce((a, h) => a + sessionAvgRpe(h), 0) / priors.length;
+      const lastAvg = sessionAvgRpe(lastR);
+      const lastRTop = sessionTop(lastR), priorRTop = sessionTop(priors[priors.length - 1]);
+      if (lastAvg - priorAvg >= 1 && lastRTop && priorRTop && lastRTop.w <= priorRTop.w){
+        flags.push({ kind: 'warn', text: '<b>Elevated effort</b> &mdash; RPE averaged ' + r1(lastAvg) + ' last session vs. ' + r1(priorAvg) + ' before it, for the same or less weight. Could be fatigue building — a lighter week might pay off.' });
+      }
+    }
+
+    // projection: straight-line rate from the PR timeline, always an estimate
+    let projection = null;
+    if (stats.timeline.length >= 2){
+      const asc = stats.timeline.slice().sort((a, b) => a.date.localeCompare(b.date));
+      const first = asc[0], lastPt = asc[asc.length - 1];
+      const weeks = (parseDate(lastPt.date) - parseDate(first.date)) / 604800000;
+      if (weeks >= 1){
+        const rate = (lastPt.w - first.w) / weeks;
+        if (rate > 0) projection = { kg: lastPt.w + rate * 4, weeks: 4 };
+      }
+    }
+    if (projection){
+      flags.push({ kind: 'info', text: 'At your current pace, projected around <b>' + wDisp(projection.kg) + ' ' + uLabel(lift.perHand) + '</b> in about a month &mdash; an estimate from your trend, not a promise.' });
+    }
+
+    return flags.length ? flags : null;
+  }
+
   function renderPR(){
     const body = document.getElementById('prBody');
     const lifts = allLifts().slice().sort((a, b) => (a.tier - b.tier) || a.name.localeCompare(b.name));
@@ -396,12 +509,15 @@
       const histRows = timeline.length > 1 ? timeline.map(t =>
         '<div class="pr-hist-row"><span>' + label(t.date) + '</span><b>' + wDisp(t.w) + ' ' + u + ' &times; ' + t.r + '</b></div>'
       ).join('') : '';
+      const flags = liftInsights(lift, stats);
+      const flagRows = flags ? '<div class="pr-flags">' + flags.map(f => '<div class="pr-flag ' + f.kind + '">' + f.text + '</div>').join('') + '</div>' : '';
       return '<div class="pr-row" data-toggle="' + lift.id + '">' +
         '<div class="pr-top"><span class="pr-name">' + (lift.tier === 1 ? '<span class="pr-tier"></span>' : '') + esc(lift.name) + '</span>' +
           '<span class="pr-main"><b>' + wDisp(pr.w) + ' ' + u + '</b> &times; ' + pr.r + ' &middot; ' + label(pr.date) + '</span></div>' +
         '<div class="pr-sub">' + delta +
           (est ? '<span class="pr-est">est. 1RM ~' + wDisp(est.e) + ' ' + u + '</span>' : '') +
         '</div>' +
+        flagRows +
         (open && histRows ? '<div class="pr-hist">' + histRows + '</div>' : '') +
         (histRows && !open ? '<div class="pr-hint">tap for PR history</div>' : '') +
       '</div>';
@@ -411,6 +527,60 @@
       if (STATE.prOpen.has(id)) STATE.prOpen.delete(id); else STATE.prOpen.add(id);
       renderPR();
     });
+  }
+
+  // ---------- Training volume ----------
+  // Volume = weight * reps, summed over every completed set in the range —
+  // the standard "how much did I actually move" number, computed straight
+  // from Train's saved history, no separate storage of its own.
+  function volumeInRange(dateFrom, dateTo){
+    let total = 0;
+    allLifts().forEach(l => (l.history || []).forEach(h => {
+      if (h.off || h.date < dateFrom || h.date > dateTo) return;
+      const sets = (h.sets && h.sets.length) ? h.sets : [{ w: h.w, r: h.r, fail: false }];
+      sets.forEach(s => {
+        if (s.fail) return;
+        const w = s.w != null ? s.w : h.w, r = s.r || 0;
+        if (w && r) total += wDisp(w) * r;
+      });
+    }));
+    return Math.round(total);
+  }
+  const fmtVol = n => n.toLocaleString('en-US');
+
+  function renderVolume(){
+    const body = document.getElementById('volBody');
+    if (!SPLIT || !allLifts().some(l => (l.history || []).length)){
+      body.innerHTML = '<div class="empty">' + (SPLIT
+        ? 'Log and finish a session in Train to start tracking volume here.'
+        : 'Open Train and finish at least one session — Velocity mirrors what Train saves.') + '</div>';
+      return;
+    }
+    const u = UNIT;
+    const thisWeek = volumeInRange(dateKeyOffset(6), dateKeyOffset(0));
+    const lastWeek = volumeInRange(dateKeyOffset(13), dateKeyOffset(7));
+    const thisMonth = volumeInRange(dateKeyOffset(29), dateKeyOffset(0));
+    const lastMonth = volumeInRange(dateKeyOffset(59), dateKeyOffset(30));
+    const deltaLine = (cur, prior) => {
+      if (!prior) return '<span class="vol-stat-d">no prior period to compare</span>';
+      const pct = r1((cur - prior) / prior * 100);
+      const cls = pct > 0 ? 'up' : pct < 0 ? 'down' : '';
+      const arrow = pct > 0 ? '&#9650; +' : pct < 0 ? '&#9660; ' : '';
+      return '<span class="vol-stat-d ' + cls + '">' + arrow + pct + '% vs prior period</span>';
+    };
+    const weeks = [];
+    for (let i = 7; i >= 0; i--){
+      weeks.push({ now: i === 0, label: i === 0 ? 'this wk' : (i + 1) + 'wk ago', vol: volumeInRange(dateKeyOffset(i * 7 + 6), dateKeyOffset(i * 7)) });
+    }
+    const maxVol = Math.max(...weeks.map(w => w.vol), 1);
+    body.innerHTML =
+      '<div class="vol-stats">' +
+        '<div class="vol-stat"><div class="vol-stat-k">This week</div><div class="vol-stat-v">' + fmtVol(thisWeek) + ' ' + u + '</div>' + deltaLine(thisWeek, lastWeek) + '</div>' +
+        '<div class="vol-stat"><div class="vol-stat-k">This month</div><div class="vol-stat-v">' + fmtVol(thisMonth) + ' ' + u + '</div>' + deltaLine(thisMonth, lastMonth) + '</div>' +
+      '</div>' +
+      '<div class="vol-bars">' + weeks.map(w =>
+        '<div class="vol-bar-col' + (w.now ? ' now' : '') + '"><div class="vol-bar" style="height:' + Math.max(2, Math.round(w.vol / maxVol * 100)) + '%" title="' + fmtVol(w.vol) + ' ' + u + '"></div><div class="vol-bar-lab">' + w.label + '</div></div>'
+      ).join('') + '</div>';
   }
 
   // ---------- Workout log ----------
@@ -437,7 +607,7 @@
       await window.Vitality.write('train', 'vitality.logger.v4', JSON.stringify(mutated));
       SPLIT = mutated;
       STATE.confirmDate = null; STATE.busy = false; STATE.err = null;
-      renderPlot(); renderPR(); renderLog();
+      renderPlot(); renderPR(); renderVolume(); renderLog();
     } catch (e) {
       STATE.busy = false;
       STATE.err = 'Couldn’t delete' + (e && e.message ? ' (' + e.message + ')' : '') + ' — try again';
@@ -491,7 +661,7 @@
       await window.Vitality.write('train', 'vitality.logger.v4', JSON.stringify(mutated));
       SPLIT = mutated;
       STATE.editDate = null; STATE.editRows = null; STATE.busy = false; STATE.err = null;
-      renderPlot(); renderPR(); renderLog();
+      renderPlot(); renderPR(); renderVolume(); renderLog();
     } catch (e) {
       STATE.busy = false;
       STATE.err = 'Couldn’t save' + (e && e.message ? ' (' + e.message + ')' : '') + ' — try again';
@@ -582,6 +752,7 @@
   drawRange();
   renderPlot();
   renderPR();
+  renderVolume();
   renderLog();
 })();
 </script>
