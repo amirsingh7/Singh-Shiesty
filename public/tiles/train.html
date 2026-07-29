@@ -168,6 +168,13 @@
   .pill.clean .tagToggle,.pill.over .tagToggle{border-color:rgba(0,0,0,.25);color:rgba(0,0,0,.55)}
   .pill.clean .tagToggle.on,.pill.over .tagToggle.on{border-color:rgba(0,0,0,.45);color:#000;background:rgba(0,0,0,.08)}
 
+  /* per-set RPE / note / actual-rest — appears once a set is logged, same
+     tagToggle chip language as amrap/bodyweight/to-failure above it. */
+  .pillMeta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;flex-basis:100%;order:6;margin-top:-2px}
+  .pillMetaLab{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-right:2px}
+  .restActual{margin-left:auto;font-family:var(--serif);font-style:italic;font-size:12px;color:var(--muted);white-space:nowrap}
+  .pill.clean .pillMetaLab,.pill.over .pillMetaLab,.pill.clean .restActual,.pill.over .restActual{color:rgba(0,0,0,.55)}
+
   /* add a lift */
   .add{display:flex;flex-direction:column;align-items:center;gap:9px;margin:34px 0 8px}
   .add-btn{width:44px;height:44px;border-radius:50%;border:1px solid var(--rule-strong);background:none;color:var(--mint);
@@ -180,6 +187,7 @@
     font-family:var(--sans);font-size:15px;padding:12px 14px;outline:none;transition:border-color .2s}
   .add-input:focus{border-color:var(--mint)}
   .add-go{background:var(--mint);color:#000;border:none;border-radius:12px;font-family:var(--sans);font-weight:600;font-size:14px;padding:0 18px;cursor:pointer}
+  textarea.setNoteArea{width:100%;min-height:96px;resize:vertical;line-height:1.5;font-size:14px}
 
   /* hidden / removed lifts (never lose your data) */
   .hidden-bar{margin-top:30px;border-top:1px solid var(--rule);padding-top:18px}
@@ -1026,7 +1034,10 @@ async function __bootTile(){
   }
 
   const uid = () => 'l' + Math.random().toString(36).slice(2,9);
-  const blankSets = n => Array.from({length:n}, () => ({ weight:null, reps:null, done:false, failed:false, amrap:false, bw:false, toFailure:false }));
+  const blankSets = n => Array.from({length:n}, () => ({ weight:null, reps:null, done:false, failed:false, amrap:false, bw:false, toFailure:false, rpe:null, notes:'', restActual:null }));
+  // mm:ss for an actual rest duration; shares the rest coach's own format so
+  // "planned" and "actual" rest always read the same way.
+  const fmtDur = s => { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
   // a few past sessions so "history" has a real line to draw (top-set weight)
   const hist = (base, step, reps) => Array.from({length:6}, (_,i) => ({ w: base + i*step, r: reps }));
 
@@ -1354,7 +1365,17 @@ async function __bootTile(){
         '<button class="tagToggle' + (set.amrap ? ' on' : '') + '" data-k="amrap" type="button">amrap</button>' +
         '<button class="tagToggle' + (set.bw ? ' on' : '') + '" data-k="bw" type="button">bodyweight</button>' +
         '<button class="tagToggle' + (set.toFailure ? ' on' : '') + '" data-k="toFailure" type="button">to failure</button>' +
-      '</div>';
+      '</div>' +
+      // RPE/notes/actual-rest only matter once a set is real, so this row only
+      // shows on a logged set — an empty pill has nothing to rate yet.
+      (logged
+        ? '<div class="pillMeta">' +
+            '<span class="pillMetaLab">rpe</span>' +
+            [6,7,8,9,10].map(v => '<button type="button" class="tagToggle' + (set.rpe === v ? ' on' : '') + '" data-rpe="' + v + '">' + v + '</button>').join('') +
+            '<button type="button" class="tagToggle' + (set.notes ? ' on' : '') + '" data-act="note">' + (set.notes ? 'note' : '+ note') + '</button>' +
+            (set.restActual != null ? '<span class="restActual">rested ' + fmtDur(set.restActual) + '</span>' : '') +
+          '</div>'
+        : '');
     // null when that slot is masked by a tag word (a <span>, not an <input>)
     const wIn = weightWord ? null : row.querySelector('[data-role="w"]');
     const rIn = repsWord ? null : row.querySelector('[data-role="r"]');
@@ -1374,7 +1395,11 @@ async function __bootTile(){
       const rv = repsWord ? r : Math.round(parseFloat(rIn.value));
       if (!isFinite(wv) || wv < 0 || wv > 1000) return;
       if (!isFinite(rv) || rv <= 0 || rv > 100) return;
+      // startRest only fires on a genuinely new log (not an edit of a past set),
+      // so that is also the one honest moment to clock the rest that preceded it.
+      if (startRest && lift.lastSetAt) set.restActual = Math.round((Date.now() - lift.lastSetAt) / 1000);
       set.weight = wv; set.reps = rv; set.done = true; set.failed = false;
+      if (startRest) lift.lastSetAt = Date.now();
       saveLog(); render();
       if (startRest && typeof restCoachStart === 'function') restCoachStart(lift, set);  // ep4: start the rest clock
     };
@@ -1382,7 +1407,7 @@ async function __bootTile(){
       const word = statusWord(lift, set, kind);
       group.innerHTML = '<span class="pillStatus">' + (kind==='over' ? '<span class="pillPr">&#9733; </span>' : '') + word + '</span>' +
         '<button class="pillReset" title="Reset this set"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 5.5 A4 4 0 1 0 5.5 2.5"/><polyline points="2 2 3.5 5.5 7 4.5"/></svg></button>';
-      group.querySelector('.pillReset').onclick = () => { set.done=false; set.failed=false; set.weight=null; set.reps=null; set.amrap=false; set.bw=false; set.toFailure=false; saveLog(); render(); if (typeof rcOnSetReset === 'function') rcOnSetReset(set); };
+      group.querySelector('.pillReset').onclick = () => { set.done=false; set.failed=false; set.weight=null; set.reps=null; set.amrap=false; set.bw=false; set.toFailure=false; set.rpe=null; set.notes=''; set.restActual=null; saveLog(); render(); if (typeof rcOnSetReset === 'function') rcOnSetReset(set); };
       // already logged: tapping the weight/reps to fix a typo saves on blur,
       // same as tapping away from any other field. A masked field is read-only —
       // untag it (below) to edit the number again.
@@ -1391,12 +1416,35 @@ async function __bootTile(){
     } else {
       group.innerHTML = '<button class="pillHit">hit it &rarr;</button><button class="pillMiss">miss</button>';
       group.querySelector('.pillHit').onclick = () => commit(true);
-      group.querySelector('.pillMiss').onclick = () => { set.failed=true; set.done=false; saveLog(); render(); };
+      group.querySelector('.pillMiss').onclick = () => { set.failed=true; set.done=false; lift.lastSetAt = Date.now(); saveLog(); render(); };
+    }
+    if (logged){
+      row.querySelectorAll('[data-rpe]').forEach(btn => {
+        btn.onclick = () => { const v = +btn.dataset.rpe; set.rpe = (set.rpe === v) ? null : v; saveLog(); render(); };
+      });
+      const noteBtn = row.querySelector('[data-act="note"]');
+      if (noteBtn) noteBtn.onclick = () => openSetNoteSheet(lift, set);
     }
     const onEnter = e => { if (e.key === 'Enter'){ e.preventDefault(); commit(true); } };
     if (wIn) wIn.onkeydown = onEnter;
     if (rIn) rIn.onkeydown = onEnter;
     return row;
+  }
+
+  // A set's note is free text, so it gets a sheet instead of crowding the pill
+  // row — tap "+ note", write it, tap away, done. Empty text clears the note.
+  function openSetNoteSheet(lift, set){
+    openSheet(
+      '<div class="sheet-eyebrow">Set note &middot; ' + esc(lift.name) + '</div>' +
+      '<div class="sheet-title">How did it feel?</div>' +
+      '<div class="sheet-sub">Pain, energy, technique, equipment — anything worth remembering next time.</div>' +
+      '<textarea class="add-input setNoteArea" id="setNoteArea" maxlength="280" placeholder="Left shoulder felt tight, dropped to a wider grip&hellip;">' + esc(set.notes || '') + '</textarea>'
+    );
+    const ta = sheet.querySelector('#setNoteArea');
+    const save = () => { set.notes = ta.value.trim(); saveLog(); render(); };
+    ta.addEventListener('blur', save);
+    ta.onkeydown = e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)){ e.preventDefault(); save(); closeSheet(); } };
+    try { ta.focus(); } catch(e){}
   }
 
   // Add a lift. Never lose one: if it already exists (even removed), bring it back
@@ -1678,7 +1726,7 @@ async function __bootTile(){
       if (lift.sets[i] && (lift.sets[i].done || lift.sets[i].failed)){ keep = i + 1; break; }
     }
     const out = [];
-    for (let i = 0; i < keep; i++) out.push(lift.sets[i] || { weight:null, reps:null, done:false, failed:false });
+    for (let i = 0; i < keep; i++) out.push(lift.sets[i] || { weight:null, reps:null, done:false, failed:false, amrap:false, bw:false, toFailure:false, rpe:null, notes:'', restActual:null });
     return out;
   }
   function openTune(lift){
@@ -1902,10 +1950,11 @@ async function __bootTile(){
       const kg = top.length ? Math.max(...top.map(s => s.weight)) : lift.weight;
       const reps = top.length ? Math.max(...top.map(s => s.reps)) : 0;
       const isPR = lift.sets.some(s => s.done && !s.failed && beatsPrevBest(lift, s));
-      lift.history = (lift.history || []).concat({ w: kg, r: reps, date: offsetDate(0), sets: logged.map(s => ({ r: s.reps || 0, fail: !!s.failed, amrap: !!s.amrap, bw: !!s.bw, toFailure: !!s.toFailure })) });
+      lift.history = (lift.history || []).concat({ w: kg, r: reps, date: offsetDate(0), sets: logged.map(s => ({ r: s.reps || 0, fail: !!s.failed, amrap: !!s.amrap, bw: !!s.bw, toFailure: !!s.toFailure, rpe: s.rpe ?? null, notes: s.notes || '', restActual: s.restActual ?? null })) });
       if (top.length) lift.weight = kg;
       lift.overload = null;
       lift.sets = blankSets(lift.targetSets);
+      lift.lastSetAt = null;   // next session starts its own rest clock, not last session's tail
       lifts++; totalSets += logged.length;
       if (isPR) prs.push({ name: lift.name, kg, perHand: lift.perHand });
     });
