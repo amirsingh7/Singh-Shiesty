@@ -74,6 +74,17 @@
 
   /* per-lift action chips */
   .chips{display:flex;align-items:center;gap:9px;margin-bottom:16px}
+  /* deload/progression call — a deterministic read of this lift's own session
+     history (plateau or regression), never a diagnosis, always dismissible by
+     just... not tapping the button. */
+  .callBanner{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    margin:-4px 0 16px;padding:11px 13px;border-radius:11px;font-size:12.5px;line-height:1.45}
+  .call-plateau{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:var(--muted-strong)}
+  .call-regress{background:rgba(224,118,123,.12);border:1px solid rgba(224,118,123,.4);color:var(--muted-strong)}
+  .callText{flex:1;min-width:170px}
+  .callBtn{flex:none;background:none;border:1px solid var(--rule-strong);color:var(--fg);font-family:var(--sans);
+    font-size:11.5px;font-weight:600;padding:6px 12px;border-radius:8px;cursor:pointer;white-space:nowrap;transition:border-color .2s,background .2s}
+  .callBtn:hover{border-color:var(--mint);background:rgba(110,231,183,.08)}
   .chip{display:inline-flex;align-items:center;gap:7px;border:1px solid rgba(110,231,183,.26);border-radius:999px;
     background:rgba(110,231,183,.03);color:var(--mint);font-family:var(--serif);font-style:italic;font-size:15px;
     padding:8px 15px;cursor:pointer;box-shadow:0 0 14px rgba(110,231,183,.06);transition:border-color .2s,background .2s,transform .15s var(--spring)}
@@ -1298,6 +1309,7 @@ async function __bootTile(){
       (goalMet ? ' starPillDone' : '') +
       (anyLogged && !goalMet ? ' starPillInert' : '');
     const starAmt = armed && !goalMet ? bumpLabel(bump, lift.perHand) : '';
+    const call = liftProgressionCall(lift);
     el.innerHTML =
       '<div class="lift-head">' +
         '<span class="glyph" aria-hidden="true">' + SVG(GLYPH[lift.muscle] || GLYPH.chest) + '</span>' +
@@ -1318,11 +1330,20 @@ async function __bootTile(){
         '</button>' +
         (starAmt ? '<span class="starAmt">' + esc(starAmt) + '</span>' : '') +
       '</div>' +
+      (call
+        ? '<div class="callBanner call-' + call.kind + '"><span class="callText">' + call.text + '</span>' +
+            (call.kind === 'plateau' ? '<button class="callBtn" data-act="deload">try ' + wDisp(call.deloadKg) + ' ' + unit + '</button>' : '') +
+          '</div>'
+        : '') +
       '<div class="rows"></div>';
     const rows = el.querySelector('.rows');
     lift.sets.forEach((set, i) => rows.appendChild(setRow(lift, set, i, unit)));
     el.querySelector('.lift-x').onclick = () => hideLift(lift.id);
     el.querySelector('.info').onclick = () => openInfo(lift);
+    if (call && call.kind === 'plateau'){
+      const db = el.querySelector('[data-act="deload"]');
+      if (db) db.onclick = () => openTune(lift, call.deloadKg);
+    }
     el.querySelector('[data-act="swap"]').onclick = () => openSwap(lift);
     el.querySelector('[data-act="history"]').onclick = () => openOverload(lift);
     el.querySelector('[data-act="tune"]').onclick = () => openTune(lift);
@@ -1729,11 +1750,14 @@ async function __bootTile(){
     for (let i = 0; i < keep; i++) out.push(lift.sets[i] || { weight:null, reps:null, done:false, failed:false, amrap:false, bw:false, toFailure:false, rpe:null, notes:'', restActual:null });
     return out;
   }
-  function openTune(lift){
+  // presetWeightKg: opens tune with a suggested weight already filled in (the
+  // deload call does this) instead of the lift's current weight — still just a
+  // draft until Save, so accepting, editing, or cancelling are all one tap away.
+  function openTune(lift, presetWeightKg){
     const unit = uLabel(lift.perHand);
     const muscleLabel = { chest:'Chest', shoulders:'Shoulders', arms:'Arms', back:'Back', legs:'Legs', core:'Core' }[lift.muscle] || 'Lift';
     const DEFAULT_REST = 150;
-    const d = { weight: lift.weight, targetSets: lift.targetSets, targetReps: lift.targetReps, rest: lift.rest ?? DEFAULT_REST };
+    const d = { weight: presetWeightKg != null ? presetWeightKg : lift.weight, targetSets: lift.targetSets, targetReps: lift.targetReps, rest: lift.rest ?? DEFAULT_REST };
     const fmtRest = s => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
     const stepRow = (k, icon, label, val) =>
       '<div class="tune-row"><span class="tune-left"><span class="tune-ico">' + SVG(icon) + '</span><span class="tune-lab"><span class="tune-k">' + label + '</span></span></span>' +
@@ -1880,6 +1904,32 @@ async function __bootTile(){
       if (!best || w > best.weight || (w === best.weight && r > best.reps)) best = { weight: w, reps: r };
     });
     return best;
+  }
+
+  // A deterministic read of the same session history — no AI call, same rule
+  // the overload star already uses (heavier wins, equal weight + more reps
+  // wins the tie). Regression (worse than last time) always outranks plateau
+  // (stuck for a few sessions) since it's the more specific, more urgent read.
+  function liftProgressionCall(lift){
+    const sessions = (lift.history || []).slice().sort((a, b) => a.date.localeCompare(b.date));
+    if (sessions.length < 2) return null;
+    const last = sessions[sessions.length - 1], prev = sessions[sessions.length - 2];
+    const lastW = last.w || 0, lastR = last.r || 0, prevW = prev.w || 0, prevR = prev.r || 0;
+    if (lastW && prevW && (lastW < prevW || (lastW === prevW && lastR < prevR))){
+      return { kind: 'regress', text: 'Down from last session &mdash; an easier session or extra rest before you push again might pay off more than grinding through.' };
+    }
+    if (sessions.length >= 3){
+      let bestW = -1, bestR = -1, lastPrDate = null;
+      sessions.forEach(h => {
+        const w = h.w || 0, r = h.r || 0;
+        if (w > bestW || (w === bestW && r > bestR)){ bestW = w; bestR = r; lastPrDate = h.date; }
+      });
+      const recentDates = sessions.slice(-3).map(h => h.date);
+      if (lastPrDate && !recentDates.includes(lastPrDate)){
+        return { kind: 'plateau', text: 'No new best in your last 3 sessions here &mdash; a deload week, lighter weight and the same reps, often breaks it.', deloadKg: round05(lift.weight * 0.9) };
+      }
+    }
+    return null;
   }
   function beatsPrevBest(lift, set){
     const best = prevBestOf(lift);
