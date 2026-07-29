@@ -48,6 +48,23 @@
   .fill{height:100%;width:0;background:var(--mint);border-radius:2px;transition:width .5s var(--ease)}
   .count{font-family:var(--serif);font-style:italic;font-size:18px;color:var(--muted);white-space:nowrap}
   .count b{color:var(--mint-cool);font-style:normal;font-weight:500;font-variant-numeric:tabular-nums}
+  /* recovery check-in: sleep/soreness/stress, once a day, never blocking —
+     tap to answer, tap "not today" to dismiss, collapses to one line once
+     all three are set. Feeds the deload/plateau calls later, not yet wired. */
+  .recovery-card{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:16px 18px;margin-bottom:20px}
+  .recovery-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .recovery-title{font-family:var(--serif);font-style:italic;font-size:15px}
+  .recovery-skip{background:none;border:none;color:var(--muted);font-family:var(--sans);font-size:11.5px;font-weight:600;cursor:pointer;padding:4px 8px;border-radius:6px;transition:color .2s,background .2s;flex:none}
+  .recovery-skip:hover{color:var(--muted-strong);background:rgba(255,255,255,.05)}
+  .recovery-row{display:flex;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap}
+  .recovery-lab{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);width:62px;flex:none}
+  .recovery-opts{display:flex;gap:6px;flex-wrap:wrap}
+  .recovery-opt{background:transparent;border:1px solid var(--rule-strong);color:var(--muted);font-family:var(--serif);font-style:italic;font-size:12.5px;padding:5px 12px;border-radius:999px;cursor:pointer;transition:border-color .2s,background .2s,color .2s}
+  .recovery-opt:hover{border-color:rgba(110,231,183,.4);color:var(--muted-strong)}
+  .recovery-opt.on{border-color:rgba(110,231,183,.5);color:var(--mint);background:rgba(110,231,183,.08)}
+  .recovery-mini{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 18px}
+  .recovery-summary{font-size:13px;color:var(--muted)}
+  .recovery-summary b{color:var(--fg);font-weight:600;text-transform:capitalize}
   .unit-toggle{display:inline-flex;flex:none;background:var(--card);border:1px solid var(--rule-strong);border-radius:999px;padding:2px}
   .unit-opt{background:none;border:none;color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:5px 12px;border-radius:999px;cursor:pointer;transition:color .2s,background .2s}
   .unit-opt.on{background:var(--mint);color:#04140d}
@@ -817,6 +834,8 @@
     <div class="count" id="count"></div>
   </div>
 
+  <div id="recoveryCard"></div>
+
   <div id="list"></div>
 
   <div class="finish-wrap" id="finishWrap">
@@ -1028,6 +1047,7 @@ async function __bootTile(){
     DATA.days.forEach(d => { if (!Array.isArray(d.lifts)) d.lifts = []; });         // a day always has a lifts array
     if (!DATA.days.find(d => d.id === DATA.activeDayId)) DATA.activeDayId = DATA.days[0].id;
     if (!Array.isArray(DATA.sessionDates)) DATA.sessionDates = [];   // finished-session dates, for the bridge report only
+    if (!DATA.recovery || typeof DATA.recovery !== 'object') DATA.recovery = {};   // date-keyed sleep/soreness/stress check-ins
     LIFTS = activeDay().lifts;
     saveLog();
     return LIFTS;
@@ -1265,6 +1285,58 @@ async function __bootTile(){
       : 'no lifts yet';
   }
 
+  // Recovery check-in: sleep/soreness/stress, one entry per calendar day, kept
+  // at the top level (DATA.recovery) since it's a whole-body signal, not a
+  // per-lift one. Every field is independently optional — skipping one never
+  // blocks the others, and "not today" dismisses the whole card without
+  // writing anything. Feeds later recovery-aware programming; not wired to
+  // the deload/plateau calls yet.
+  const RECOVERY_FIELDS = [
+    { key: 'sleep', label: 'sleep', opts: ['poor', 'ok', 'great'] },
+    { key: 'soreness', label: 'soreness', opts: ['fresh', 'some', 'sore'] },
+    { key: 'stress', label: 'stress', opts: ['low', 'med', 'high'] },
+  ];
+  let recoveryEditing = false;
+  function todayRecovery(){
+    const k = offsetDate(0);
+    if (!DATA.recovery[k]) DATA.recovery[k] = {};
+    return DATA.recovery[k];
+  }
+  function renderRecovery(){
+    const el = document.getElementById('recoveryCard');
+    if (!el || !DATA) return;
+    const k = offsetDate(0);
+    const rec = DATA.recovery[k] || null;
+    if (rec && rec.skipped){ el.innerHTML = ''; return; }
+    const complete = rec && RECOVERY_FIELDS.every(f => rec[f.key]);
+    if (complete && !recoveryEditing){
+      el.innerHTML = '<div class="recovery-card recovery-mini">' +
+        '<span class="recovery-summary">Feeling today: <b>' + RECOVERY_FIELDS.map(f => rec[f.key]).join(' &middot; ') + '</b></span>' +
+        '<button class="recovery-skip" id="recEdit">edit</button>' +
+      '</div>';
+      document.getElementById('recEdit').onclick = () => { recoveryEditing = true; renderRecovery(); };
+      return;
+    }
+    el.innerHTML = '<div class="recovery-card">' +
+      '<div class="recovery-head"><span class="recovery-title">How are you feeling today?</span>' +
+        '<button class="recovery-skip" id="recSkip">' + (complete ? 'done' : 'not today') + '</button></div>' +
+      RECOVERY_FIELDS.map(f =>
+        '<div class="recovery-row"><span class="recovery-lab">' + f.label + '</span><span class="recovery-opts">' +
+          f.opts.map(o => '<button class="recovery-opt' + ((rec && rec[f.key] === o) ? ' on' : '') + '" data-k="' + f.key + '" data-v="' + o + '" type="button">' + o + '</button>').join('') +
+        '</span></div>'
+      ).join('') +
+    '</div>';
+    el.querySelectorAll('.recovery-opt').forEach(b => b.onclick = () => {
+      const r = todayRecovery();
+      r[b.dataset.k] = (r[b.dataset.k] === b.dataset.v) ? null : b.dataset.v;   // tap again to clear
+      saveLog(); renderRecovery();
+    });
+    document.getElementById('recSkip').onclick = () => {
+      if (complete){ recoveryEditing = false; renderRecovery(); }
+      else { todayRecovery().skipped = true; saveLog(); renderRecovery(); }
+    };
+  }
+
   // render
   function render(){
     listEl.innerHTML = '';
@@ -1292,6 +1364,7 @@ async function __bootTile(){
     paintFinish();
     syncCelebrations();
     if (typeof paintDayChrome === 'function') paintDayChrome();   // session: keep the day title + split rail in sync
+    if (typeof renderRecovery === 'function') renderRecovery();
   }
 
   function liftCard(lift){
