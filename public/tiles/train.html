@@ -322,6 +322,16 @@
   .tune-num{font-family:var(--serif);font-style:italic;font-size:27px;color:var(--fg);background:none;border:none;outline:none;
     text-align:right;width:auto;field-sizing:content;min-width:1.4ch;border-bottom:1.5px solid transparent;padding:0 1px;transition:border-color .25s,color .25s}
   .tune-num:focus{color:var(--mint);border-bottom-color:var(--mint)}
+
+  /* PLAN: next-session sheet — reasoning line, then warmup/working/back-off
+     rows in the same tune-row rhythm so it reads like part of the same app. */
+  .plan-reason{font-size:12.5px;line-height:1.55;color:var(--muted-strong);margin:6px 0 4px}
+  .plan-block{display:flex;align-items:baseline;justify-content:space-between;gap:14px;padding:13px 2px;border-top:1px solid var(--rule)}
+  .plan-block-main .plan-val{color:var(--fg)}
+  .plan-lab{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);flex:none}
+  .plan-val{font-family:var(--serif);font-style:italic;font-size:14.5px;color:var(--muted-strong);text-align:right}
+  .plan-val b{font-style:normal;font-weight:600;color:var(--mint-cool)}
+  .plan-alt{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--muted);text-align:center;margin-top:12px}
   .tune-unit{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:lowercase;color:var(--muted);margin-left:6px}
 
   /* SWAP helper bits kept for parity with the app */
@@ -995,6 +1005,7 @@ async function __bootTile(){
     eye:'<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
     arrow:'<path d="M4 12h14M13 7l5 5-5 5"/>',
     search:'<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
+    plan:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>',
   };
 
   function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
@@ -1397,6 +1408,7 @@ async function __bootTile(){
         '<button class="chip" data-act="swap">' + SVG(ICON.swap) + 'swap</button>' +
         '<button class="chip" data-act="history">' + SVG(ICON.history) + 'history</button>' +
         '<button class="chip" data-act="tune">' + SVG(ICON.tune) + 'tune</button>' +
+        '<button class="chip" data-act="plan">' + SVG(ICON.plan) + 'plan</button>' +
         '<button class="' + starCls + '" data-act="star" aria-label="Progressive overload"' + (anyLogged ? ' disabled' : '') + '>' +
           '<span class="starDots" aria-hidden><span class="starDot"></span><span class="starDot"></span></span>' +
           '<span class="starGlyph" aria-hidden>&#9733;</span>' +
@@ -1420,6 +1432,7 @@ async function __bootTile(){
     el.querySelector('[data-act="swap"]').onclick = () => openSwap(lift);
     el.querySelector('[data-act="history"]').onclick = () => openOverload(lift);
     el.querySelector('[data-act="tune"]').onclick = () => openTune(lift);
+    el.querySelector('[data-act="plan"]').onclick = () => openPlanSheet(lift);
     const starBtn = el.querySelector('[data-act="star"]');
     starBtn.onclick = () => { if (anyLogged) return; openOverloadCard(lift); };
     return el;
@@ -2004,6 +2017,127 @@ async function __bootTile(){
     }
     return null;
   }
+
+  // NEXT-SESSION PLAN — a deterministic warmup/working/back-off suggestion for
+  // this lift's next session, built from data already on the page: the same
+  // plateau/regression call above, today's recovery check-in, and whether the
+  // last logged session was clean (no fails, no RPE 9+). No AI call, nothing
+  // written until the sheet's own Accept button is tapped — same rule as the
+  // rest of this file (never change the program without approval).
+  const PLAN_PAIN_WORDS = ['sharp pain', 'dizzy', 'dizziness', 'numb', 'chest pain', 'faint', 'pain'];
+  function planScaffold(workingKg, workingReps){
+    const warmups = workingKg > 0
+      ? [0.5, 0.7, 0.85].map((pct, i) => ({
+          kg: round05(workingKg * pct),
+          reps: [Math.max(5, workingReps + 4), Math.max(3, workingReps + 2), Math.max(2, workingReps)][i],
+        }))
+      : [];
+    return { warmups, backoff: { kg: round05(workingKg * 0.9), reps: workingReps + 2 } };
+  }
+  function buildPlanVariants(lift){
+    const sessions = (lift.history || []).slice().sort((a, b) => a.date.localeCompare(b.date));
+    const last = sessions[sessions.length - 1] || null;
+    const call = liftProgressionCall(lift);
+    const rec = DATA.recovery ? DATA.recovery[offsetDate(0)] : null;
+    const recoveryBad = rec && !rec.skipped && (rec.soreness === 'sore' || rec.sleep === 'poor' || rec.stress === 'high');
+    const unit = uLabel(lift.perHand);
+    const baseWeight = lift.weight || 0, baseReps = lift.targetReps;
+
+    let painHit = null;
+    if (last && last.sets){
+      for (const s of last.sets){
+        if (!s.notes) continue;
+        const hit = PLAN_PAIN_WORDS.find(w => s.notes.toLowerCase().includes(w));
+        if (hit){ painHit = hit; break; }
+      }
+    }
+
+    const variant = (id, workingKg, workingReps, rpeTarget, reasoning) => {
+      const scaffold = planScaffold(workingKg, workingReps);
+      return { id, workingKg, workingReps, rpeTarget, reasoning, warmups: scaffold.warmups, backoff: scaffold.backoff };
+    };
+
+    if (painHit){
+      return [variant('hold', baseWeight, baseReps, '6–7',
+        'You noted <b>' + esc(painHit) + '</b> last session. Holding ' + wDisp(baseWeight) + ' ' + unit + ' and ' + baseReps + ' reps flat, not chasing a PR, until that’s checked out. If it’s sharp, dizziness, or chest pain, skip this lift and get it looked at — this isn’t medical advice, just your own words read back.')];
+    }
+    if (call && call.kind === 'plateau'){
+      return [
+        variant('deload', call.deloadKg, baseReps, '6–7',
+          'No new best here in your last 3 sessions. Dropping to ' + wDisp(call.deloadKg) + ' ' + unit + ' (about 90%) at the same ' + baseReps + ' reps, a standard deload to reset before pushing again.'),
+        variant('reps', baseWeight, baseReps + 1, '7–8',
+          'Alternative to a deload: same ' + wDisp(baseWeight) + ' ' + unit + ', one more rep per set. Still a new stimulus without dropping the weight.'),
+      ];
+    }
+    if (call && call.kind === 'regress'){
+      return [variant('hold', baseWeight, baseReps, '6–7',
+        'Your last session came in under the one before it. Repeating ' + wDisp(baseWeight) + ' ' + unit + ' and ' + baseReps + ' reps rather than adding more on top of a rough one.')];
+    }
+    if (recoveryBad){
+      const why = rec.soreness === 'sore' ? 'sore' : rec.sleep === 'poor' ? 'short on sleep' : 'stressed';
+      return [variant('hold', baseWeight, baseReps, '6–7',
+        'You checked in ' + why + ' today. Holding ' + wDisp(baseWeight) + ' ' + unit + ' flat rather than adding weight on a day your own signals say go easier — tune it yourself if you feel good once you’re warmed up.')];
+    }
+
+    let lastClean = true, lastMaxRpe = null;
+    if (last && last.sets && last.sets.length){
+      lastClean = last.sets.every(s => !s.fail);
+      const rpes = last.sets.filter(s => s.rpe != null).map(s => s.rpe);
+      if (rpes.length) lastMaxRpe = Math.max(...rpes);
+    }
+    const repeatV = variant('repeat', baseWeight, baseReps, '7',
+      last ? 'Repeating ' + wDisp(baseWeight) + ' ' + unit + ' and ' + baseReps + ' reps to consolidate before pushing again.'
+           : 'No session history yet for this lift, so this starts at your current working weight.');
+
+    if (!lastClean || (lastMaxRpe != null && lastMaxRpe >= 9)){
+      return [repeatV, variant('reps', baseWeight, baseReps + 1, '7–8',
+        'Last session had a missed set or a very hard one. Same ' + wDisp(baseWeight) + ' ' + unit + ', one more rep per set if it feels right today.')];
+    }
+
+    const incKg = Math.max(0.5, round05(baseWeight * 0.025));
+    return [
+      variant('weight', baseWeight + incKg, baseReps, '7–8',
+        last ? 'You cleared ' + wDisp(baseWeight) + ' ' + unit + ' for ' + baseReps + ' reps last session with room to spare. Adding ' + wDisp(incKg) + ' ' + unit + ' for your next working sets.'
+             : 'No session history yet, so this starts at your current working weight plus a small bump.'),
+      variant('reps', baseWeight, baseReps + 1, '7–8',
+        'Alternative: same ' + wDisp(baseWeight) + ' ' + unit + ', one more rep per set instead of adding load.'),
+      repeatV,
+    ];
+  }
+  function openPlanSheet(lift){
+    const variants = buildPlanVariants(lift);
+    let idx = 0;
+    function paint(){
+      const v = variants[idx];
+      const unit = uLabel(lift.perHand);
+      const warmLine = v.warmups.length
+        ? v.warmups.map(w => wDisp(w.kg) + ' ' + unit + ' × ' + w.reps).join('  ·  ')
+        : 'a few easy bodyweight reps first';
+      openSheet(
+        '<div class="sheet-eyebrow">Plan &middot; Next session</div>' +
+        '<div class="sheet-title">' + esc(lift.name) + '</div>' +
+        '<p class="plan-reason">' + v.reasoning + '</p>' +
+        '<div class="plan-block"><span class="plan-lab">warm up</span><span class="plan-val">' + warmLine + '</span></div>' +
+        '<div class="plan-block plan-block-main"><span class="plan-lab">working</span><span class="plan-val"><b>' + lift.targetSets + ' × ' + v.workingReps + '</b> at <b>' + wDisp(v.workingKg) + ' ' + unit + '</b> &middot; RPE ' + v.rpeTarget + '</span></div>' +
+        '<div class="plan-block"><span class="plan-lab">back-off</span><span class="plan-val">' + wDisp(v.backoff.kg) + ' ' + unit + ' × ' + v.backoff.reps + '</span></div>' +
+        (variants.length > 1 ? '<div class="plan-alt">option ' + (idx + 1) + ' of ' + variants.length + '</div>' : '') +
+        '<div class="card-foot">' +
+          (variants.length > 1 ? '<button class="btn-ghost" data-act="regen">regenerate</button>' : '') +
+          '<button class="btn-ghost" data-act="modify">modify</button>' +
+          '<button class="btn-mint" data-act="accept">accept</button>' +
+        '</div>'
+      );
+      const regen = sheet.querySelector('[data-act="regen"]');
+      if (regen) regen.onclick = () => { idx = (idx + 1) % variants.length; paint(); };
+      sheet.querySelector('[data-act="modify"]').onclick = () => { closeSheet(); openTune(lift, v.workingKg); };
+      sheet.querySelector('[data-act="accept"]').onclick = () => {
+        updateLift(lift.id, l => ({ weight: v.workingKg, targetReps: v.workingReps, sets: reshapeSets(l, l.targetSets) }));
+        render(); closeSheet();
+      };
+    }
+    paint();
+  }
+
   function beatsPrevBest(lift, set){
     const best = prevBestOf(lift);
     if (!best || best.weight <= 0) return false;

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import WelcomeBackdrop from '@/components/WelcomeBackdrop'
 import DashboardHeaderGem from '@/app/app/DashboardHeaderGem'
 import { CORE_TILES } from '@/lib/tiles/coreTiles'
+import { tileStore } from '@/lib/tiles/tileStore'
 import {
   allGoals,
   activeGoalId,
@@ -14,6 +15,181 @@ import {
   tileIdeas,
   type Goal,
 } from '@/lib/tiles/weights'
+
+/**
+ * Mentor Chat — Claude-native (see CLAUDE.md: "No AI keys in the app, ever").
+ * There is no backend AI route here: Send opens claude.ai in a new tab with
+ * the question plus a compact, real summary of the user's own Train/Fuel
+ * data baked in, exactly like Train's rest-coach "Ask Claude" pill. This app
+ * only remembers WHAT was asked (for history/delete/clear) — it never
+ * fabricates or stores an assistant reply, since it never receives one back.
+ */
+const MENTOR_CHAT_KEY = 'vitality:mentorChat'
+const MENTOR_PREFS_KEY = 'vitality:mentorChat:prefs'
+
+interface ChatEntry {
+  id: string
+  text: string
+  ts: number
+}
+interface ChatPrefs {
+  workout: boolean
+  nutrition: boolean
+  recovery: boolean
+}
+const DEFAULT_PREFS: ChatPrefs = { workout: true, nutrition: true, recovery: true }
+
+const SUGGESTED_PROMPTS = [
+  'Analyze today’s workout',
+  'Am I progressing on bench press?',
+  'Recommend my next working sets',
+  'Review today’s calories and macros',
+  'Am I showing signs of a plateau?',
+  'How should I adjust my next workout?',
+  'Generate my weekly progress summary',
+  'Compare this week with last week',
+]
+
+function loadChatHistory(): ChatEntry[] {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw = window.localStorage.getItem(MENTOR_CHAT_KEY)
+    const list = raw ? JSON.parse(raw) : []
+    return Array.isArray(list) ? list : []
+  } catch {
+    return []
+  }
+}
+function saveChatHistory(list: ChatEntry[]): void {
+  try {
+    window.localStorage.setItem(MENTOR_CHAT_KEY, JSON.stringify(list))
+  } catch {
+    /* quota / blocked — chat still works this session, just won't persist */
+  }
+}
+function loadChatPrefs(): ChatPrefs {
+  if (typeof window === 'undefined') return DEFAULT_PREFS
+  try {
+    const raw = window.localStorage.getItem(MENTOR_PREFS_KEY)
+    const p = raw ? JSON.parse(raw) : null
+    return p && typeof p === 'object' ? { ...DEFAULT_PREFS, ...p } : DEFAULT_PREFS
+  } catch {
+    return DEFAULT_PREFS
+  }
+}
+function saveChatPrefs(p: ChatPrefs): void {
+  try {
+    window.localStorage.setItem(MENTOR_PREFS_KEY, JSON.stringify(p))
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Same shape train.html writes: { days: [{ name, lifts: [{ name, weight, targetReps, history }] }] }. */
+function summarizeWorkoutData(data: unknown): string {
+  if (!data || typeof data !== 'object') return ''
+  const days = (data as { days?: unknown }).days
+  if (!Array.isArray(days)) return ''
+  const lines: string[] = []
+  let liftCount = 0
+  for (const day of days) {
+    if (liftCount >= 5) break
+    const lifts = (day as { lifts?: unknown })?.lifts
+    if (!Array.isArray(lifts)) continue
+    for (const lift of lifts) {
+      if (liftCount >= 5) break
+      const l = lift as { name?: string; weight?: number; targetReps?: number; history?: Array<{ w?: number; r?: number; date?: string }> }
+      const hist = Array.isArray(l.history) ? l.history : []
+      if (!hist.length) continue
+      const sorted = hist.slice().sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))
+      const last = sorted[sorted.length - 1]
+      const prev = sorted[sorted.length - 2]
+      let best: { w: number; r: number } | null = null
+      sorted.forEach((h) => {
+        const w = h.w ?? 0,
+          r = h.r ?? 0
+        if (!best || w > best.w || (w === best.w && r > best.r)) best = { w, r }
+      })
+      let line = `${l.name}: last ${last?.w ?? '?'}×${last?.r ?? '?'} on ${last?.date ?? '?'}`
+      if (prev) line += `, before that ${prev.w ?? '?'}×${prev.r ?? '?'}`
+      if (best) line += `, all-time best ${(best as { w: number; r: number }).w}×${(best as { w: number; r: number }).r}`
+      lines.push(line)
+      liftCount++
+    }
+  }
+  return lines.length ? 'Recent lifts (real, from your log):\n' + lines.join('\n') : ''
+}
+
+function summarizeRecoveryData(data: unknown): string {
+  if (!data || typeof data !== 'object') return ''
+  const recovery = (data as { recovery?: Record<string, { sleep?: string; soreness?: string; stress?: string; skipped?: boolean }> }).recovery
+  if (!recovery || typeof recovery !== 'object') return ''
+  const todayKey = new Date().toISOString().slice(0, 10)
+  const rec = recovery[todayKey]
+  if (!rec || rec.skipped) return ''
+  const parts: string[] = []
+  if (rec.sleep) parts.push(`sleep ${rec.sleep}`)
+  if (rec.soreness) parts.push(`soreness ${rec.soreness}`)
+  if (rec.stress) parts.push(`stress ${rec.stress}`)
+  return parts.length ? `Today's recovery check-in: ${parts.join(', ')}.` : ''
+}
+
+/** Same shape fuel.html writes: { profile, targets, meals: { 'YYYY-MM-DD': [...] } }. */
+function summarizeNutritionData(data: unknown): string {
+  if (!data || typeof data !== 'object') return ''
+  const d = data as {
+    profile?: { goalShape?: string }
+    targets?: { calories?: number; protein?: number; carbs?: number; fat?: number }
+    meals?: Record<string, Array<{ cal?: number; p?: number; c?: number; f?: number }>>
+  }
+  const lines: string[] = []
+  if (d.profile?.goalShape) lines.push(`Nutrition goal: ${d.profile.goalShape}.`)
+  if (d.targets) lines.push(`Daily targets: ${d.targets.calories ?? '?'} cal, ${d.targets.protein ?? '?'}p/${d.targets.carbs ?? '?'}c/${d.targets.fat ?? '?'}f.`)
+  if (d.meals && typeof d.meals === 'object') {
+    const days = Object.keys(d.meals).sort().reverse().slice(0, 3)
+    for (const day of days) {
+      const meals = d.meals[day]
+      if (!Array.isArray(meals) || !meals.length) continue
+      const tot = meals.reduce(
+        (a: { cal: number; p: number; c: number; f: number }, m) => ({
+          cal: a.cal + (m.cal ?? 0),
+          p: a.p + (m.p ?? 0),
+          c: a.c + (m.c ?? 0),
+          f: a.f + (m.f ?? 0),
+        }),
+        { cal: 0, p: 0, c: 0, f: 0 },
+      )
+      lines.push(`${day}: ${Math.round(tot.cal)} cal, ${Math.round(tot.p)}p/${Math.round(tot.c)}c/${Math.round(tot.f)}f logged.`)
+    }
+  }
+  return lines.join('\n')
+}
+
+/** Pulls the user's own real Train/Fuel data (only the fields the prefs allow)
+ *  into a compact block, same "context in, no key, no server" pattern as
+ *  Train's rcAskPrompt. Never includes anything outside training/nutrition/
+ *  recovery — no founder bio, no unrelated profile fields. */
+async function buildMentorContext(prefs: ChatPrefs, goalTitle: string | undefined): Promise<string> {
+  const blocks: string[] = []
+  if (goalTitle) blocks.push(`My current goal: ${goalTitle}.`)
+  if (prefs.workout || prefs.recovery) {
+    const train = await tileStore.loadData('me', 'train')
+    if (prefs.workout) {
+      const w = summarizeWorkoutData(train)
+      if (w) blocks.push(w)
+    }
+    if (prefs.recovery) {
+      const r = summarizeRecoveryData(train)
+      if (r) blocks.push(r)
+    }
+  }
+  if (prefs.nutrition) {
+    const fuel = await tileStore.loadData('me', 'fuel')
+    const n = summarizeNutritionData(fuel)
+    if (n) blocks.push(n)
+  }
+  return blocks.join('\n')
+}
 
 /**
  * The Mentor — the equation, minimal. When the mentor is clicked everything
@@ -82,10 +258,18 @@ export default function MentorPage({
   const [ideasOpen, setIdeasOpen] = useState(false) // the +: blueprints for tiles you're missing
   const gemRef = useRef<HTMLDivElement | null>(null)
 
+  // Mentor Chat: Claude-native comment box (see buildMentorContext above).
+  const [chatHistory, setChatHistory] = useState<ChatEntry[]>([])
+  const [chatPrefs, setChatPrefs] = useState<ChatPrefs>(DEFAULT_PREFS)
+  const [question, setQuestion] = useState('')
+  const [asking, setAsking] = useState(false)
+
   useEffect(() => {
     setMounted(true)
     setList(allGoals())
     setActive(activeGoalId())
+    setChatHistory(loadChatHistory())
+    setChatPrefs(loadChatPrefs())
   }, [])
 
   // Pulse the gem when the goal changes — WAAPI on the wrapper, NO remount.
@@ -123,6 +307,47 @@ export default function MentorPage({
     saveGoals([...goals(), { id, title: raw, weights: {}, pending: true } as Goal])
     setList(allGoals())
     setDraft('')
+  }
+
+  const togglePref = (key: keyof ChatPrefs) => {
+    const next = { ...chatPrefs, [key]: !chatPrefs[key] }
+    setChatPrefs(next)
+    saveChatPrefs(next)
+  }
+
+  const askMentor = async (text: string) => {
+    const q = text.trim()
+    if (!q || asking) return
+    setAsking(true)
+    try {
+      const context = await buildMentorContext(chatPrefs, act?.title)
+      const prompt =
+        (context ? context + '\n\n' : '') +
+        'My question: ' +
+        q +
+        ' Use only the data above if it helps; ask me if something you need is missing. Keep it concise, explain your reasoning, and never present an estimate as guaranteed. This is not medical advice.'
+      window.open('https://claude.ai/new?q=' + encodeURIComponent(prompt), '_blank', 'noopener')
+      const entry: ChatEntry = { id: 'm-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), text: q, ts: Date.now() }
+      const next = [...chatHistory, entry]
+      setChatHistory(next)
+      saveChatHistory(next)
+      setQuestion('')
+    } finally {
+      setAsking(false)
+    }
+  }
+
+  const deleteMessage = (id: string) => {
+    const next = chatHistory.filter((m) => m.id !== id)
+    setChatHistory(next)
+    saveChatHistory(next)
+  }
+
+  const clearChat = () => {
+    if (!chatHistory.length) return
+    if (!window.confirm('Clear your whole mentor chat history? This only removes what you asked — none of your workout or nutrition data is touched.')) return
+    setChatHistory([])
+    saveChatHistory([])
   }
 
   const mono: React.CSSProperties = {
@@ -478,7 +703,197 @@ export default function MentorPage({
             Give it to the mentor
           </button>
         </div>
+
+        {/* ask your mentor — the comment box. Claude-native: Send opens claude.ai
+            in a new tab with a real summary of your own data baked into the
+            question (same pattern as Train's rest-coach "Ask Claude" pill), so
+            there's no AI key, no server, and no fabricated reply stored here —
+            this app only remembers what you asked. */}
+        <div style={{ width: 'min(620px, 100%)', margin: '60px auto 0', textAlign: 'left', animation: 'fadeUp .8s ease .8s both' }}>
+          <p style={{ ...mono, fontSize: 10.5, color: accent, margin: '0 0 4px', transition: 'color .8s ease' }}>ask your mentor</p>
+          <p style={{ fontSize: 12, color: 'var(--muted, #8a8f98)', margin: '0 0 14px', lineHeight: 1.5 }}>
+            Opens Claude in a new tab with your real numbers already in the question — no AI key, nothing billed, informational only, not medical advice.
+          </p>
+
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+            {(
+              [
+                ['workout', 'workout data'],
+                ['nutrition', 'nutrition data'],
+                ['recovery', 'recovery data'],
+              ] as [keyof ChatPrefs, string][]
+            ).map(([k, label2]) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => togglePref(k)}
+                aria-pressed={chatPrefs[k]}
+                style={{
+                  ...mono,
+                  fontSize: 9.5,
+                  color: chatPrefs[k] ? accent : 'var(--muted, #8a8f98)',
+                  background: chatPrefs[k] ? `${accent}12` : 'transparent',
+                  border: `1px solid ${chatPrefs[k] ? accent + '59' : 'var(--border, #262626)'}`,
+                  borderRadius: 999,
+                  padding: '6px 12px',
+                  cursor: 'pointer',
+                }}
+              >
+                {chatPrefs[k] ? '✓ ' : ''}
+                include {label2}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginBottom: 14 }}>
+            {SUGGESTED_PROMPTS.map((p) => (
+              <button
+                key={p}
+                type="button"
+                disabled={asking}
+                onClick={() => askMentor(p)}
+                style={{
+                  fontSize: 11.5,
+                  color: 'var(--muted-strong, #b9c4be)',
+                  background: 'transparent',
+                  border: '1px solid var(--border, #262626)',
+                  borderRadius: 999,
+                  padding: '7px 13px',
+                  cursor: asking ? 'default' : 'pointer',
+                  opacity: asking ? 0.5 : 1,
+                }}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 10,
+              border: '1px dashed var(--border, #333)',
+              borderRadius: 18,
+              padding: 14,
+            }}
+          >
+            <textarea
+              className="mentorChatBox"
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) askMentor(question)
+              }}
+              placeholder="Ask your AI mentor about your workout, nutrition, recovery, or progress…"
+              aria-label="Ask your AI mentor"
+              rows={3}
+              style={{
+                resize: 'vertical',
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                color: 'var(--fg, #fff)',
+                fontSize: 13.5,
+                fontFamily: 'inherit',
+                lineHeight: 1.5,
+              }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => askMentor(question)}
+                disabled={asking || !question.trim()}
+                aria-label="Send to your mentor"
+                style={{
+                  background: asking || !question.trim() ? 'var(--border, #262626)' : accent,
+                  color: asking || !question.trim() ? 'var(--muted, #8a8f98)' : '#0a0f0c',
+                  border: 'none',
+                  borderRadius: 999,
+                  padding: '9px 18px',
+                  fontWeight: 600,
+                  fontSize: 12.5,
+                  cursor: asking || !question.trim() ? 'default' : 'pointer',
+                  transition: 'background .3s ease',
+                }}
+              >
+                {asking ? 'opening…' : 'Send'}
+              </button>
+            </div>
+          </div>
+
+          {chatHistory.length > 0 && (
+            <div style={{ marginTop: 22 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <span style={{ ...mono, fontSize: 9.5, color: 'var(--muted, #8a8f98)' }}>
+                  asked before ({chatHistory.length})
+                </span>
+                <button
+                  type="button"
+                  onClick={clearChat}
+                  style={{
+                    ...mono,
+                    fontSize: 9.5,
+                    color: 'var(--muted, #8a8f98)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    textDecoration: 'underline',
+                  }}
+                >
+                  clear conversation
+                </button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {chatHistory
+                  .slice()
+                  .reverse()
+                  .map((m) => (
+                    <div
+                      key={m.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 10,
+                        padding: '10px 12px',
+                        border: '1px solid var(--border, #1d1d22)',
+                        borderRadius: 12,
+                        background: 'rgba(255,255,255,.015)',
+                      }}
+                    >
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 13, color: 'var(--fg, #fff)', margin: 0, lineHeight: 1.5 }}>{m.text}</p>
+                        <p style={{ ...mono, fontSize: 9, color: 'var(--muted, #8a8f98)', margin: '4px 0 0' }}>
+                          {new Date(m.ts).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => askMentor(m.text)}
+                        disabled={asking}
+                        aria-label="Ask again"
+                        title="Ask again"
+                        style={{ flex: 'none', background: 'none', border: 'none', color: accent, fontSize: 11, cursor: 'pointer', padding: 4 }}
+                      >
+                        ↻
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteMessage(m.id)}
+                        aria-label="Delete this message"
+                        title="Delete"
+                        style={{ flex: 'none', background: 'none', border: 'none', color: 'var(--muted, #8a8f98)', fontSize: 16, cursor: 'pointer', padding: '0 4px', lineHeight: 1 }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
+      <style>{`.mentorChatBox:focus-visible { outline: 2px solid ${accent}; outline-offset: 2px; border-radius: 8px; }`}</style>
     </main>
   )
 }

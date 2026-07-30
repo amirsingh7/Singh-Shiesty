@@ -5,15 +5,27 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Fuel</title>
 <!--
-  FUEL — one number (water today), one button, three ways to read it. The
-  gallon: pick cups, mL, or gallon and the count + the week bars re-express
+  FUEL — water (Episode 1) plus macro targets + meal logging (AI Mentors,
+  section 4-5 slice). Two tabs, one tile, one store.
+
+  Water: pick cups, mL, or gallon and the count + the week bars re-express
   in that unit. Minimum recommended intake is 8-10 cups a day; the bars still
   scale off 8 (the floor) so "full" reads the same regardless of unit.
-  Everything else this tile could become (macros, meals, caffeine) gets built
-  WITH the mentor, on top of this.
-  Store: { water: { 'YYYY-MM-DD': count } } (count is always whole cups,
-  regardless of display unit), waterUnit: 'cups'|'ml'|'gallon' — /sweep and
-  save_data can file straight into it.
+
+  Macros: calorie/protein/carb/fat targets computed from a tile-local profile
+  (age/height/weight/sex/goal/activity — mirrors lib/tiles/profile.ts's
+  DEFAULT_PROFILE, since this sealed tile can't read that app-level store) via
+  Mifflin-St Jeor, editable any time from the targets sheet, or overridden with
+  direct numbers. Meals log against a small built-in common-foods list (real
+  serving values, not AI-estimated — tiles are sandboxed with no network, so
+  there's no live lookup) or manual entry. No AI call anywhere in this tile.
+
+  Store shape:
+    water: { 'YYYY-MM-DD': cups }, waterUnit: 'cups'|'ml'|'gallon'
+    profile: { age, heightCm, weightKg, sex, goalShape, activity, units }
+    targets: { calories, protein, carbs, fat, custom }
+    meals: { 'YYYY-MM-DD': [{ id, name, serving, cal, p, c, f, time }] }
+  /sweep and save_data can file straight into any of the above.
 -->
 <style>
   :root{
@@ -90,18 +102,108 @@
   .foot{font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-top:34px}
   .starterTag{width:max-content;max-width:92%;margin:0 auto 20px;padding:6px 14px;border:1px solid rgba(110,231,183,.25);border-radius:999px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#84848c;text-align:center}
   .starterTag,.starterTag *{line-height:1.6}
+
+  /* section tabs: Water / Macros */
+  .secTabs{display:flex;gap:8px;margin-top:22px}
+  .secTab{flex:1;background:none;border:1px solid var(--border);color:var(--muted);font-family:var(--font);font-size:12.5px;
+    font-weight:600;padding:10px;border-radius:12px;cursor:pointer;transition:color .2s,background .2s,border-color .2s}
+  .secTab:hover{color:#fff;border-color:var(--muted)}
+  .secTab.on{background:var(--brand-soft);color:var(--brand);border-color:rgba(110,231,183,.4)}
+
+  /* MACROS tab */
+  .macrosHead{display:flex;align-items:center;justify-content:space-between;margin-top:26px;text-align:left}
+  .macrosHead .kick{margin:0}
+  .gearBtn{background:none;border:1px solid var(--border);color:var(--muted);width:32px;height:32px;border-radius:999px;cursor:pointer;font-size:14px;transition:color .2s,border-color .2s}
+  .gearBtn:hover{color:#fff;border-color:var(--muted)}
+  .meters{margin-top:18px;display:flex;flex-direction:column;gap:16px;text-align:left}
+  .meterRow{}
+  .meterHead{display:flex;justify-content:space-between;align-items:baseline}
+  .meterLab{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-strong)}
+  .meterNum{font-family:var(--serif);font-style:italic;font-size:15px;color:#fff}
+  .meterNum i{font-style:normal;color:var(--muted);font-size:12px}
+  .meterTrack{height:7px;border-radius:99px;background:var(--border);margin-top:7px;overflow:hidden}
+  .meterFill{height:100%;background:linear-gradient(90deg,rgba(110,231,183,.55),var(--brand));border-radius:99px;transition:width .5s var(--ease)}
+  .meterFill.over{background:linear-gradient(90deg,var(--brand),#fff)}
+  .meterSub{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;color:var(--muted);margin-top:5px;text-transform:uppercase}
+
+  .logHead{display:flex;justify-content:space-between;align-items:center;margin-top:30px;text-align:left}
+  .logTitle{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+  .addFoodBtn{background:var(--brand-soft);border:1px solid rgba(110,231,183,.4);color:var(--brand);font-family:var(--font);
+    font-weight:600;font-size:12px;padding:7px 14px;border-radius:999px;cursor:pointer;transition:background .2s}
+  .addFoodBtn:hover{background:rgba(110,231,183,.16)}
+  .mealList{margin-top:12px;display:flex;flex-direction:column;gap:6px;text-align:left}
+  .mealRow{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.015)}
+  .mealMain{flex:1;min-width:0}
+  .mealName{font-size:13.5px;color:#fff;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mealMeta{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px}
+  .mealCal{font-family:var(--serif);font-style:italic;font-size:15px;color:var(--brand);flex:none}
+  .mealDel{flex:none;background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:2px 6px;border-radius:6px;transition:color .2s,background .2s}
+  .mealDel:hover{color:#e0767b;background:rgba(224,118,123,.1)}
+  .emptyLog{text-align:left;color:var(--muted);font-size:12.5px;padding:16px 0}
+
+  /* overlay: add-food + targets, shared shell */
+  .overlay{position:fixed;inset:0;z-index:50;display:none;align-items:flex-end;justify-content:center;
+    background:rgba(0,0,0,.6);backdrop-filter:blur(6px);padding:14px}
+  .overlay.on{display:flex}
+  @media (min-width:640px){.overlay{align-items:center}}
+  .ovCard{width:100%;max-width:440px;max-height:82vh;overflow-y:auto;background:#0b0b0d;border:1px solid var(--border);
+    border-radius:20px;padding:22px 20px 20px;text-align:left;position:relative}
+  .ovClose{position:absolute;top:14px;right:14px;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1;padding:4px}
+  .ovClose:hover{color:#fff}
+  .ovTitle{font-family:var(--serif);font-style:italic;font-size:22px;color:#fff;margin-bottom:14px}
+  .ovLab{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:block;margin:14px 0 6px}
+  .ovLab:first-of-type{margin-top:0}
+  .ovInput,.ovSelect{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.02);
+    color:#fff;font-family:var(--font);font-size:13.5px;-moz-appearance:textfield}
+  .ovInput::-webkit-outer-spin-button,.ovInput::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .ovInput:focus,.ovSelect:focus{outline:none;border-color:var(--brand)}
+  .ovRow2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .ovRow4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .ovBtnRow{display:flex;gap:10px;margin-top:20px}
+  .ovBtn{flex:1;padding:11px;border-radius:11px;border:1px solid var(--border);background:none;color:var(--muted-strong);
+    font-family:var(--font);font-weight:600;font-size:13px;cursor:pointer;transition:all .15s}
+  .ovBtn:hover{border-color:var(--muted)}
+  .ovBtn.primary{background:var(--brand);border-color:var(--brand);color:#04140d}
+  .ovBtn.primary:hover{background:#5dd6a6}
+  .ovHint{font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:6px}
+  .ovDivider{border-top:1px solid var(--border);margin:20px 0}
+
+  .foodSearch{width:100%;padding:11px 14px;border-radius:11px;border:1px solid var(--border);background:rgba(255,255,255,.02);
+    color:#fff;font-family:var(--font);font-size:13.5px}
+  .foodSearch:focus{outline:none;border-color:var(--brand)}
+  .recentChips{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
+  .recentChip{background:none;border:1px solid var(--border);color:var(--muted-strong);font-family:var(--font);font-size:11.5px;
+    padding:6px 11px;border-radius:999px;cursor:pointer;transition:all .15s}
+  .recentChip:hover{border-color:var(--brand);color:var(--brand)}
+  .foodResults{margin-top:10px;display:flex;flex-direction:column;gap:4px;max-height:220px;overflow-y:auto}
+  .foodItem{display:flex;justify-content:space-between;align-items:center;padding:9px 10px;border-radius:10px;cursor:pointer;transition:background .15s}
+  .foodItem:hover{background:rgba(255,255,255,.04)}
+  .foodItemN{font-size:13px;color:#fff}
+  .foodItemS{font-family:var(--mono);font-size:9.5px;color:var(--muted);margin-top:1px}
+  .foodItemC{font-family:var(--serif);font-style:italic;font-size:13px;color:var(--brand);flex:none;margin-left:10px}
+  .customLink{display:block;text-align:center;margin-top:14px;background:none;border:none;color:var(--muted);font-family:var(--font);
+    font-size:12px;text-decoration:underline;cursor:pointer}
+  .customLink:hover{color:var(--brand)}
+  .qtyRow{display:flex;align-items:center;justify-content:center;gap:14px;margin:16px 0 6px}
+  .qtyBtn{width:38px;height:38px;border-radius:999px;border:1px solid var(--border);background:none;color:var(--muted);font-size:17px;cursor:pointer}
+  .qtyBtn:hover{color:#fff;border-color:var(--muted)}
+  .qtyVal{font-family:var(--serif);font-style:italic;font-size:20px;color:#fff;min-width:3ch;text-align:center}
 </style>
 </head>
 <body>
 <div class="shell">
 <div class="starterTag">✦ starter — the value is what you build · the videos show how</div>
   <h1>Fuel</h1>
-  <p class="sub">water today, in your units · build the rest with your mentor</p>
+  <p class="sub">water and macros, in your units · build the rest with your mentor</p>
+  <div class="secTabs" id="secTabs">
+    <button class="secTab" data-sec="water">Water</button>
+    <button class="secTab" data-sec="macros">Macros</button>
+  </div>
   <div class="well" id="app"></div>
 </div>
+<div class="overlay" id="overlay"><div class="ovCard" id="ovCard"></div></div>
 <script>
-/* internal count is always whole cups; GOAL_LO/HI is the 8-10 cup daily
-   minimum the tile recommends. Every display unit is derived from cups. */
+/* ============================== WATER (Episode 1, unchanged) ============================== */
 const GOAL_LO=8, GOAL_HI=10, CUP_ML=237, GAL_CUPS=16;
 const UNITS=[['cups','Cups'],['ml','mL'],['gallon','Gallon']];
 let store={};
@@ -142,7 +244,7 @@ function goalRange(u){
   if(u==='gallon')return toUnit(GOAL_LO,'gallon')+'–'+toUnit(GOAL_HI,'gallon')+' gal';
   return GOAL_LO+'–'+GOAL_HI+' cups';
 }
-function render(){
+function renderWaterBody(){
   const w=today(),cups=w[key()]||0;
   const pct=cups/GOAL_HI,pulseClass=justLogged?' pulse':'';
   justLogged=false;
@@ -153,8 +255,7 @@ function render(){
     const lab=i===0?'today':['SU','MO','TU','WE','TH','FR','SA'][d.getDay()];
     bars+='<div class="day"><div class="bar'+(c?'':' zero')+'" style="height:'+h+'px" title="'+toUnit(c,unit)+' '+unitLabel(unit)+'"></div><span class="dLab'+(i===0?' today':'')+'">'+lab+'</span></div>';
   }
-  document.getElementById('app').innerHTML=
-    '<div class="kick">✦ water</div>'
+  return '<div class="kick">✦ water</div>'
     +'<div class="gallonWrap'+pulseClass+'" id="gallonWrap">'+gallonSvg(pct)+'</div>'
     +'<div class="uTabs">'+UNITS.map(u=>'<button data-u="'+u[0]+'" class="'+(u[0]===unit?'on':'')+'">'+u[1]+'</button>').join('')+'</div>'
     +'<div class="count">'+toUnit(cups,unit)+'</div>'
@@ -175,10 +276,309 @@ function addMl(){
   justLogged=true;
   persist();render();
 }
+
+/* ============================== MACROS (AI Mentors, section 4-5 slice) ============================== */
+/* Small built-in common-foods list — real per-serving values, not AI-estimated.
+   Tiles are sandboxed with no network (see lib/tiles/tileBridge.ts), so there's
+   no live nutrition lookup here; this covers common staples, "+ custom food"
+   covers everything else. */
+const FOODS=[
+  {n:'Chicken breast',s:'100g cooked',cal:165,p:31,c:0,f:3.6},
+  {n:'Egg',s:'1 large',cal:72,p:6,c:0.4,f:5},
+  {n:'Greek yogurt (nonfat)',s:'170g',cal:100,p:17,c:6,f:0.7},
+  {n:'Oats',s:'40g dry',cal:150,p:5,c:27,f:3},
+  {n:'White rice',s:'1 cup cooked',cal:205,p:4.3,c:45,f:0.4},
+  {n:'Brown rice',s:'1 cup cooked',cal:216,p:5,c:45,f:1.8},
+  {n:'Banana',s:'1 medium',cal:105,p:1.3,c:27,f:0.4},
+  {n:'Salmon',s:'100g cooked',cal:208,p:20,c:0,f:13},
+  {n:'Ground beef 90/10',s:'100g cooked',cal:217,p:26,c:0,f:12},
+  {n:'Whole wheat bread',s:'1 slice',cal:81,p:4,c:14,f:1.1},
+  {n:'Peanut butter',s:'2 tbsp',cal:190,p:8,c:6,f:16},
+  {n:'Almonds',s:'28g (~23)',cal:164,p:6,c:6,f:14},
+  {n:'Sweet potato',s:'1 medium',cal:112,p:2,c:26,f:0.1},
+  {n:'Broccoli',s:'1 cup',cal:31,p:2.5,c:6,f:0.3},
+  {n:'Avocado',s:'1/2 medium',cal:120,p:1.5,c:6,f:11},
+  {n:'Whey protein',s:'1 scoop',cal:120,p:24,c:3,f:1.5},
+  {n:'Milk 2%',s:'1 cup',cal:122,p:8,c:12,f:4.8},
+  {n:'Cheddar cheese',s:'28g',cal:113,p:7,c:0.4,f:9},
+  {n:'Apple',s:'1 medium',cal:95,p:0.5,c:25,f:0.3},
+  {n:'Tuna (canned, water)',s:'100g',cal:116,p:26,c:0,f:0.8},
+  {n:'Pasta',s:'1 cup cooked',cal:221,p:8,c:43,f:1.3},
+  {n:'Olive oil',s:'1 tbsp',cal:119,p:0,c:0,f:13.5},
+  {n:'Black beans',s:'1 cup cooked',cal:227,p:15,c:41,f:0.9},
+  {n:'Cottage cheese',s:'1 cup low-fat',cal:163,p:28,c:6,f:2.3},
+];
+const ACTIVITY=[['sedentary',1.2],['light',1.375],['moderate',1.55],['very',1.725],['extra',1.9]];
+const GOAL_LABEL={bulk:'Bulk',cut:'Cut','lean-bulk':'Lean bulk',maintain:'Maintain'};
+const GOAL_ADJ={bulk:1.20,'lean-bulk':1.10,cut:0.80,maintain:1.0};
+const PROTEIN_PER_KG={bulk:1.8,'lean-bulk':1.8,cut:2.2,maintain:1.6};
+const LB=2.2046226218, CM_PER_IN=2.54;
+
+/* mirrors lib/tiles/profile.ts DEFAULT_PROFILE — this sealed tile can't read
+   that app-level store (only train/fuel/vitals/brand/peak/finance are
+   cross-tile readable), so it keeps its own copy, editable from the targets
+   sheet. If the mentor updates the app-level profile, update this seed too. */
+function ensureProfile(){
+  if(!store.profile||typeof store.profile!=='object'){
+    store.profile={age:22,sex:'male',heightCm:177.8,weightKg:82.1,goalShape:'lean-bulk',activity:1.55,units:'imperial'};
+  }
+  return store.profile;
+}
+function bmr(p){
+  const base=10*p.weightKg+6.25*p.heightCm-5*p.age;
+  return p.sex==='female'?base-161:base+5;
+}
+function computeTargets(p){
+  const tdee=bmr(p)*(p.activity||1.55);
+  const cal=Math.round(tdee*(GOAL_ADJ[p.goalShape]||1)/10)*10;
+  const protein=Math.round(p.weightKg*(PROTEIN_PER_KG[p.goalShape]||1.7));
+  const fat=Math.round((cal*0.25)/9);
+  const carbs=Math.max(0,Math.round((cal-protein*4-fat*9)/4));
+  return {calories:cal,protein,carbs,fat};
+}
+function ensureTargets(){
+  if(!store.targets||typeof store.targets!=='object'){
+    store.targets=Object.assign({custom:false},computeTargets(ensureProfile()));
+  }
+  return store.targets;
+}
+function mealsToday(){
+  if(!store.meals||typeof store.meals!=='object')store.meals={};
+  const k=key();
+  if(!store.meals[k]||!Array.isArray(store.meals[k]))store.meals[k]=[];
+  return store.meals[k];
+}
+function dayTotals(list){
+  return list.reduce((a,m)=>({cal:a.cal+(m.cal||0),p:a.p+(m.p||0),c:a.c+(m.c||0),f:a.f+(m.f||0)}),{cal:0,p:0,c:0,f:0});
+}
+function recentFoodNames(n){
+  const seen=new Set(),out=[];
+  const days=Object.keys(store.meals||{}).sort().reverse();
+  outer: for(const d of days){
+    const list=store.meals[d]||[];
+    for(let i=list.length-1;i>=0;i--){
+      const m=list[i];
+      if(seen.has(m.name))continue;
+      seen.add(m.name);out.push(m);
+      if(out.length>=n)break outer;
+    }
+  }
+  return out;
+}
+function meterRow(label,val,target,unitLab){
+  const target2=target>0?target:1;
+  const pct=Math.min(1,val/target2);
+  const remain=Math.round(target-val);
+  const over=remain<0;
+  return '<div class="meterRow"><div class="meterHead"><span class="meterLab">'+label+'</span>'
+    +'<span class="meterNum">'+Math.round(val)+' <i>/ '+Math.round(target)+' '+unitLab+'</i></span></div>'
+    +'<div class="meterTrack"><div class="meterFill'+(over?' over':'')+'" style="width:'+(pct*100)+'%"></div></div>'
+    +'<div class="meterSub">'+(over?Math.abs(remain)+' '+unitLab+' over':remain+' '+unitLab+' left')+'</div></div>';
+}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function fmtTime(d){let h=d.getHours(),m=d.getMinutes();const ap=h>=12?'pm':'am';h=h%12;if(h===0)h=12;return h+':'+String(m).padStart(2,'0')+ap;}
+
+function renderMacrosBody(){
+  const t=ensureTargets();
+  const list=mealsToday();
+  const tot=dayTotals(list);
+  const rows=list.slice().reverse().map(m=>
+    '<div class="mealRow" data-id="'+m.id+'"><div class="mealMain"><div class="mealName">'+esc(m.name)+'</div>'
+    +'<div class="mealMeta">'+esc(m.serving||'')+(m.serving?' · ':'')+esc(m.time||'')+' · '+Math.round(m.p)+'p '+Math.round(m.c)+'c '+Math.round(m.f)+'f</div></div>'
+    +'<div class="mealCal">'+Math.round(m.cal)+'</div>'
+    +'<button class="mealDel" data-del="'+m.id+'" aria-label="Delete">&times;</button></div>'
+  ).join('');
+  return '<div class="macrosHead"><span class="kick">✦ macros &middot; '+(GOAL_LABEL[store.profile&&store.profile.goalShape]||'Maintain')+'</span>'
+      +'<button class="gearBtn" id="openTargets" title="Edit targets" aria-label="Edit targets">&#9881;</button></div>'
+    +'<div class="meters">'
+      +meterRow('calories',tot.cal,t.calories,'cal')
+      +meterRow('protein',tot.p,t.protein,'g')
+      +meterRow('carbs',tot.c,t.carbs,'g')
+      +meterRow('fat',tot.f,t.fat,'g')
+    +'</div>'
+    +'<div class="logHead"><span class="logTitle">today\'s meals</span><button class="addFoodBtn" id="openAddFood">+ log food</button></div>'
+    +'<div class="mealList">'+(rows||'<div class="emptyLog">Nothing logged yet today.</div>')+'</div>'
+    +'<p class="foot">built-in serving values, not AI-estimated · edit anything before or after saving</p>';
+}
+
+/* ---- overlays ---- */
+const overlay=document.getElementById('overlay'), ovCard=document.getElementById('ovCard');
+function openOverlay(html){ ovCard.innerHTML=html; overlay.classList.add('on'); }
+function closeOverlay(){ overlay.classList.remove('on'); ovCard.innerHTML=''; }
+overlay.addEventListener('click',e=>{ if(e.target===overlay)closeOverlay(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&overlay.classList.contains('on'))closeOverlay(); });
+
+function openTargetsSheet(){
+  const p=ensureProfile();
+  const isImp=p.units==='imperial';
+  paint();
+  function paint(){
+    openOverlay(
+      '<button class="ovClose" id="ovX">&times;</button>'
+      +'<div class="ovTitle">Your targets</div>'
+      +'<span class="ovLab">Units</span>'
+      +'<div class="uTabs" style="justify-content:flex-start" id="unitToggle">'
+        +'<button data-u="imperial" class="'+(isImp?'on':'')+'">lb / in</button>'
+        +'<button data-u="metric" class="'+(!isImp?'on':'')+'">kg / cm</button>'
+      +'</div>'
+      +'<div class="ovRow2">'
+        +'<div><span class="ovLab">Weight ('+(isImp?'lb':'kg')+')</span><input class="ovInput" id="pWeight" type="number" inputmode="decimal" value="'+(isImp?Math.round(p.weightKg*LB*10)/10:p.weightKg)+'"></div>'
+        +'<div><span class="ovLab">Height ('+(isImp?'in':'cm')+')</span><input class="ovInput" id="pHeight" type="number" inputmode="decimal" value="'+(isImp?Math.round(p.heightCm/CM_PER_IN*10)/10:p.heightCm)+'"></div>'
+      +'</div>'
+      +'<div class="ovRow2">'
+        +'<div><span class="ovLab">Age</span><input class="ovInput" id="pAge" type="number" inputmode="numeric" value="'+p.age+'"></div>'
+        +'<div><span class="ovLab">Sex</span><select class="ovSelect" id="pSex"><option value="male"'+(p.sex==='male'?' selected':'')+'>Male</option><option value="female"'+(p.sex==='female'?' selected':'')+'>Female</option></select></div>'
+      +'</div>'
+      +'<span class="ovLab">Goal</span><select class="ovSelect" id="pGoal">'
+        +Object.keys(GOAL_LABEL).map(g=>'<option value="'+g+'"'+(p.goalShape===g?' selected':'')+'>'+GOAL_LABEL[g]+'</option>').join('')
+      +'</select>'
+      +'<span class="ovLab">Activity level</span><select class="ovSelect" id="pActivity">'
+        +ACTIVITY.map(a=>'<option value="'+a[1]+'"'+(p.activity===a[1]?' selected':'')+'>'+a[0]+'</option>').join('')
+      +'</select>'
+      +'<div class="ovBtnRow"><button class="ovBtn primary" id="recompute">Recompute targets</button></div>'
+      +'<div class="ovDivider"></div>'
+      +'<span class="ovLab">Or set numbers directly</span>'
+      +'<div class="ovRow4">'
+        +'<div><span class="ovLab">Cal</span><input class="ovInput" id="tCal" type="number" value="'+store.targets.calories+'"></div>'
+        +'<div><span class="ovLab">Protein</span><input class="ovInput" id="tP" type="number" value="'+store.targets.protein+'"></div>'
+        +'<div><span class="ovLab">Carbs</span><input class="ovInput" id="tC" type="number" value="'+store.targets.carbs+'"></div>'
+        +'<div><span class="ovLab">Fat</span><input class="ovInput" id="tF" type="number" value="'+store.targets.fat+'"></div>'
+      +'</div>'
+      +'<div class="ovBtnRow"><button class="ovBtn" id="saveCustom">Save these numbers</button></div>'
+    );
+    document.getElementById('ovX').onclick=closeOverlay;
+    document.getElementById('unitToggle').querySelectorAll('[data-u]').forEach(b=>b.onclick=()=>{ p.units=b.getAttribute('data-u'); persist(); paint(); });
+    document.getElementById('recompute').onclick=()=>{
+      const wVal=parseFloat(document.getElementById('pWeight').value);
+      const hVal=parseFloat(document.getElementById('pHeight').value);
+      const isImpNow=p.units==='imperial';
+      if(isFinite(wVal)&&wVal>0) p.weightKg=isImpNow?wVal/LB:wVal;
+      if(isFinite(hVal)&&hVal>0) p.heightCm=isImpNow?hVal*CM_PER_IN:hVal;
+      const ageVal=parseInt(document.getElementById('pAge').value,10);
+      if(isFinite(ageVal)&&ageVal>0) p.age=ageVal;
+      p.sex=document.getElementById('pSex').value;
+      p.goalShape=document.getElementById('pGoal').value;
+      p.activity=parseFloat(document.getElementById('pActivity').value);
+      store.targets=Object.assign({custom:false},computeTargets(p));
+      persist();render();closeOverlay();
+    };
+    document.getElementById('saveCustom').onclick=()=>{
+      const cal=parseFloat(document.getElementById('tCal').value)||0;
+      const pr=parseFloat(document.getElementById('tP').value)||0;
+      const cb=parseFloat(document.getElementById('tC').value)||0;
+      const ft=parseFloat(document.getElementById('tF').value)||0;
+      store.targets={calories:cal,protein:pr,carbs:cb,fat:ft,custom:true};
+      persist();render();closeOverlay();
+    };
+  }
+}
+
+function addMeal(m){
+  const now=new Date();
+  mealsToday().push({id:Date.now()+'-'+Math.random().toString(36).slice(2,7),name:m.name,serving:m.serving||'',
+    cal:m.cal||0,p:m.p||0,c:m.c||0,f:m.f||0,time:fmtTime(now)});
+  persist();render();
+}
+function openCustomFoodForm(){
+  openOverlay(
+    '<button class="ovClose" id="ovX">&times;</button>'
+    +'<div class="ovTitle">Custom food</div>'
+    +'<span class="ovLab">Name</span><input class="ovInput" id="cName" type="text" placeholder="e.g. Chicken stir fry">'
+    +'<span class="ovLab">Serving (optional)</span><input class="ovInput" id="cServing" type="text" placeholder="e.g. 1 bowl">'
+    +'<div class="ovRow4">'
+      +'<div><span class="ovLab">Cal</span><input class="ovInput" id="cCal" type="number" inputmode="decimal" value="0"></div>'
+      +'<div><span class="ovLab">Protein</span><input class="ovInput" id="cP" type="number" inputmode="decimal" value="0"></div>'
+      +'<div><span class="ovLab">Carbs</span><input class="ovInput" id="cC" type="number" inputmode="decimal" value="0"></div>'
+      +'<div><span class="ovLab">Fat</span><input class="ovInput" id="cF" type="number" inputmode="decimal" value="0"></div>'
+    +'</div>'
+    +'<div class="ovBtnRow"><button class="ovBtn primary" id="addCustom">Add to today</button></div>'
+  );
+  document.getElementById('ovX').onclick=closeOverlay;
+  document.getElementById('addCustom').onclick=()=>{
+    const name=document.getElementById('cName').value.trim();
+    if(!name)return;
+    addMeal({name:name,serving:document.getElementById('cServing').value.trim(),
+      cal:parseFloat(document.getElementById('cCal').value)||0,
+      p:parseFloat(document.getElementById('cP').value)||0,
+      c:parseFloat(document.getElementById('cC').value)||0,
+      f:parseFloat(document.getElementById('cF').value)||0});
+    closeOverlay();
+  };
+}
+function openFoodQty(food){
+  let qty=1;
+  paint();
+  function paint(){
+    openOverlay(
+      '<button class="ovClose" id="ovX">&times;</button>'
+      +'<div class="ovTitle">'+esc(food.n)+'</div>'
+      +'<div class="ovHint">'+esc(food.s)+' &middot; '+food.cal+' cal &middot; '+food.p+'p '+food.c+'c '+food.f+'f</div>'
+      +'<div class="qtyRow"><button class="qtyBtn" id="qMinus">&minus;</button><span class="qtyVal">&times;'+qty+'</span><button class="qtyBtn" id="qPlus">+</button></div>'
+      +'<div class="ovBtnRow"><button class="ovBtn primary" id="qAdd">Add to today</button></div>'
+    );
+    document.getElementById('ovX').onclick=closeOverlay;
+    document.getElementById('qMinus').onclick=()=>{ qty=Math.max(0.5,qty-0.5); paint(); };
+    document.getElementById('qPlus').onclick=()=>{ qty=Math.min(10,qty+0.5); paint(); };
+    document.getElementById('qAdd').onclick=()=>{
+      addMeal({name:food.n,serving:(qty!==1?qty+'× ':'')+food.s,cal:food.cal*qty,p:food.p*qty,c:food.c*qty,f:food.f*qty});
+      closeOverlay();
+    };
+  }
+}
+function openAddFood(){
+  const recents=recentFoodNames(6);
+  paint('');
+  function paint(q){
+    const ql=q.toLowerCase();
+    const results=q?FOODS.filter(f=>f.n.toLowerCase().includes(ql)).slice(0,12):FOODS.slice(0,12);
+    openOverlay(
+      '<button class="ovClose" id="ovX">&times;</button>'
+      +'<div class="ovTitle">Log food</div>'
+      +'<input class="foodSearch" id="fSearch" type="text" placeholder="Search foods…" value="'+esc(q)+'" autocomplete="off">'
+      +(!q&&recents.length?'<div class="recentChips">'+recents.map(m=>'<button class="recentChip" data-recent="'+esc(m.name)+'">'+esc(m.name)+'</button>').join('')+'</div>':'')
+      +'<div class="foodResults">'+results.map((f,i)=>
+        '<div class="foodItem" data-food="'+i+'"><div><div class="foodItemN">'+esc(f.n)+'</div><div class="foodItemS">'+esc(f.s)+'</div></div><div class="foodItemC">'+f.cal+'</div></div>'
+      ).join('')+'</div>'
+      +'<button class="customLink" id="customBtn">+ custom food (type your own numbers)</button>'
+    );
+    document.getElementById('ovX').onclick=closeOverlay;
+    const sInp=document.getElementById('fSearch');
+    sInp.oninput=()=>paint(sInp.value);
+    sInp.focus();sInp.setSelectionRange(q.length,q.length);
+    document.getElementById('customBtn').onclick=openCustomFoodForm;
+    ovCard.querySelectorAll('[data-food]').forEach(el=>el.onclick=()=>openFoodQty(results[parseInt(el.getAttribute('data-food'),10)]));
+    ovCard.querySelectorAll('[data-recent]').forEach(el=>el.onclick=()=>{
+      const m=recents.find(r=>r.name===el.getAttribute('data-recent'));
+      if(m)addMeal({name:m.name,serving:m.serving,cal:m.cal,p:m.p,c:m.c,f:m.f});
+      closeOverlay();
+    });
+  }
+}
+
+/* ============================== dispatcher + shared click handling ============================== */
+let activeSec='water';
+function render(){
+  document.querySelectorAll('#secTabs .secTab').forEach(b=>b.classList.toggle('on',b.getAttribute('data-sec')===activeSec));
+  document.getElementById('app').innerHTML = activeSec==='macros' ? renderMacrosBody() : renderWaterBody();
+}
+document.getElementById('secTabs').addEventListener('click',e=>{
+  const b=e.target.closest('[data-sec]'); if(!b)return;
+  activeSec=b.getAttribute('data-sec'); store.uiTab=activeSec; persist(); render();
+});
 document.addEventListener('click',e=>{
   if(e.target.closest('#mlSubmit')){addMl();return;}
+  if(e.target.closest('#openTargets')){openTargetsSheet();return;}
+  if(e.target.closest('#openAddFood')){openAddFood();return;}
+  const del=e.target.closest('[data-del]');
+  if(del){
+    const id=del.getAttribute('data-del');
+    const list=mealsToday();
+    const i=list.findIndex(m=>String(m.id)===id);
+    if(i>=0){ list.splice(i,1); persist(); render(); }
+    return;
+  }
   const u=e.target.closest('[data-u]');
-  if(u){unit=u.getAttribute('data-u');store.waterUnit=unit;persist();render();return;}
+  if(u&&!e.target.closest('#unitToggle')){unit=u.getAttribute('data-u');store.waterUnit=unit;persist();render();return;}
   const b=e.target.closest('[data-d]');if(!b)return;
   const w=today(),k=key(),delta=parseInt(b.getAttribute('data-d'),10);
   w[k]=Math.max(0,(w[k]||0)+delta);
@@ -193,6 +593,8 @@ if(!window.Vitality){window.Vitality={save:function(d){try{localStorage.setItem(
   const d=await window.Vitality.load();
   store=(d&&typeof d==='object'&&!Array.isArray(d))?d:{};
   if(UNITS.some(u=>u[0]===store.waterUnit))unit=store.waterUnit;
+  if(store.uiTab==='macros')activeSec='macros';
+  ensureProfile();ensureTargets();
   render();
 })();
 </script>
