@@ -153,11 +153,11 @@
    reads as one typographic voice (the old Hanken sans looked like a HUD digit).
    Tabular figures keep every digit equal-width so any score sits dead-centre and
    the count-up reveal doesn't jitter sideways. */
-.veeTiles .vscore .vnum{font-family:var(--serif);font-style:normal;font-weight:700;font-weight:400;letter-spacing:0;
+.veeTiles .vscore .vnum{font-family:var(--serif);font-style:normal;font-weight:700;letter-spacing:0;
   font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;
   fill:var(--mint);font-size:56px;opacity:0;transform-box:fill-box;transform-origin:center;will-change:opacity,transform;
   filter:drop-shadow(0 0 2px rgba(240,255,245,.9)) drop-shadow(0 0 9px rgba(217,142,74,.55)) drop-shadow(0 0 20px rgba(217,142,74,.28))}
-.veeTiles .vscore .vgh{font-family:var(--serif);font-style:normal;font-weight:700;font-weight:400;letter-spacing:0;
+.veeTiles .vscore .vgh{font-family:var(--serif);font-style:normal;font-weight:700;letter-spacing:0;
   font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;font-size:56px;
   opacity:0;transform-box:fill-box;transform-origin:center;will-change:opacity,transform}
 .veeTiles .vscore .vgi{fill:#b9a3ff;filter:drop-shadow(0 0 6px rgba(185,163,255,.5))}
