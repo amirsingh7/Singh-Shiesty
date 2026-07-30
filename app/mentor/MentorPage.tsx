@@ -291,7 +291,7 @@ export default function MentorPage({
   if (!mounted) return null
 
   const act = list.find((g) => g.id === active) ?? list[0]
-  const accent = act?.accent ?? '#6EE7B7'
+  const accent = act?.accent ?? '#D98E4A'
   const entries = Object.entries(act?.weights ?? {}).sort((a, b) => b[1] - a[1])
   const advice = noticedFeed()[0]
 
@@ -424,7 +424,7 @@ export default function MentorPage({
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, justifyContent: 'center' }}>
             <span aria-hidden style={{ flex: 1, maxWidth: 180, height: 1, background: `linear-gradient(to right, transparent, ${accent}55)`, transition: 'background .8s ease' }} />
-            <h1 style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(30px, 4.6vw, 44px)', color: 'var(--fg, #fff)', margin: 0 }}>
+            <h1 style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontStyle: 'normal', fontWeight: 700, fontSize: 'clamp(30px, 4.6vw, 44px)', color: 'var(--fg, #fff)', margin: 0 }}>
               ai mentor
             </h1>
             <span aria-hidden style={{ flex: 1, maxWidth: 180, height: 1, background: `linear-gradient(to left, transparent, ${accent}55)`, transition: 'background .8s ease' }} />
@@ -436,7 +436,7 @@ export default function MentorPage({
         <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap', marginTop: 34, animation: 'fadeUp .8s ease .25s both' }}>
           {list.map((g) => {
             const on = g.id === active
-            const gA = g.accent ?? '#6EE7B7'
+            const gA = g.accent ?? '#D98E4A'
             return (
               <button
                 key={g.id}
@@ -448,7 +448,7 @@ export default function MentorPage({
                   color: on ? gA : 'var(--muted, #8a8f98)',
                   background: on ? `${gA}12` : 'transparent',
                   border: `1px solid ${on ? gA + '59' : 'var(--border, #262626)'}`,
-                  borderRadius: 999,
+                  borderRadius: 10,
                   padding: '8px 16px',
                   cursor: 'pointer',
                   transition: 'color .6s ease, border-color .6s ease, background .6s ease',
@@ -546,7 +546,7 @@ export default function MentorPage({
               <p style={{ ...mono, fontSize: 9.5, color: accent, letterSpacing: '.2em', margin: '0 0 8px' }}>
                 THE MENTOR SEES A GAP
               </p>
-              <span style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontStyle: 'italic', fontSize: 24, color: 'var(--fg, #fff)' }}>
+              <span style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontStyle: 'normal', fontSize: 24, color: 'var(--fg, #fff)' }}>
                 You&apos;re not tracking everything.
               </span>
 
@@ -560,9 +560,9 @@ export default function MentorPage({
                       <span
                         style={{
                           fontFamily: 'var(--font-serif), Georgia, serif',
-                          fontStyle: 'italic',
+                          fontStyle: 'normal',
                           fontSize: 'clamp(30px, 5vw, 40px)',
-                          fontWeight: 400,
+                          fontWeight: 700,
                           color: 'var(--fg, #fff)',
                         }}
                       >
@@ -597,7 +597,7 @@ export default function MentorPage({
           <span aria-hidden style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontSize: 34, fontWeight: 300, color: `${accent}88`, transition: 'color .8s ease' }}>
             =
           </span>
-          <h2 style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(24px, 3.6vw, 34px)', color: 'var(--fg, #fff)', margin: '10px 0 0' }}>
+          <h2 style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontStyle: 'normal', fontWeight: 700, fontSize: 'clamp(24px, 3.6vw, 34px)', color: 'var(--fg, #fff)', margin: '10px 0 0' }}>
             {act?.title}
           </h2>
 
@@ -670,7 +670,7 @@ export default function MentorPage({
             width: 'min(560px, 100%)',
             margin: '54px auto 0',
             border: '1px dashed var(--border, #333)',
-            borderRadius: 999,
+            borderRadius: 10,
             padding: '6px 8px 6px 18px',
             animation: 'fadeUp .8s ease .7s both',
           }}
@@ -692,7 +692,7 @@ export default function MentorPage({
               background: accent,
               color: '#0a0f0c',
               border: 'none',
-              borderRadius: 999,
+              borderRadius: 10,
               padding: '9px 16px',
               fontWeight: 600,
               fontSize: 12.5,
@@ -734,7 +734,7 @@ export default function MentorPage({
                   color: chatPrefs[k] ? accent : 'var(--muted, #8a8f98)',
                   background: chatPrefs[k] ? `${accent}12` : 'transparent',
                   border: `1px solid ${chatPrefs[k] ? accent + '59' : 'var(--border, #262626)'}`,
-                  borderRadius: 999,
+                  borderRadius: 10,
                   padding: '6px 12px',
                   cursor: 'pointer',
                 }}
@@ -757,7 +757,7 @@ export default function MentorPage({
                   color: 'var(--muted-strong, #b9c4be)',
                   background: 'transparent',
                   border: '1px solid var(--border, #262626)',
-                  borderRadius: 999,
+                  borderRadius: 10,
                   padding: '7px 13px',
                   cursor: asking ? 'default' : 'pointer',
                   opacity: asking ? 0.5 : 1,
@@ -809,7 +809,7 @@ export default function MentorPage({
                   background: asking || !question.trim() ? 'var(--border, #262626)' : accent,
                   color: asking || !question.trim() ? 'var(--muted, #8a8f98)' : '#0a0f0c',
                   border: 'none',
-                  borderRadius: 999,
+                  borderRadius: 10,
                   padding: '9px 18px',
                   fontWeight: 600,
                   fontSize: 12.5,

@@ -121,7 +121,7 @@
   margin-left: -3.5px;
   margin-top: -3.5px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(167,243,208,0.6) 45%, rgba(110,231,183,0) 70%);
+  background: radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(167,243,208,0.6) 45%, rgba(217, 142, 74,0) 70%);
   box-shadow: 0 0 12px rgba(217, 142, 74, 0.7);
   opacity: 0;
   animation: dashgem-sparkle 1.8s ease-out forwards;

@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import MentorPage from './MentorPage'
 
 export const metadata: Metadata = {
-  title: 'Mentor · Vitality',
+  title: 'Mentor · PR Portfolio',
 }
 
 // The Mentor is a full page, not a popup: y — the overseer. Your goals, the

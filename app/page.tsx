@@ -3,7 +3,7 @@ import { site } from '@/content/site'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Dashboard · Vitality',
+  title: 'Dashboard · PR Portfolio',
 }
 
 // The base is a single page: the dashboard. No auth, no backend — a fixed

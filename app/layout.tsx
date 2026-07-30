@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, Instrument_Serif, Hanken_Grotesk, JetBrains_Mono } from 'next/font/google'
+import { Inter, Roboto_Slab, Hanken_Grotesk, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 
 const inter = Inter({
@@ -8,10 +8,13 @@ const inter = Inter({
   display: 'swap',
 })
 
-const instrumentSerif = Instrument_Serif({
+// PR Portfolio's display face — a bold slab, not the old Instrument Serif
+// italic. Same --font-serif variable so every existing var(--font-serif)
+// consumer (globals.css .serif/.serif-italic, inline styles) just picks up
+// the new face without a rename.
+const instrumentSerif = Roboto_Slab({
   subsets: ['latin'],
-  weight: '400',
-  style: ['normal', 'italic'],
+  weight: ['600', '700'],
   variable: '--font-serif',
   display: 'swap',
 })
@@ -35,14 +38,14 @@ const jetBrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Vitality',
-  description: 'A personal dashboard built around your goals.',
-  applicationName: 'Vitality',
+  title: 'PR Portfolio',
+  description: 'Your verified athletic record — training, recovery, and proof.',
+  applicationName: 'PR Portfolio',
   // Installable PWA: opens fullscreen from the home screen, no Safari chrome.
   // (manifest.ts + app/icon.tsx + app/apple-icon.tsx are auto-linked by Next.)
   appleWebApp: {
     capable: true,
-    title: 'Vitality',
+    title: 'PR Portfolio',
     statusBarStyle: 'black-translucent',
   },
   // Modern equivalent of the (deprecated) apple-mobile-web-app-capable meta that
@@ -56,7 +59,7 @@ export const metadata: Metadata = {
 // userScalable:false stops double-tap-zoom fighting tap targets in the dense
 // logger UI.
 export const viewport: Viewport = {
-  themeColor: '#04060a',
+  themeColor: '#14100d',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,

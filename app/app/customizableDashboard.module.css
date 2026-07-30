@@ -26,7 +26,7 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: transparent;
   color: #fff;
-  border-radius: 999px;
+  border-radius: 10px;
   padding: 9px 18px;
   font-size: 13px;
   font-family: inherit;
@@ -37,9 +37,9 @@
   border-color: rgba(255, 255, 255, 0.18);
 }
 .customizeBtn.on {
-  background: var(--mint, #6ee7b7);
+  background: var(--mint, #D98E4A);
   color: #042a1c;
-  border-color: var(--mint, #6ee7b7);
+  border-color: var(--mint, #D98E4A);
   font-weight: 600;
 }
 
@@ -48,7 +48,7 @@
   gap: 18px;
   flex-wrap: wrap;
   font-size: 12.5px;
-  color: var(--mint, #6ee7b7);
+  color: var(--mint, #D98E4A);
 }
 .hint b {
   color: #fff;
@@ -136,8 +136,8 @@
   gap: 8px;
 }
 .name {
-  font-family: var(--font-serif, 'Instrument Serif', Georgia, serif);
-  font-style: italic;
+  font-family: var(--font-serif, 'Rockwell', 'Roboto Slab', Georgia, serif);
+  font-style:normal;font-weight:700;
   font-size: 18px;
   letter-spacing: 0.3px;
   color: rgba(255, 255, 255, 0.9);
@@ -174,8 +174,8 @@
 }
 .ctrls .size:hover,
 .ctrls .edit:hover {
-  border-color: var(--mint, #6ee7b7);
-  color: var(--mint, #6ee7b7);
+  border-color: var(--mint, #D98E4A);
+  color: var(--mint, #D98E4A);
 }
 .ctrls .del:hover {
   background: #f59e0b;
@@ -195,8 +195,8 @@
 }
 .tile.dragging {
   animation: none !important;
-  box-shadow: 0 0 0 1px var(--mint, #6ee7b7), 0 18px 50px rgba(0, 0, 0, 0.6);
-  border-color: var(--mint, #6ee7b7);
+  box-shadow: 0 0 0 1px var(--mint, #D98E4A), 0 18px 50px rgba(0, 0, 0, 0.6);
+  border-color: var(--mint, #D98E4A);
   z-index: 5;
 }
 @keyframes jiggle {
@@ -219,14 +219,14 @@
   justify-content: center;
   gap: 8px;
   cursor: pointer;
-  color: var(--mint, #6ee7b7);
+  color: var(--mint, #D98E4A);
   border-radius: 16px;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   font-family: inherit;
 }
 .addtile:hover {
-  border-color: var(--mint, #6ee7b7);
-  background: rgba(110, 231, 183, 0.04);
+  border-color: var(--mint, #D98E4A);
+  background: rgba(217, 142, 74, 0.04);
 }
 .addtile .plus {
   width: 38px;
@@ -254,8 +254,8 @@
   font-size: 13.5px;
 }
 .empty:hover {
-  border-color: rgba(110, 231, 183, 0.4);
-  color: var(--mint, #6ee7b7);
+  border-color: rgba(217, 142, 74, 0.4);
+  color: var(--mint, #D98E4A);
 }
 
 /* overlay sheet (add + design editor) */
@@ -276,7 +276,7 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   /* same Origin-grade card treatment as .wallPanel, for consistency */
   background:
-    radial-gradient(90% 70% at 8% -6%, rgba(110, 231, 183, 0.06), transparent 50%),
+    radial-gradient(90% 70% at 8% -6%, rgba(217, 142, 74, 0.06), transparent 50%),
     radial-gradient(80% 70% at 108% 110%, rgba(31, 77, 61, 0.16), transparent 58%),
     linear-gradient(165deg, rgba(14, 20, 18, 0.98), rgba(6, 9, 8, 0.985));
   backdrop-filter: blur(16px);
@@ -285,7 +285,7 @@
   box-shadow:
     0 32px 80px -26px rgba(0, 0, 0, 0.88),
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    inset 0 0 0 1px rgba(110, 231, 183, 0.05);
+    inset 0 0 0 1px rgba(217, 142, 74, 0.05);
 }
 
 /* Design-your-tile layout: gallery on the left (scrolls on its own), a compact
@@ -361,7 +361,7 @@
   overflow: auto;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background:
-    radial-gradient(130% 90% at 12% -6%, rgba(110, 231, 183, 0.08), transparent 52%),
+    radial-gradient(130% 90% at 12% -6%, rgba(217, 142, 74, 0.08), transparent 52%),
     radial-gradient(120% 85% at 110% 112%, rgba(31, 77, 61, 0.22), transparent 60%),
     linear-gradient(165deg, rgba(15, 21, 19, 0.98), rgba(6, 9, 8, 0.985));
   backdrop-filter: blur(16px);
@@ -370,7 +370,7 @@
   box-shadow:
     0 32px 80px -26px rgba(0, 0, 0, 0.88),
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    inset 0 0 0 1px rgba(110, 231, 183, 0.05);
+    inset 0 0 0 1px rgba(217, 142, 74, 0.05);
   animation: wallRise 0.32s cubic-bezier(0.16, 1, 0.3, 1);
 }
 @keyframes wallRise {
@@ -384,17 +384,17 @@
   margin-bottom: 18px;
 }
 .wallHead h3 {
-  font-family: var(--font-serif, 'Instrument Serif', Georgia, serif);
-  font-style: italic;
+  font-family: var(--font-serif, 'Rockwell', 'Roboto Slab', Georgia, serif);
+  font-style:normal;font-weight:700;
   font-size: 27px;
   letter-spacing: -0.01em;
 }
 /* Done = primary action: a mint CTA, not a ghost. */
 .wallClose {
-  border: 1px solid var(--mint, #6ee7b7);
-  background: var(--mint, #6ee7b7);
+  border: 1px solid var(--mint, #D98E4A);
+  background: var(--mint, #D98E4A);
   color: #042a1c;
-  border-radius: 999px;
+  border-radius: 10px;
   padding: 9px 20px;
   font-size: 13px;
   font-weight: 600;
@@ -406,7 +406,7 @@
 .wallClose:active { transform: translateY(0); }
 .range {
   width: 100%;
-  accent-color: var(--mint, #6ee7b7);
+  accent-color: var(--mint, #D98E4A);
   cursor: pointer;
 }
 .gradRow {
@@ -423,12 +423,12 @@
   padding: 0;
 }
 .gradChip.on {
-  border-color: var(--mint, #6ee7b7);
-  box-shadow: 0 0 0 1px var(--mint, #6ee7b7);
+  border-color: var(--mint, #D98E4A);
+  box-shadow: 0 0 0 1px var(--mint, #D98E4A);
 }
 .sheet h3 {
-  font-family: var(--font-serif, 'Instrument Serif', Georgia, serif);
-  font-style: italic;
+  font-family: var(--font-serif, 'Rockwell', 'Roboto Slab', Georgia, serif);
+  font-style:normal;font-weight:700;
   font-size: 26px;
   margin-bottom: 4px;
 }
@@ -448,7 +448,7 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: transparent;
   color: rgba(255, 255, 255, 0.5);
-  border-radius: 999px;
+  border-radius: 10px;
   padding: 6px 14px;
   font-size: 12.5px;
   font-family: inherit;
@@ -460,9 +460,9 @@
   color: #fff;
 }
 .chip.on {
-  background: var(--mint, #6ee7b7);
+  background: var(--mint, #D98E4A);
   color: #04130d;
-  border-color: var(--mint, #6ee7b7);
+  border-color: var(--mint, #D98E4A);
   font-weight: 600;
 }
 
@@ -481,7 +481,7 @@
   /* Origin-grade mini-poster: a premium mint-washed gradient card (matches the
      sheet + wallpaper panels) rather than a flat 2%-white rectangle. */
   background:
-    radial-gradient(120% 80% at 12% -10%, rgba(110, 231, 183, 0.05), transparent 55%),
+    radial-gradient(120% 80% at 12% -10%, rgba(217, 142, 74, 0.05), transparent 55%),
     linear-gradient(165deg, rgba(15, 21, 19, 0.9), rgba(7, 10, 9, 0.94));
   border-radius: 14px;
   overflow: hidden;
@@ -491,12 +491,12 @@
 }
 .dcard:hover {
   transform: translateY(-3px);
-  border-color: rgba(110, 231, 183, 0.28);
+  border-color: rgba(217, 142, 74, 0.28);
   box-shadow: 0 16px 34px -20px rgba(0, 0, 0, 0.8);
 }
 .dcard.sel {
-  border-color: var(--mint, #6ee7b7);
-  box-shadow: 0 0 0 1px var(--mint, #6ee7b7), 0 16px 34px -20px rgba(0, 0, 0, 0.8);
+  border-color: var(--mint, #D98E4A);
+  box-shadow: 0 0 0 1px var(--mint, #D98E4A), 0 16px 34px -20px rgba(0, 0, 0, 0.8);
 }
 /* The design sits in its own framed art STAGE (like a real poster tile): a dark
    glass panel with the art centered, the name row beneath. Every design SVG uses
@@ -517,8 +517,8 @@
 .dname {
   padding: 9px 12px;
   font-size: 13px;
-  font-family: var(--font-serif, 'Instrument Serif', Georgia, serif);
-  font-style: italic;
+  font-family: var(--font-serif, 'Rockwell', 'Roboto Slab', Georgia, serif);
+  font-style:normal;font-weight:700;
   color: rgba(255, 255, 255, 0.85);
 }
 
@@ -553,8 +553,8 @@
   justify-content: space-between;
 }
 .ptitle {
-  font-family: var(--font-serif, 'Instrument Serif', Georgia, serif);
-  font-style: italic;
+  font-family: var(--font-serif, 'Rockwell', 'Roboto Slab', Georgia, serif);
+  font-style:normal;font-weight:700;
   font-size: 22px;
   color: rgba(255, 255, 255, 0.92);
 }
@@ -582,11 +582,11 @@
   color: #fff;
   font-size: 14px;
   font-family: inherit;
-  caret-color: var(--mint, #6ee7b7);
+  caret-color: var(--mint, #D98E4A);
   outline: none;
 }
 .nameInput:focus {
-  border-color: rgba(110, 231, 183, 0.5);
+  border-color: rgba(217, 142, 74, 0.5);
 }
 .swatches {
   display: flex;
@@ -626,9 +626,9 @@
   color: #fff;
 }
 .seg.on {
-  background: var(--mint, #6ee7b7);
+  background: var(--mint, #D98E4A);
   color: #04130d;
-  border-color: var(--mint, #6ee7b7);
+  border-color: var(--mint, #D98E4A);
   font-weight: 600;
 }
 .foot {
@@ -641,7 +641,7 @@
   border: 1px solid rgba(255, 255, 255, 0.16);
   background: none;
   color: rgba(255, 255, 255, 0.5);
-  border-radius: 999px;
+  border-radius: 10px;
   padding: 10px 18px;
   cursor: pointer;
   font-family: inherit;
@@ -649,9 +649,9 @@
 }
 .go {
   border: 0;
-  border-radius: 999px;
+  border-radius: 10px;
   padding: 10px 20px;
-  background: var(--mint, #6ee7b7);
+  background: var(--mint, #D98E4A);
   color: #042a1c;
   font-weight: 600;
   font-size: 13px;
@@ -669,7 +669,7 @@
   cursor: pointer;
 }
 .pick:hover {
-  border-color: rgba(110, 231, 183, 0.45);
+  border-color: rgba(217, 142, 74, 0.45);
 }
 .pickRow {
   display: flex;

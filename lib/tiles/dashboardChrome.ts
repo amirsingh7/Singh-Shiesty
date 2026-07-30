@@ -56,7 +56,7 @@ export const DEFAULT_CHROME: DashboardChrome = {
 
 /** Wallpaper accent swatches (World tint + Solid + theme-from-wallpaper). */
 export const WALLPAPER_ACCENTS: { name: string; hex: string }[] = [
-  { name: 'Mint', hex: '#6EE7B7' },
+  { name: 'Mint', hex: '#D98E4A' },
   { name: 'Azure', hex: '#6EA8FF' },
   { name: 'Ice', hex: '#CFE9FF' },
   { name: 'Amber', hex: '#F5B044' },

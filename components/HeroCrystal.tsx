@@ -41,9 +41,9 @@ const PARAMS = {
   keyWarmth: 0.55,
 }
 
-const MINT = new THREE.Color('#6EE7B7')
+const MINT = new THREE.Color('#D98E4A')
 const WARM = new THREE.Color('#FFE2B5')
-const COOL_MINT = new THREE.Color('#A7F3D0')
+const COOL_MINT = new THREE.Color('#E8B17E')
 const NEUTRAL = new THREE.Color('#F2FFF8')
 
 // Gem colorways for the coach family. Each retints the transmission
@@ -58,8 +58,8 @@ const TINTS: Record<GemTint, {
   env1: [string, string, string]
   env3: [string, string]
 }> = {
-  mint:  { glass: null,      atten: '#6EE7B7', emissive: '#0d4a36', wire: 0xa7f3d0,
-           env1: ['rgba(180,255,220,1)', 'rgba(110,231,183,0.45)', 'rgba(110,231,183,0)'], env3: ['rgba(140,220,190,0.9)', 'rgba(140,220,190,0)'] },
+  mint:  { glass: null,      atten: '#D98E4A', emissive: '#0d4a36', wire: 0xE8B17E,
+           env1: ['rgba(180,255,220,1)', 'rgba(217, 142, 74,0.45)', 'rgba(217, 142, 74,0)'], env3: ['rgba(140,220,190,0.9)', 'rgba(140,220,190,0)'] },
   amber: { glass: '#F2DBB0', atten: '#E8A33D', emissive: '#3a2406', wire: 0xffd9a0,
            env1: ['rgba(255,240,205,1)', 'rgba(245,185,95,0.45)', 'rgba(245,185,95,0)'], env3: ['rgba(225,175,95,0.85)', 'rgba(225,175,95,0)'] },
   iris:  { glass: '#D8CFFF', atten: '#8E7BFF', emissive: '#1c1640', wire: 0xc7bcff,
@@ -451,14 +451,14 @@ export default function HeroCrystal({
     // mystical, ethereal feel.
     function paintGlyphOn(c: CanvasRenderingContext2D, path: GlyphKey) {
       const layers: Array<[string, number, number]> = [
-        ['rgba(110, 231, 183, 0.10)', 18, 90], // outermost haze
-        ['rgba(110, 231, 183, 0.22)', 13, 52], // outer halo
+        ['rgba(217, 142, 74, 0.10)', 18, 90], // outermost haze
+        ['rgba(217, 142, 74, 0.22)', 13, 52], // outer halo
         ['rgba(167, 243, 208, 0.50)',  7, 26], // mid bloom
         ['rgba(196, 250, 220, 0.85)',  4, 12], // inner glow
         ['rgba(240, 255, 245, 1.00)', 1.8, 4], // crisp core
       ]
       for (const [color, lineWidth, blur] of layers) {
-        c.shadowColor = '#6EE7B7'
+        c.shadowColor = '#D98E4A'
         c.shadowBlur = blur
         c.strokeStyle = color
         c.lineWidth = lineWidth
@@ -491,14 +491,14 @@ export default function HeroCrystal({
       // Slightly thinner than the V's stack (more strokes here) so the hand
       // stays crisp instead of blooming into a slab.
       const layers: Array<[string, number, number]> = [
-        ['rgba(110, 231, 183, 0.10)', 13, 70],
-        ['rgba(110, 231, 183, 0.22)',  9, 40],
+        ['rgba(217, 142, 74, 0.10)', 13, 70],
+        ['rgba(217, 142, 74, 0.22)',  9, 40],
         ['rgba(167, 243, 208, 0.50)',  5, 20],
         ['rgba(196, 250, 220, 0.85)',  3,  9],
         ['rgba(240, 255, 245, 1.00)', 1.5, 3],
       ]
       for (const [color, lineWidth, blur] of layers) {
-        c.shadowColor = '#6EE7B7'
+        c.shadowColor = '#D98E4A'
         c.shadowBlur = blur
         c.strokeStyle = color
         c.lineWidth = lineWidth
@@ -533,14 +533,14 @@ export default function HeroCrystal({
     // Shared painter for the single-stroke mood glyphs (V-family glow stack).
     function paintMoodGlyph(c: CanvasRenderingContext2D, trace: (c: CanvasRenderingContext2D) => void) {
       const layers: Array<[string, number, number]> = [
-        ['rgba(110, 231, 183, 0.10)', 16, 90],
-        ['rgba(110, 231, 183, 0.22)', 11, 52],
+        ['rgba(217, 142, 74, 0.10)', 16, 90],
+        ['rgba(217, 142, 74, 0.22)', 11, 52],
         ['rgba(167, 243, 208, 0.50)',  6, 26],
         ['rgba(196, 250, 220, 0.85)', 3.5, 12],
         ['rgba(240, 255, 245, 1.00)', 1.8, 4],
       ]
       for (const [color, lineWidth, blur] of layers) {
-        c.shadowColor = '#6EE7B7'
+        c.shadowColor = '#D98E4A'
         c.shadowBlur = blur
         c.strokeStyle = color
         c.lineWidth = lineWidth
@@ -577,12 +577,12 @@ export default function HeroCrystal({
         const r = level === 2 ? 30 : level === 1 ? 26 : 19
         const layers: Array<[string, number]> =
           level === 2
-            ? [['rgba(110, 231, 183, 0.16)', 90], ['rgba(167, 243, 208, 0.55)', 32], ['rgba(240, 255, 245, 1.00)', 12]]
+            ? [['rgba(217, 142, 74, 0.16)', 90], ['rgba(167, 243, 208, 0.55)', 32], ['rgba(240, 255, 245, 1.00)', 12]]
             : level === 1
-              ? [['rgba(110, 231, 183, 0.13)', 64], ['rgba(167, 243, 208, 0.48)', 24], ['rgba(228, 252, 240, 0.95)', 11]]
-              : [['rgba(110, 231, 183, 0.10)', 48], ['rgba(150, 220, 190, 0.42)', 16]]
+              ? [['rgba(217, 142, 74, 0.13)', 64], ['rgba(167, 243, 208, 0.48)', 24], ['rgba(228, 252, 240, 0.95)', 11]]
+              : [['rgba(217, 142, 74, 0.10)', 48], ['rgba(150, 220, 190, 0.42)', 16]]
         for (const [color, blur] of layers) {
-          c.shadowColor = '#6EE7B7'
+          c.shadowColor = '#D98E4A'
           c.shadowBlur = blur
           c.fillStyle = color
           c.beginPath()
@@ -689,8 +689,8 @@ export default function HeroCrystal({
       const g = dc.createRadialGradient(64, 64, 0, 64, 64, 62)
       g.addColorStop(0, 'rgba(245, 255, 250, 1)')
       g.addColorStop(0.34, 'rgba(167, 243, 208, 0.95)')
-      g.addColorStop(0.7, 'rgba(110, 231, 183, 0.45)')
-      g.addColorStop(1, 'rgba(110, 231, 183, 0)')
+      g.addColorStop(0.7, 'rgba(217, 142, 74, 0.45)')
+      g.addColorStop(1, 'rgba(217, 142, 74, 0)')
       dc.fillStyle = g
       dc.beginPath(); dc.arc(64, 64, 62, 0, Math.PI * 2); dc.fill()
     }
@@ -999,7 +999,7 @@ export default function HeroCrystal({
       // brows are slightly less white than the V's core (220/250/232
       // vs V's 240/255/245) so they feel like an accent, not a peer.
       const layered = (ctx: CanvasRenderingContext2D, drawStrokes: (color: string, w: number, blur: number) => void) => {
-        drawStrokes('rgba(110, 231, 183, 0.18)', 7, 28)
+        drawStrokes('rgba(217, 142, 74, 0.18)', 7, 28)
         drawStrokes('rgba(167, 243, 208, 0.55)', 3.5, 11)
         drawStrokes('rgba(220, 250, 232, 0.96)', 1.4, 3)
       }
@@ -1015,7 +1015,7 @@ export default function HeroCrystal({
       ): BrowDraw => (c) => {
         c.lineCap = 'round'; c.lineJoin = 'round'
         layered(c, (color, w, blur) => {
-          c.shadowColor = '#6EE7B7'; c.shadowBlur = blur
+          c.shadowColor = '#D98E4A'; c.shadowBlur = blur
           c.strokeStyle = color; c.lineWidth = w
           c.beginPath(); left(c); c.stroke()
           c.beginPath(); right(c); c.stroke()
