@@ -1184,6 +1184,13 @@ async function __bootTile(){
   const uLabel = perHand => UNIT + (perHand ? '/ea' : '');
   const nudgeDefault = () => UNIT === 'lb' ? 5 : 2.5;
   const nudgeStep = () => UNIT === 'lb' ? 2.5 : 1.25;
+  // Snaps a suggested weight to what's actually on the rack: dumbbells commonly
+  // jump 5lb/2.5kg at a time, and barbell plates (2.5/5/10/25/45 lb or
+  // 1.25/2.5/5/10/15/20/25 kg, always added in pairs) bottom out at the same
+  // practical two-sided step — same increment nudgeDefault() already uses for
+  // the overload star. Only for numbers THIS FILE suggests (plan/deload); never
+  // applied to a weight the user typed themselves.
+  const snapKg = kg => kg > 0 ? wKg(Math.max(nudgeDefault(), Math.round(wDisp(kg) / nudgeDefault()) * nudgeDefault())) : kg;
   function paintUnitToggle(){ document.querySelectorAll('.unit-opt').forEach(b => b.classList.toggle('on', b.dataset.u === UNIT)); }
   function setUnit(u){ if (u !== 'kg' && u !== 'lb') return; UNIT = u; try { VStore.setItem('vitality.logger.unit', u); } catch(e){} paintUnitToggle(); render(); }
 
@@ -2012,7 +2019,7 @@ async function __bootTile(){
       });
       const recentDates = sessions.slice(-3).map(h => h.date);
       if (lastPrDate && !recentDates.includes(lastPrDate)){
-        return { kind: 'plateau', text: 'No new best in your last 3 sessions here &mdash; a deload week, lighter weight and the same reps, often breaks it.', deloadKg: round05(lift.weight * 0.9) };
+        return { kind: 'plateau', text: 'No new best in your last 3 sessions here &mdash; a deload week, lighter weight and the same reps, often breaks it.', deloadKg: snapKg(lift.weight * 0.9) };
       }
     }
     return null;
@@ -2028,11 +2035,11 @@ async function __bootTile(){
   function planScaffold(workingKg, workingReps){
     const warmups = workingKg > 0
       ? [0.5, 0.7, 0.85].map((pct, i) => ({
-          kg: round05(workingKg * pct),
+          kg: snapKg(workingKg * pct),
           reps: [Math.max(5, workingReps + 4), Math.max(3, workingReps + 2), Math.max(2, workingReps)][i],
         }))
       : [];
-    return { warmups, backoff: { kg: round05(workingKg * 0.9), reps: workingReps + 2 } };
+    return { warmups, backoff: { kg: snapKg(workingKg * 0.9), reps: workingReps + 2 } };
   }
   function buildPlanVariants(lift){
     const sessions = (lift.history || []).slice().sort((a, b) => a.date.localeCompare(b.date));
@@ -2094,10 +2101,14 @@ async function __bootTile(){
         'Last session had a missed set or a very hard one. Same ' + wDisp(baseWeight) + ' ' + unit + ', one more rep per set if it feels right today.')];
     }
 
-    const incKg = Math.max(0.5, round05(baseWeight * 0.025));
+    // the smallest real jump is one equipment step (nudgeDefault: 5lb/2.5kg —
+    // dumbbells and plate math both bottom out there); a bigger current weight
+    // still only moves one step at a time, never a fractional in-between plate.
+    const nextKg = snapKg(baseWeight + wKg(nudgeDefault()));
+    const incDisp = wDisp(nextKg) - wDisp(baseWeight);
     return [
-      variant('weight', baseWeight + incKg, baseReps, '7–8',
-        last ? 'You cleared ' + wDisp(baseWeight) + ' ' + unit + ' for ' + baseReps + ' reps last session with room to spare. Adding ' + wDisp(incKg) + ' ' + unit + ' for your next working sets.'
+      variant('weight', nextKg, baseReps, '7–8',
+        last ? 'You cleared ' + wDisp(baseWeight) + ' ' + unit + ' for ' + baseReps + ' reps last session with room to spare. Adding ' + fmtN(incDisp) + ' ' + unit + ' for your next working sets.'
              : 'No session history yet, so this starts at your current working weight plus a small bump.'),
       variant('reps', baseWeight, baseReps + 1, '7–8',
         'Alternative: same ' + wDisp(baseWeight) + ' ' + unit + ', one more rep per set instead of adding load.'),
