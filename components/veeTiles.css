@@ -84,7 +84,7 @@
 .veeTiles .index{position:absolute;top:15px;left:20px;z-index:6;font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:rgba(255,255,255,.38)}
 .veeTiles .glyph{position:absolute;top:13px;right:16px;z-index:6;width:20px;height:20px;color:var(--mint);opacity:.4}
 .veeTiles .glyph svg{width:100%;height:100%;display:block}
-.veeTiles .label{position:absolute;left:20px;bottom:16px;z-index:6;font-family:var(--serif);font-style:italic;font-size:22px;color:var(--vfg)}
+.veeTiles .label{position:absolute;left:20px;bottom:16px;z-index:6;font-family:var(--serif);font-style:normal;font-weight:700;font-size:22px;color:var(--vfg)}
 .veeTiles .arrow{position:absolute;right:18px;bottom:17px;z-index:6;color:var(--vfg);opacity:.4;font-size:14px}
 /* live stat — one glanceable metric per tile */
 .veeTiles .stat{position:absolute;left:20px;bottom:46px;z-index:6;font-family:var(--mono);font-size:16px;font-weight:500;letter-spacing:.01em;color:var(--mint)}
@@ -153,11 +153,11 @@
    reads as one typographic voice (the old Hanken sans looked like a HUD digit).
    Tabular figures keep every digit equal-width so any score sits dead-centre and
    the count-up reveal doesn't jitter sideways. */
-.veeTiles .vscore .vnum{font-family:var(--serif);font-style:italic;font-weight:400;letter-spacing:0;
+.veeTiles .vscore .vnum{font-family:var(--serif);font-style:normal;font-weight:700;font-weight:400;letter-spacing:0;
   font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;
   fill:var(--mint);font-size:56px;opacity:0;transform-box:fill-box;transform-origin:center;will-change:opacity,transform;
   filter:drop-shadow(0 0 2px rgba(240,255,245,.9)) drop-shadow(0 0 9px rgba(217,142,74,.55)) drop-shadow(0 0 20px rgba(217,142,74,.28))}
-.veeTiles .vscore .vgh{font-family:var(--serif);font-style:italic;font-weight:400;letter-spacing:0;
+.veeTiles .vscore .vgh{font-family:var(--serif);font-style:normal;font-weight:700;font-weight:400;letter-spacing:0;
   font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;font-size:56px;
   opacity:0;transform-box:fill-box;transform-origin:center;will-change:opacity,transform}
 .veeTiles .vscore .vgi{fill:#b9a3ff;filter:drop-shadow(0 0 6px rgba(185,163,255,.5))}
@@ -172,20 +172,20 @@
    that slides in from the RIGHT (the backsplash) with Header / Wallpaper / Reset
    staggering in. No wordy hint — the controls speak for themselves. */
 .veeTiles .editBar{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-bottom:18px;flex-wrap:wrap}
-.veeTiles .editTools{display:flex;align-items:center;gap:4px;padding:5px;border-radius:999px;
+.veeTiles .editTools{display:flex;align-items:center;gap:4px;padding:5px;border-radius:10px;
   background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);backdrop-filter:blur(12px);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 14px 32px -20px rgba(0,0,0,.75);
   animation:editRailIn .5s cubic-bezier(.16,1,.3,1) both;transform-origin:right center}
 @keyframes editRailIn{from{opacity:0;transform:translateX(30px) scaleX(.88)}to{opacity:1;transform:none}}
 .veeTiles .editTool{display:inline-flex;align-items:center;gap:7px;border:0;background:transparent;color:rgba(255,255,255,.82);
-  border-radius:999px;padding:8px 13px;font-size:12.5px;font-weight:500;font-family:inherit;cursor:pointer;white-space:nowrap;
+  border-radius:10px;padding:8px 13px;font-size:12.5px;font-weight:500;font-family:inherit;cursor:pointer;white-space:nowrap;
   transition:background .18s var(--vease),color .18s var(--vease);
   animation:editToolIn .44s cubic-bezier(.16,1,.3,1) both;animation-delay:calc(.14s + var(--i,0) * .06s)}
 .veeTiles .editTool svg{width:15px;height:15px;opacity:.82}
 .veeTiles .editTool:hover{background:rgba(255,255,255,.07);color:#fff}
 @keyframes editToolIn{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
 .veeTiles .editToggle{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(255,255,255,.12);
-  background:rgba(255,255,255,.03);color:rgba(255,255,255,.9);border-radius:999px;padding:9px 17px;
+  background:rgba(255,255,255,.03);color:rgba(255,255,255,.9);border-radius:10px;padding:9px 17px;
   font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;
   transition:border-color .2s var(--vease),background .2s var(--vease),color .2s var(--vease),transform .14s var(--vease)}
 .veeTiles .editToggle svg{width:16px;height:16px;opacity:.9}
@@ -325,7 +325,7 @@
 
 /* Restore-the-default-layout pill (the safety net so users diverge fearlessly) */
 .veeTiles .restoreBtn{border:1px solid rgba(255,255,255,.1);background:transparent;color:var(--vmuted);
-  border-radius:999px;padding:9px 16px;font-size:13px;font-family:inherit;cursor:pointer;transition:all .2s var(--vease)}
+  border-radius:10px;padding:9px 16px;font-size:13px;font-family:inherit;cursor:pointer;transition:all .2s var(--vease)}
 .veeTiles .restoreBtn:hover{border-color:rgba(255,255,255,.22);color:#fff}
 
 /* add-tile dashed card */
@@ -353,7 +353,7 @@
   animation:openRise .3s var(--vease) both}
 .veeTiles .openTop{display:flex;align-items:center;justify-content:space-between;gap:12px;
   padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.07);flex:none}
-.veeTiles .openTitle{font-family:var(--serif);font-style:italic;font-size:20px;letter-spacing:.3px;
+.veeTiles .openTitle{font-family:var(--serif);font-style:normal;font-weight:700;font-size:20px;letter-spacing:.3px;
   color:rgba(255,255,255,.92);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .veeTiles .openClose{flex:none;width:34px;height:34px;display:grid;place-items:center;
   border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.03);color:rgba(255,255,255,.7);

@@ -83,9 +83,9 @@ function consentPage(p: Params, opts: { error?: string } = {}): Response {
     : ''
   const html = `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Connect to Vitality</title>
+<title>Connect to PR Portfolio</title>
 <style>
-  :root { --bg:#04060a; --mint:#D98E4A; --ink:#e9efe9; --dim:rgba(233,239,233,.62);
+  :root { --bg:#14100d; --mint:#D98E4A; --ink:#f5ede2; --dim:rgba(245,237,226,.62);
     --line:rgba(217, 142, 74,.25); --err:#ff8a8a; }
   * { box-sizing:border-box; } body { margin:0; background:var(--bg); color:var(--ink);
     font-family:Inter,-apple-system,system-ui,sans-serif; display:flex; min-height:100vh;
@@ -97,11 +97,11 @@ function consentPage(p: Params, opts: { error?: string } = {}): Response {
   .host { font-family:ui-monospace,Menlo,monospace; font-size:13px; color:var(--mint); }
   label { display:block; font-size:13px; color:var(--dim); margin:0 0 8px; }
   input[type=password] { width:100%; font:inherit; font-size:15px; padding:12px;
-    border-radius:10px; border:1px solid var(--line); background:#0b0f14; color:var(--ink);
+    border-radius:10px; border:1px solid var(--line); background:#0e0a07; color:var(--ink);
     margin:0 0 20px; }
   .err { color:var(--err); font-size:13px; margin:0 0 16px; }
   .row { display:flex; gap:12px; } button, a.deny { flex:1; font:inherit; font-size:15px;
-    font-weight:600; padding:12px; border-radius:999px; cursor:pointer; text-align:center;
+    font-weight:600; padding:12px; border-radius:10px; cursor:pointer; text-align:center;
     text-decoration:none; border:1px solid var(--line); }
   .allow { background:var(--mint); color:#04060a; border:none; }
   a.deny { background:transparent; color:var(--ink); line-height:1.4; }
@@ -109,7 +109,7 @@ function consentPage(p: Params, opts: { error?: string } = {}): Response {
 <div class="card">
   <h1>Connect to your dashboard</h1>
   <p>A client at <span class="host">${esc(redirectHost)}</span> wants to connect to your
-     Vitality MCP. Enter your <strong>MCP token</strong> to allow it.</p>
+     PR Portfolio MCP. Enter your <strong>MCP token</strong> to allow it.</p>
   ${errorBlock}
   <form method="POST" action="${esc(oauthPaths.authorize)}">
     ${hidden('client_id', p.clientId)}

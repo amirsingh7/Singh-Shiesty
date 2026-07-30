@@ -82,7 +82,7 @@
 }
 .name {
   font-family: var(--font-serif), Georgia, serif;
-  font-style: italic;
+  font-style:normal;font-weight:700;
   font-weight: 400;
   font-size: clamp(24px, 4vw, 32px);
   margin: 0;
@@ -140,7 +140,7 @@
 
 .statement {
   font-family: var(--font-serif), Georgia, serif;
-  font-style: italic;
+  font-style:normal;font-weight:700;
   font-size: 19px;
   line-height: 1.5;
   margin-top: 10px;

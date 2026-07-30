@@ -357,7 +357,7 @@ function ConnectorOverlay({ id, label, onClose }: { id: string; label: string; o
             style={{
               marginTop: 14,
               padding: '0.65rem 1.2rem',
-              borderRadius: 999,
+              borderRadius: 10,
               background: 'var(--mint)',
               color: 'var(--mint-ink, #042a1c)',
               fontWeight: 600,
@@ -401,7 +401,7 @@ function NewTileOverlay({ onClose }: { onClose: () => void; onSaved?: (slot: str
           </button>
         </div>
         <div className="openStage" style={{ display: 'block', overflow: 'auto', padding: '26px 26px 30px' }}>
-          <p style={{ margin: 0, textAlign: 'center', color: 'var(--fg)', fontSize: 22, fontFamily: 'var(--font-serif), Georgia, serif', fontStyle: 'italic' }}>
+          <p style={{ margin: 0, textAlign: 'center', color: 'var(--fg)', fontSize: 22, fontFamily: 'var(--font-serif), Georgia, serif', fontStyle: 'normal' }}>
             Start with <code style={{ color: 'var(--mint)', fontStyle: 'normal', fontSize: 20 }}>/tile</code>
           </p>
           <p style={{ margin: '12px auto 0', maxWidth: 380, textAlign: 'center', color: 'var(--muted)', fontSize: 13.5, lineHeight: 1.65 }}>
@@ -431,7 +431,7 @@ function NewTileOverlay({ onClose }: { onClose: () => void; onSaved?: (slot: str
                 flex: '0 0 auto',
                 background: 'var(--mint)',
                 color: 'var(--mint-ink, #042a1c)',
-                borderRadius: 999,
+                borderRadius: 10,
                 padding: '8px 14px',
                 fontWeight: 600,
                 fontSize: 12.5,
@@ -466,9 +466,9 @@ function EmptyCanvas({ onBack }: { onBack: () => void }) {
     >
       <h1
         style={{
-          fontFamily: 'Georgia, "Times New Roman", serif',
-          fontStyle: 'italic',
-          fontWeight: 400,
+          fontFamily: 'var(--font-serif), Georgia, serif',
+          fontStyle: 'normal',
+          fontWeight: 700,
           fontSize: 'clamp(40px, 7vw, 76px)',
           color: '#fff',
           margin: 0,
@@ -488,7 +488,7 @@ function EmptyCanvas({ onBack }: { onBack: () => void }) {
           background: '#D98E4A',
           color: '#04140d',
           border: 'none',
-          borderRadius: 999,
+          borderRadius: 10,
           padding: '13px 28px',
           fontWeight: 600,
           fontSize: 15,
@@ -517,9 +517,9 @@ function VisionEmptyState({ onNewTile }: { onNewTile: () => void }) {
     >
       <h1
         style={{
-          fontFamily: 'Georgia, "Times New Roman", serif',
-          fontStyle: 'italic',
-          fontWeight: 400,
+          fontFamily: 'var(--font-serif), Georgia, serif',
+          fontStyle: 'normal',
+          fontWeight: 700,
           fontSize: 'clamp(36px, 6vw, 68px)',
           color: 'var(--fg, #fff)',
           margin: 0,
@@ -544,7 +544,7 @@ function VisionEmptyState({ onNewTile }: { onNewTile: () => void }) {
           background: '#D98E4A',
           color: '#04140d',
           border: 'none',
-          borderRadius: 999,
+          borderRadius: 10,
           padding: '12px 26px',
           fontWeight: 600,
           fontSize: 15,
@@ -764,9 +764,9 @@ export default function DashboardGrid({ userId }: DashboardGridProps) {
               key={goal?.id ?? 'none'}
               style={{
                 display: 'inline-block',
-                fontFamily: 'Georgia, "Times New Roman", serif',
-                fontStyle: 'italic',
-                fontWeight: 400,
+                fontFamily: 'var(--font-serif), Georgia, serif',
+                fontStyle: 'normal',
+                fontWeight: 700,
                 fontSize: 'clamp(22px, 3.2vw, 34px)',
                 color: goal?.accent ?? 'var(--mint, #D98E4A)',
                 textShadow: `0 0 34px ${goal?.accent ?? '#D98E4A'}44`,
@@ -781,7 +781,7 @@ export default function DashboardGrid({ userId }: DashboardGridProps) {
 
           {/* y = the goal picker — every goal visible, one tap to switch */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontStyle: 'italic', fontSize: 22, color: goal?.accent ?? 'var(--mint, #D98E4A)', transition: 'color .8s ease' }}>y</span>
+            <span style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontStyle: 'normal', fontSize: 22, color: goal?.accent ?? 'var(--mint, #D98E4A)', transition: 'color .8s ease' }}>y</span>
             <span style={{ fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 11, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--muted, #8a8f98)' }}>=</span>
 
             {/* main (★) goal stands alone; the standalone goals share ONE border */}
@@ -816,7 +816,7 @@ export default function DashboardGrid({ userId }: DashboardGridProps) {
                       background: on ? `${gA}1a` : 'transparent',
                       border: grouped ? 'none' : `1px solid ${on ? `${gA}88` : `${gA}44`}`,
                       boxShadow: grouped && on ? `inset 0 0 0 1px ${gA}66` : 'none',
-                      borderRadius: 999,
+                      borderRadius: 10,
                       padding: '7px 15px',
                       cursor: 'pointer',
                       transition: 'color .5s ease, background .5s ease, border-color .5s ease',
@@ -833,7 +833,7 @@ export default function DashboardGrid({ userId }: DashboardGridProps) {
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
                   {mainG && btn(mainG, false)}
                   {others.length > 0 && (
-                    <div style={{ display: 'flex', gap: 4, border: '1px solid var(--border, #262626)', borderRadius: 999, padding: 4, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: 4, border: '1px solid var(--border, #262626)', borderRadius: 10, padding: 4, flexWrap: 'wrap' }}>
                       {others.map((g) => btn(g, true))}
                     </div>
                   )}
@@ -855,7 +855,7 @@ export default function DashboardGrid({ userId }: DashboardGridProps) {
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <a href="/mentor" style={{ display: 'flex', alignItems: 'baseline', gap: 10, textDecoration: 'none' }}>
-              <span style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontStyle: 'italic', fontSize: 22, color: goal?.accent ?? 'var(--mint, #D98E4A)', transition: 'color .8s ease' }}>x</span>
+              <span style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontStyle: 'normal', fontSize: 22, color: goal?.accent ?? 'var(--mint, #D98E4A)', transition: 'color .8s ease' }}>x</span>
               <span
                 aria-hidden
                 style={{
@@ -883,7 +883,7 @@ export default function DashboardGrid({ userId }: DashboardGridProps) {
                 background: editing ? 'var(--mint)' : 'transparent',
                 color: editing ? 'var(--mint-ink, #042a1c)' : 'var(--muted)',
                 border: editing ? 'none' : '1px solid var(--border)',
-                borderRadius: 999,
+                borderRadius: 10,
                 padding: '5px 14px',
                 fontWeight: 600,
                 fontSize: 12,
@@ -918,7 +918,7 @@ export default function DashboardGrid({ userId }: DashboardGridProps) {
                       flex: '0 0 auto',
                       alignSelf: 'center',
                       color: 'rgba(217, 142, 74,.45)',
-                      fontFamily: 'Georgia, "Times New Roman", serif',
+                      fontFamily: 'var(--font-serif), Georgia, serif',
                       fontSize: 30,
                       fontWeight: 300,
                     }}
@@ -965,7 +965,7 @@ export default function DashboardGrid({ userId }: DashboardGridProps) {
                   flex: '0 0 auto',
                   alignSelf: 'center',
                   color: 'rgba(217, 142, 74,.45)',
-                  fontFamily: 'Georgia, "Times New Roman", serif',
+                  fontFamily: 'var(--font-serif), Georgia, serif',
                   fontSize: 30,
                   fontWeight: 300,
                 }}
@@ -1029,7 +1029,7 @@ export default function DashboardGrid({ userId }: DashboardGridProps) {
               background: 'transparent',
               color: 'var(--muted)',
               border: '1px solid var(--border)',
-              borderRadius: 999,
+              borderRadius: 10,
               padding: '10px 16px',
               fontWeight: 500,
               fontSize: 13,

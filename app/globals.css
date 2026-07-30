@@ -131,17 +131,20 @@ select,
   user-select: text;
 }
 
-/* Editorial display face — used sparingly. Italic is where the personality lives. */
+/* Editorial display face — used sparingly. Weight is where the personality
+   lives now (bold slab, not the old italic serif). */
 .serif {
-  font-family: var(--font-serif), 'Times New Roman', Georgia, serif;
-  font-weight: 400;
+  font-family: var(--font-serif), Georgia, serif;
+  font-weight: 600;
   letter-spacing: -0.01em;
 }
 
+/* kept the name so every existing var(--font-serif) + .serif-italic caller
+   still works — it just renders upright and bold now instead of italic. */
 .serif-italic {
-  font-family: var(--font-serif), 'Times New Roman', Georgia, serif;
-  font-style: italic;
-  font-weight: 400;
+  font-family: var(--font-serif), Georgia, serif;
+  font-style: normal;
+  font-weight: 700;
   letter-spacing: -0.01em;
 }
 

@@ -43,7 +43,7 @@
     --card-elev:rgba(245, 237, 226,0.04);
     --ease-premium:cubic-bezier(0.16,1,0.3,1);
     --ease-soft:cubic-bezier(0.22,1,0.36,1);
-    --font-serif:'Instrument Serif',Georgia,'Times New Roman',serif;
+    --font-serif:'Rockwell','Roboto Slab',Georgia,serif;
     --font-mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
     --r-lg:20px;
   }
@@ -66,17 +66,17 @@
   .hero{display:flex;align-items:center;gap:2px;flex-direction:column;text-align:left;align-items:flex-start;margin:6px 4px 30px;
     animation:fadeUp 700ms var(--ease-premium) both}
   .heroTitle{font-family:var(--font-serif);font-size:clamp(34px,5.4vw,52px);line-height:1.02;font-weight:400;letter-spacing:-0.01em}
-  .heroTitle em{color:var(--mint);font-style:italic}
+  .heroTitle em{color:var(--mint);font-style:normal;font-weight:700}
   .heroDate{font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--muted);margin-top:12px}
 
   /* ── section frame + eyebrow (peak.module.css, lifted) ── */
   .section{margin-bottom:30px;opacity:0;animation:fadeUp 800ms var(--ease-premium) forwards}
   .eyebrow{display:flex;align-items:center;gap:11px;margin-bottom:16px;padding-left:2px}
-  .ebNum{font-family:var(--font-serif);font-style:italic;color:var(--mint);font-size:1.35rem;line-height:1}
+  .ebNum{font-family:var(--font-serif);font-style:normal;font-weight:700;color:var(--mint);font-size:1.35rem;line-height:1}
   .ebLbl{font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.24em;text-transform:uppercase;color:var(--muted-strong)}
   .ebRule{flex:1;height:1px;background:linear-gradient(90deg,var(--border-strong),transparent)}
   .ebInfo{width:22px;height:22px;border-radius:50%;border:1px solid var(--border-strong);background:none;color:var(--muted-strong);
-    font-family:var(--font-serif);font-style:italic;font-size:0.8rem;cursor:pointer;flex:none;transition:color .18s,border-color .18s}
+    font-family:var(--font-serif);font-style:normal;font-weight:700;font-size:0.8rem;cursor:pointer;flex:none;transition:color .18s,border-color .18s}
   .ebInfo:hover{color:var(--mint);border-color:rgba(217, 142, 74,0.4)}
 
   /* ── the stack (StimQuickLog, lifted) ── */
@@ -87,13 +87,13 @@
   .stackEyebrow svg{color:var(--mint)}
   .stackActions{display:inline-flex;align-items:center;gap:8px}
   .miniBtn{font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.14em;text-transform:uppercase;
-    padding:7px 13px;border-radius:999px;border:1px solid var(--border-strong);background:transparent;color:var(--muted-strong);
+    padding:7px 13px;border-radius:10px;border:1px solid var(--border-strong);background:transparent;color:var(--muted-strong);
     cursor:pointer;text-decoration:none;transition:color .18s,border-color .18s,background .18s}
   .miniBtn:hover{color:var(--mint);border-color:rgba(217, 142, 74,0.4);background:rgba(217, 142, 74,0.06)}
   .miniBtn.on{color:var(--mint);border-color:rgba(217, 142, 74,0.5);background:rgba(217, 142, 74,0.10)}
 
   .addRow{display:flex;gap:8px;flex-wrap:wrap;padding:2px 0 2px;animation:fadeUp 300ms var(--ease-premium)}
-  .addPill{display:inline-flex;align-items:center;gap:7px;padding:8px 13px;border-radius:999px;border:1px dashed var(--border-strong);
+  .addPill{display:inline-flex;align-items:center;gap:7px;padding:8px 13px;border-radius:10px;border:1px dashed var(--border-strong);
     background:var(--card);color:var(--muted-strong);font-size:12.5px;cursor:pointer;transition:color .18s,border-color .18s,background .18s}
   .addPill:hover{color:var(--fg);border-color:rgba(217, 142, 74,0.5);background:rgba(217, 142, 74,0.06)}
   .addPill .chip{width:20px;height:20px}
@@ -118,7 +118,7 @@
   .qlRemove:hover{color:var(--fg);border-color:var(--border-strong)}
 
   /* the log button — a green-light spark action (charge ring on tap, no idle glow) */
-  .qlLog{position:relative;overflow:hidden;width:100%;border:none;border-radius:999px;padding:11px 14px;cursor:pointer;
+  .qlLog{position:relative;overflow:hidden;width:100%;border:none;border-radius:10px;padding:11px 14px;cursor:pointer;
     font-size:14px;font-weight:600;letter-spacing:-0.01em;font-family:inherit;
     background:linear-gradient(180deg,#E8B17E,var(--mint));color:#04140d;
     transition:filter .18s,transform .12s var(--ease-soft),box-shadow .2s}
@@ -130,8 +130,8 @@
   .qlLog.charge .spark{animation:sparkRing 620ms var(--ease-premium)}
   @keyframes sparkRing{0%{transform:translate(-50%,-50%) scale(0.2);opacity:0.7}100%{transform:translate(-50%,-50%) scale(9);opacity:0}}
 
-  .qlBar{height:4px;border-radius:999px;background:rgba(245, 237, 226,0.06);overflow:hidden}
-  .qlBar i{display:block;height:100%;width:0;border-radius:999px;background:var(--mint);transition:width 500ms var(--ease-soft),background .3s}
+  .qlBar{height:4px;border-radius:10px;background:rgba(245, 237, 226,0.06);overflow:hidden}
+  .qlBar i{display:block;height:100%;width:0;border-radius:10px;background:var(--mint);transition:width 500ms var(--ease-soft),background .3s}
   .qlBar i.warn{background:var(--amber)}
 
   /* the lift readout under the stack */
@@ -141,7 +141,7 @@
   .roDelta b{color:var(--fg);font-variant-numeric:tabular-nums}
   .roDelta b.now{color:var(--mint)}
   .roPill{font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--mint);
-    padding:4px 9px;border-radius:999px;background:rgba(217, 142, 74,0.12)}
+    padding:4px 9px;border-radius:10px;background:rgba(217, 142, 74,0.12)}
   .roLegend{display:inline-flex;gap:14px;font-size:11px;color:var(--muted)}
   .roKey{display:inline-flex;align-items:center;gap:7px}
   .roSolid{width:16px;border-top:2px solid var(--mint);border-radius:2px}
@@ -176,7 +176,7 @@
     font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);transition:border-color .2s,color .2s,background .2s}
   .planEmpty:hover{border-color:rgba(217, 142, 74,0.4);color:var(--muted-strong);background:rgba(217, 142, 74,0.04)}
 
-  .modeBtn{padding:6px 14px;border-radius:999px;background:transparent;color:var(--muted);font-size:10px;font-weight:500;
+  .modeBtn{padding:6px 14px;border-radius:10px;background:transparent;color:var(--muted);font-size:10px;font-weight:500;
     letter-spacing:0.16em;text-transform:uppercase;font-family:var(--font-mono);border:none;cursor:pointer;
     transition:background 180ms var(--ease-premium),color 180ms}
   .modeBtn[aria-current="true"]{background:rgba(217, 142, 74,0.16);color:var(--mint)}
@@ -212,7 +212,7 @@
     padding:26px 28px;display:grid;grid-template-columns:1.3fr 1fr;gap:26px;transition:border-color .2s,box-shadow .2s}
   .openCard:hover{border-color:rgba(217, 142, 74,0.18);box-shadow:0 0 32px -20px var(--mint-glow)}
   @media (max-width:640px){.openCard{grid-template-columns:1fr;gap:20px;padding:22px}}
-  .ocRail{position:absolute;left:0;top:22px;bottom:22px;width:3px;border-radius:999px;background:linear-gradient(180deg,var(--mint),rgba(217, 142, 74,0.15))}
+  .ocRail{position:absolute;left:0;top:22px;bottom:22px;width:3px;border-radius:10px;background:linear-gradient(180deg,var(--mint),rgba(217, 142, 74,0.15))}
   .ocMark{display:inline-flex;align-items:center;gap:9px;font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.2em;
     text-transform:uppercase;color:var(--mint)}
   .ocDot{width:8px;height:8px;border-radius:999px;background:var(--mint);box-shadow:0 0 0 0 rgba(217, 142, 74,0.5);animation:ocPulse 2.6s ease-in-out infinite}
@@ -222,12 +222,12 @@
   .ocNextLbl{font-family:var(--font-mono);font-size:0.56rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
   .ocNext{font-size:14px;color:var(--muted-strong)}
   .ocNext b{color:var(--fg);font-weight:500}
-  .ocRightTitle{font-family:var(--font-serif);font-style:italic;font-size:1.55rem;line-height:1;margin-bottom:12px}
+  .ocRightTitle{font-family:var(--font-serif);font-style:normal;font-weight:700;font-size:1.55rem;line-height:1;margin-bottom:12px}
   .ocRightBody{font-size:14px;line-height:1.6;color:var(--muted-strong)}
   .ocList{display:flex;flex-direction:column;gap:9px;margin-top:4px}
   .ocItem{display:flex;align-items:center;gap:11px;font-size:13.5px}
   .ocItem .t{font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.06em;color:var(--muted);min-width:96px}
-  .ocItem .bar{width:3px;align-self:stretch;border-radius:999px;background:var(--mint);opacity:0.7}
+  .ocItem .bar{width:3px;align-self:stretch;border-radius:10px;background:var(--mint);opacity:0.7}
   .ocItem.amber .bar{background:var(--amber)}
   .ocItem .n{color:var(--fg)}
 
@@ -288,7 +288,7 @@
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:10px">
-          <div id="modes" style="display:inline-flex;gap:2px;padding:2px;border:1px solid var(--border);border-radius:999px;background:var(--card)"></div>
+          <div id="modes" style="display:inline-flex;gap:2px;padding:2px;border:1px solid var(--border);border-radius:10px;background:var(--card)"></div>
           <button type="button" class="gearBtn" id="gear" aria-label="How this plugs into your data" title="How this plugs into your data">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="3"/>
@@ -306,9 +306,9 @@
         <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap">
           <div>
             <div class="piEyebrow" style="color:var(--mint)">How this plugs in</div>
-            <div style="font-family:var(--font-serif);font-style:italic;font-size:22px;margin-top:6px">No new inputs. It reads what you already track.</div>
+            <div style="font-family:var(--font-serif);font-style:normal;font-weight:700;font-size:22px;margin-top:6px">No new inputs. It reads what you already track.</div>
           </div>
-          <button type="button" id="wireClose" style="background:transparent;border:1px solid var(--border);border-radius:999px;color:var(--muted);padding:6px 14px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;cursor:pointer">CLOSE</button>
+          <button type="button" id="wireClose" style="background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);padding:6px 14px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;cursor:pointer">CLOSE</button>
         </div>
         <svg viewBox="0 0 900 250" style="width:100%;display:block;margin-top:18px">
           <text class="wt" x="10" y="22">YOUR SAVED DATA</text>
@@ -627,7 +627,7 @@ function renderHover(){
     <div style="position:absolute;left:${x-6}px;top:${y-6}px;width:12px;height:12px;border-radius:999px;background:${color};box-shadow:0 0 14px ${color};border:2px solid #000"></div>
     <div style="position:absolute;left:${pillLeft}px;top:${above?y-64:y+16}px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;padding:7px 12px;border-radius:10px;background:rgba(8,8,8,0.92);border:1px solid ${color};box-shadow:0 6px 24px rgba(0,0,0,0.5),0 0 16px ${color}33;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);white-space:nowrap">
       <div style="display:flex;align-items:baseline;gap:5px">
-        <span style="font-family:var(--font-serif);font-style:italic;font-size:24px;line-height:1;color:${color}">${Math.round(score)}</span>
+        <span style="font-family:var(--font-serif);font-style:normal;font-weight:700;font-size:24px;line-height:1;color:${color}">${Math.round(score)}</span>
         <span style="font-size:11px;color:var(--muted-strong)">${tier}</span>
       </div>
       <span style="font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-top:1px">${fmtHour(h)}</span>
@@ -657,12 +657,12 @@ function renderFeel(){
     <div style="position:absolute;left:${PAD.left}px;right:${PAD.right}px;top:${y}px;${lineStyle};opacity:${feelDragging?1:resting?0.95:0.85};transition:${feelDragging?'none':ease}"></div>
     <div style="position:absolute;left:${PAD.left+2}px;top:${y}px;transform:translateY(-50%);font-size:9px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:${resting?REST:'var(--muted)'};background:rgba(8,8,8,0.62);padding:2px 6px;border-radius:5px;white-space:nowrap;opacity:${feelLogged?0:1};transition:${feelDragging?'none':ease+',opacity 160ms'}">drag to log feel</div>
     <div id="feelStrip" style="position:absolute;left:${PAD.left}px;right:${PAD.right}px;top:${y-14}px;height:28px;cursor:ns-resize;pointer-events:auto;touch-action:none;transition:${feelDragging?'none':ease}"></div>
-    <div id="feelHandle" style="position:absolute;left:${handleLeft}px;top:${y}px;transform:translate(-50%,-50%);display:flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;background:rgba(8,8,8,0.92);border:1px solid ${color};box-shadow:${feelDragging?`0 4px 18px rgba(0,0,0,0.5),0 0 16px ${color}66`:resting?`0 2px 10px rgba(0,0,0,0.4),0 0 14px ${REST}55`:'0 2px 10px rgba(0,0,0,0.4)'};cursor:ns-resize;pointer-events:auto;touch-action:none;white-space:nowrap;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);transition:${feelDragging?'none':ease+',box-shadow 160ms'}">
+    <div id="feelHandle" style="position:absolute;left:${handleLeft}px;top:${y}px;transform:translate(-50%,-50%);display:flex;align-items:center;gap:6px;padding:5px 11px;border-radius:10px;background:rgba(8,8,8,0.92);border:1px solid ${color};box-shadow:${feelDragging?`0 4px 18px rgba(0,0,0,0.5),0 0 16px ${color}66`:resting?`0 2px 10px rgba(0,0,0,0.4),0 0 14px ${REST}55`:'0 2px 10px rgba(0,0,0,0.4)'};cursor:ns-resize;pointer-events:auto;touch-action:none;white-space:nowrap;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);transition:${feelDragging?'none':ease+',box-shadow 160ms'}">
       ${feelLogged
         ?`<span style="font-size:11px;font-weight:600;color:${color}">logged &#10003;</span>`
         :resting
           ?`<span style="display:flex;align-items:center;gap:5px;font-size:8.5px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:${REST}">log feel <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg></span>`
-          :`<span style="font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted)">I feel</span><span style="font-family:var(--font-serif);font-style:italic;font-size:17px;line-height:1;color:${color}">${Math.round(feelPct)}%</span>`}
+          :`<span style="font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted)">I feel</span><span style="font-family:var(--font-serif);font-style:normal;font-weight:700;font-size:17px;line-height:1;color:${color}">${Math.round(feelPct)}%</span>`}
     </div>`;
   const start=e=>{
     e.preventDefault();
@@ -698,11 +698,11 @@ function renderGauge(hh){
         <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round" stroke-dasharray="${c*pct} ${c}" style="filter:drop-shadow(0 0 6px ${color});transition:stroke-dasharray 220ms cubic-bezier(0.16,1,0.3,1),stroke 220ms linear"/>
       </svg>
       <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">
-        <span style="font-family:var(--font-serif);font-style:italic;font-size:${size*0.34}px;line-height:1;color:${color};font-variant-numeric:tabular-nums;transition:color 220ms linear">${Math.round(score)}</span>
+        <span style="font-family:var(--font-serif);font-style:normal;font-weight:700;font-size:${size*0.34}px;line-height:1;color:${color};font-variant-numeric:tabular-nums;transition:color 220ms linear">${Math.round(score)}</span>
       </div>
     </div>
     <div style="display:flex;flex-direction:column;gap:2px">
-      <span style="font-family:var(--font-serif);font-style:italic;font-size:18px;color:var(--fg)">${tier}</span>
+      <span style="font-family:var(--font-serif);font-style:normal;font-weight:700;font-size:18px;color:var(--fg)">${tier}</span>
       <span style="font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);font-weight:500">${live?'At '+fmtHour(h):'Right now'}</span>
       <span style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px;margin-top:2px">
         <span style="width:5px;height:5px;border-radius:999px;background:${live?color:'var(--muted)'}"></span>${live?'Scrubbing':'Hover the curve'}

@@ -84,7 +84,7 @@ function ScratchPanel({ userId, onClose }: { userId: string; onClose: () => void
         color: tab === id ? 'var(--fg, #fff)' : 'var(--muted, #8a8f98)',
         background: tab === id ? 'rgba(255,255,255,.08)' : 'transparent',
         border: 'none',
-        borderRadius: 999,
+        borderRadius: 10,
         padding: '7px 13px',
         cursor: 'pointer',
       }}
@@ -210,7 +210,7 @@ function ScratchPanel({ userId, onClose }: { userId: string; onClose: () => void
                 width: '100%',
                 marginTop: 16,
                 padding: '0.7rem 1rem',
-                borderRadius: 999,
+                borderRadius: 10,
                 background: 'var(--mint, #D98E4A)',
                 color: 'var(--mint-ink, #042a1c)',
                 border: 'none',
@@ -260,7 +260,7 @@ function ScratchPanel({ userId, onClose }: { userId: string; onClose: () => void
                           color: 'var(--muted, #8a8f98)',
                           background: 'transparent',
                           border: '1px solid var(--border, #262626)',
-                          borderRadius: 999,
+                          borderRadius: 10,
                           padding: '5px 12px',
                           cursor: 'pointer',
                         }}
@@ -277,7 +277,7 @@ function ScratchPanel({ userId, onClose }: { userId: string; onClose: () => void
                     width: '100%',
                     marginTop: 18,
                     padding: '0.7rem 1rem',
-                    borderRadius: 999,
+                    borderRadius: 10,
                     background: armed ? '#e5484d' : 'transparent',
                     color: armed ? '#fff' : 'var(--fg)',
                     border: armed ? 'none' : '1px solid var(--border)',
@@ -339,7 +339,7 @@ function ScratchPanel({ userId, onClose }: { userId: string; onClose: () => void
                 style={{
                   flex: 1,
                   padding: '0.7rem 1rem',
-                  borderRadius: 999,
+                  borderRadius: 10,
                   background: 'transparent',
                   color: 'var(--fg)',
                   border: '1px solid var(--border)',
@@ -355,7 +355,7 @@ function ScratchPanel({ userId, onClose }: { userId: string; onClose: () => void
                 style={{
                   flex: 1.4,
                   padding: '0.7rem 1rem',
-                  borderRadius: 999,
+                  borderRadius: 10,
                   background: 'var(--mint, #D98E4A)',
                   color: 'var(--mint-ink, #042a1c)',
                   border: 'none',

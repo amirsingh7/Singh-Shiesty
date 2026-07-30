@@ -183,7 +183,7 @@
 
 .greeting {
   font-family: var(--font-serif), 'Times New Roman', Georgia, serif;
-  font-style: italic;
+  font-style:normal;font-weight:700;
   font-weight: 400;
   /* --greet-scale (default 1) lets the user size their greeting; the font stays
      Instrument Serif italic, the unified voice. */
@@ -194,7 +194,7 @@
 }
 
 .greetingName {
-  font-style: italic;
+  font-style:normal;font-weight:700;
   /* the accented name follows the chosen wallpaper accent (mint by default) */
   color: var(--wall-accent, var(--mint));
 }
@@ -487,7 +487,7 @@
   left: 22px;
   z-index: 3;
   font-family: var(--font-serif), 'Times New Roman', Georgia, serif;
-  font-style: italic;
+  font-style:normal;font-weight:700;
   font-size: var(--text-sm);
   color: var(--muted);
   letter-spacing: 0.02em;
@@ -499,7 +499,7 @@
   left: 22px;
   z-index: 3;
   font-family: var(--font-serif), 'Times New Roman', Georgia, serif;
-  font-style: italic;
+  font-style:normal;font-weight:700;
   font-size: clamp(20px, 2vw, 28px);
   color: var(--fg);
 }

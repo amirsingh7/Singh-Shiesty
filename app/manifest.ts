@@ -11,15 +11,15 @@ import type { MetadataRoute } from 'next'
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Vitality',
-    short_name: 'Vitality',
-    description: 'Your personal life dashboard: workouts, fuel, recovery, and more.',
+    name: 'PR Portfolio',
+    short_name: 'PR Portfolio',
+    description: 'Your verified athletic record: training, recovery, and proof.',
     start_url: '/',
     scope: '/',
     display: 'standalone',
     orientation: 'portrait',
-    background_color: '#04060a',
-    theme_color: '#04060a',
+    background_color: '#14100d',
+    theme_color: '#14100d',
     icons: [
       { src: '/icon', sizes: '512x512', type: 'image/png', purpose: 'any' },
       { src: '/apple-icon', sizes: '180x180', type: 'image/png' },
