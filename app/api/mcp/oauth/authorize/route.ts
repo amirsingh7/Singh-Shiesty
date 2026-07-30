@@ -85,13 +85,13 @@ function consentPage(p: Params, opts: { error?: string } = {}): Response {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Connect to Vitality</title>
 <style>
-  :root { --bg:#04060a; --mint:#6ee7b7; --ink:#e9efe9; --dim:rgba(233,239,233,.62);
-    --line:rgba(110,231,183,.25); --err:#ff8a8a; }
+  :root { --bg:#04060a; --mint:#D98E4A; --ink:#e9efe9; --dim:rgba(233,239,233,.62);
+    --line:rgba(217, 142, 74,.25); --err:#ff8a8a; }
   * { box-sizing:border-box; } body { margin:0; background:var(--bg); color:var(--ink);
     font-family:Inter,-apple-system,system-ui,sans-serif; display:flex; min-height:100vh;
     align-items:center; justify-content:center; padding:24px; }
   .card { width:100%; max-width:420px; border:1px solid var(--line); border-radius:16px;
-    padding:32px; background:rgba(110,231,183,.04); }
+    padding:32px; background:rgba(217, 142, 74,.04); }
   h1 { font-size:20px; margin:0 0 8px; }
   p { color:var(--dim); font-size:14px; line-height:1.6; margin:0 0 16px; }
   .host { font-family:ui-monospace,Menlo,monospace; font-size:13px; color:var(--mint); }

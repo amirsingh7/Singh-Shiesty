@@ -374,7 +374,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .input:focus {
   border-color: var(--mint);
-  background: rgba(110, 231, 183, 0.04);
+  background: rgba(217, 142, 74, 0.04);
 }
 
 /* ----- Links ----- */

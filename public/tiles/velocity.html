@@ -26,11 +26,11 @@
 -->
 <style>
   :root{
-    --bg:#000; --fg:#fff;
-    --mint:#6EE7B7; --mint-hover:#5dd6a6; --gold:#f1cf7a; --rose:#e0767b;
-    --muted:rgba(255,255,255,.5); --muted-strong:rgba(255,255,255,.72);
-    --rule:rgba(255,255,255,.08); --rule-strong:rgba(255,255,255,.16);
-    --card:rgba(255,255,255,.022);
+    --bg:#14100d; --fg:#f5ede2;
+    --mint:#D98E4A; --mint-hover:#B8703A; --gold:#D4AF6A; --rose:#e0767b;
+    --muted:rgba(245, 237, 226,.5); --muted-strong:rgba(245, 237, 226,.72);
+    --rule:rgba(245, 237, 226,.08); --rule-strong:rgba(245, 237, 226,.16);
+    --card:rgba(245, 237, 226,.022);
     --serif:'Instrument Serif','Newsreader',Georgia,serif;
     --sans:'Inter',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
     --mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;
@@ -38,14 +38,14 @@
     --c1:#3987e5; --c2:#199e70; --c3:#c98500; --c4:#d55181; --c5:#9085e9;
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  ::selection{background:rgba(110,231,183,.25);color:#fff}
+  ::selection{background:rgba(217, 142, 74,.25);color:#f5ede2}
   html,body{background:var(--bg);min-height:100%}
   body{font-family:var(--sans);color:var(--fg);-webkit-font-smoothing:antialiased;letter-spacing:-.006em;
     padding:34px 18px 70px}
   .atmos{position:fixed;inset:0;z-index:0;pointer-events:none;
     background:
-      radial-gradient(ellipse 70% 40% at 50% -4%, rgba(110,231,183,.13), transparent 60%),
-      linear-gradient(180deg, #07140e 0%, #050b08 32%, #020403 64%, #000 100%)}
+      radial-gradient(ellipse 70% 40% at 50% -4%, rgba(217, 142, 74,.13), transparent 60%),
+      linear-gradient(180deg, #140d08 0%, #0c0704 32%, #040302 64%, #000 100%)}
   .wrap{position:relative;z-index:1;width:100%;max-width:620px;margin:0 auto}
 
   .head{margin-bottom:6px}
@@ -56,7 +56,7 @@
   .sheet{margin-top:26px;background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:22px}
   .sheet-h{font-size:16px;font-weight:600}
 
-  .range{display:flex;gap:3px;justify-content:center;background:rgba(255,255,255,.03);border:1px solid var(--rule);border-radius:12px;padding:4px;margin:18px auto 0;width:fit-content}
+  .range{display:flex;gap:3px;justify-content:center;background:rgba(245, 237, 226,.03);border:1px solid var(--rule);border-radius:12px;padding:4px;margin:18px auto 0;width:fit-content}
   .range button{background:none;border:none;color:var(--muted);font-family:var(--sans);font-size:13px;font-weight:600;padding:8px 15px;border-radius:9px;cursor:pointer;transition:color .2s,background .25s}
   .range button.on{background:var(--mint);color:#042a1c}
 
@@ -94,14 +94,14 @@
   .log-del{background:none;border:none;color:var(--muted);font-family:var(--sans);font-size:11.5px;font-weight:600;cursor:pointer;padding:4px 6px;border-radius:6px;transition:color .2s,background .2s;flex:none}
   .log-del:hover{color:var(--rose);background:rgba(224,118,123,.1)}
   .log-edit{background:none;border:none;color:var(--muted);font-family:var(--sans);font-size:11.5px;font-weight:600;cursor:pointer;padding:4px 6px;border-radius:6px;transition:color .2s,background .2s;flex:none}
-  .log-edit:hover{color:var(--mint);background:rgba(110,231,183,.1)}
+  .log-edit:hover{color:var(--mint);background:rgba(217, 142, 74,.1)}
   .log-confirm{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:8px 10px;font-size:12px}
   .log-confirm span{color:var(--muted)}
   .log-confirm .log-err{color:var(--rose)}
   .log-confirm button{background:none;border:1px solid var(--rule-strong);color:var(--fg);font-family:var(--sans);font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:7px;cursor:pointer;transition:background .2s,border-color .2s;flex:none}
   .log-confirm .log-yes{border-color:rgba(224,118,123,.5);color:var(--rose)}
   .log-confirm .log-yes:hover{background:rgba(224,118,123,.12)}
-  .log-confirm .log-cancel:hover{background:rgba(255,255,255,.06)}
+  .log-confirm .log-cancel:hover{background:rgba(245, 237, 226,.06)}
   .log-confirm.busy button{opacity:.5;pointer-events:none}
   .log-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid var(--rule)}
   .log-row:last-child{border-bottom:none}
@@ -110,7 +110,7 @@
   .log-val{font-size:13.5px;color:var(--muted);font-variant-numeric:tabular-nums;text-align:right}
   .log-val b{color:var(--fg);font-weight:600}
   .log-editvals{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
-  .edit-inp{width:54px;background:rgba(255,255,255,.04);border:1px solid var(--rule-strong);border-radius:6px;color:var(--fg);font-family:var(--sans);font-size:13px;font-variant-numeric:tabular-nums;padding:5px 6px;text-align:right}
+  .edit-inp{width:54px;background:rgba(245, 237, 226,.04);border:1px solid var(--rule-strong);border-radius:6px;color:var(--fg);font-family:var(--sans);font-size:13px;font-variant-numeric:tabular-nums;padding:5px 6px;text-align:right}
   .edit-inp:focus{outline:none;border-color:var(--mint)}
   .edit-inp-r{width:38px}
   .edit-unit,.edit-x,.edit-sets{color:var(--muted);font-size:12px}
@@ -134,11 +134,11 @@
   .pr-flag{font-size:12px;padding:8px 10px;border-radius:9px;line-height:1.45}
   .pr-flag.warn{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:var(--muted-strong)}
   .pr-flag.alert{background:rgba(224,118,123,.12);border:1px solid rgba(224,118,123,.4);color:var(--muted-strong)}
-  .pr-flag.info{background:rgba(110,231,183,.08);border:1px solid rgba(110,231,183,.25);color:var(--muted-strong)}
+  .pr-flag.info{background:rgba(217, 142, 74,.08);border:1px solid rgba(217, 142, 74,.25);color:var(--muted-strong)}
   .pr-flag b{color:var(--fg)}
 
   .vol-stats{display:flex;gap:14px;flex-wrap:wrap}
-  .vol-stat{flex:1;min-width:130px;background:rgba(255,255,255,.03);border:1px solid var(--rule);border-radius:12px;padding:14px}
+  .vol-stat{flex:1;min-width:130px;background:rgba(245, 237, 226,.03);border:1px solid var(--rule);border-radius:12px;padding:14px}
   .vol-stat-k{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
   .vol-stat-v{font-family:var(--serif);font-size:22px;margin-top:6px}
   .vol-stat-d{font-size:12px;color:var(--muted);margin-top:4px}
