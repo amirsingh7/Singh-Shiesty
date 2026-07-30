@@ -75,8 +75,10 @@ function computeKeyColor() {
 }
 
 interface HeroCrystalProps {
-  /** Geometry to render. Defaults to icosahedron (the original gem). */
-  shape?: 'icosahedron' | 'dodecahedron' | 'tetrahedron' | 'octahedron'
+  /** Geometry to render. Defaults to icosahedron (the original gem).
+   *  'seal' is a faceted coin/medallion (low-poly cylinder, capped faces
+   *  rotated to face the camera) — the PR Portfolio identity mark. */
+  shape?: 'icosahedron' | 'dodecahedron' | 'tetrahedron' | 'octahedron' | 'seal'
   /** Colorway. Default mint (the canonical gem). amber + iris are for the
    *  coach family — they retint glass / attenuation / emissive / wire / env. */
   tint?: GemTint
@@ -142,6 +144,11 @@ interface HeroCrystalProps {
    *  it instantly. Pass a custom list to flavor a gem (e.g. a coach), or `null`
    *  to disable autonomous moves (host drives everything). Character mode only. */
   ambient?: string[] | null
+  /** When set, the face mark is this text (canvas strokeText, same 5-layer
+   *  engraved-glow treatment as the V), instead of the `glyph` path system —
+   *  e.g. "PR" for the seal. Bypasses the shared GlyphKey catalogue entirely
+   *  since a 2-letter monogram doesn't belong in the quiz-glyph set. */
+  sealText?: string
 }
 
 /**
@@ -163,6 +170,7 @@ export default function HeroCrystal({
   hideGlyph = false,
   glyph = 'v',
   secondaryGlyph,
+  sealText,
   controlRef,
   onMoveGlyph,
   loading = false,
@@ -258,8 +266,26 @@ export default function HeroCrystal({
     scene.environment = envTex
 
     /* ── Crystal mesh + wireframe ─────────────────────────────── */
+    // The seal is a low-poly (faceted, not smooth) coin: a smaller radial
+    // segment count keeps it in the same jewel-cut visual family as the
+    // icosahedron rather than reading as a plain disc. CylinderGeometry's
+    // caps default to facing +Y (up); rotateX(90°) turns that to face +Z
+    // (the camera), so the SAME "face most aligned with +Z" pick the
+    // character-mode code below already does lands on the coin's flat
+    // face — no changes needed to that logic at all. toNonIndexed() is
+    // required: unlike Icosahedron/Dodecahedron/Tetrahedron/Octahedron
+    // Geometry (all index: null, one unique vertex triple per triangle),
+    // CylinderGeometry IS indexed — the face-merge algorithm below reads
+    // geo.attributes.position in raw sequential triples assuming each
+    // triple is one triangle's own unique vertices, which only holds for
+    // non-indexed geometry. Verified in isolation: without this the "face"
+    // list is garbage (arbitrary vertex triples, NaN normals); with it,
+    // the front cap's 22 triangles correctly merge into one face at
+    // normal (0,0,1), center (0,0,0.17) — precisely what character mode
+    // needs to lock onto and center the PR mark on.
     const geo =
-      shape === 'dodecahedron' ? new THREE.DodecahedronGeometry(1, 0)
+      shape === 'seal' ? new THREE.CylinderGeometry(0.92, 0.92, 0.34, 22, 1).rotateX(Math.PI / 2).toNonIndexed()
+      : shape === 'dodecahedron' ? new THREE.DodecahedronGeometry(1, 0)
       : shape === 'tetrahedron' ? new THREE.TetrahedronGeometry(1, 0)
       : shape === 'octahedron' ? new THREE.OctahedronGeometry(1, 0)
       : new THREE.IcosahedronGeometry(1, 0)
@@ -466,6 +492,30 @@ export default function HeroCrystal({
       }
     }
 
+    // Same 5-layer engraved-glow treatment as paintGlyphOn, but for a short
+    // monogram (the seal's "PR") instead of a traced path — strokeText is
+    // far more reliable than hand-plotting letterform bezier paths, and a
+    // bold slab face reads cleanly at the gem's render size.
+    function paintSealTextOn(c: CanvasRenderingContext2D, text: string) {
+      const layers: Array<[string, number, number]> = [
+        ['rgba(217, 142, 74, 0.10)', 18, 90],
+        ['rgba(217, 142, 74, 0.22)', 13, 52],
+        ['rgba(167, 243, 208, 0.50)',  7, 26],
+        ['rgba(196, 250, 220, 0.85)',  4, 12],
+        ['rgba(240, 255, 245, 1.00)', 1.8, 4],
+      ]
+      c.font = '900 200px Arial, Helvetica, sans-serif'
+      c.textAlign = 'center'
+      c.textBaseline = 'middle'
+      for (const [color, lineWidth, blur] of layers) {
+        c.shadowColor = '#D98E4A'
+        c.shadowBlur = blur
+        c.strokeStyle = color
+        c.lineWidth = lineWidth
+        c.strokeText(text, 256, 268)
+      }
+    }
+
     // ── Hello glyph (waving hand) — a greeting mark in the SAME engraved
     //    glow format as the V. Used only by the "happy hello" scripted move,
     //    which flickers the V into this and back. Kept stroke-minimal so it
@@ -597,7 +647,8 @@ export default function HeroCrystal({
     const paintHeartOn = (c: CanvasRenderingContext2D) => paintMoodGlyph(c, traceHeartOn)
     const paintCheckOn = (c: CanvasRenderingContext2D) => paintMoodGlyph(c, traceCheckOn)
 
-    paintGlyphOn(vCtx, glyph)
+    if (sealText) paintSealTextOn(vCtx, sealText)
+    else paintGlyphOn(vCtx, glyph)
 
     const vTex = new THREE.CanvasTexture(vCanvas)
     vTex.colorSpace = THREE.SRGBColorSpace

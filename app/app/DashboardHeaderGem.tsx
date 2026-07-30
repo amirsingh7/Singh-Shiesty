@@ -5,21 +5,23 @@ import dynamic from 'next/dynamic'
 import styles from './dashboardHeaderGem.module.css'
 
 /**
- * DashboardHeaderGem — the canonical Vitality V crystal mounted next to
- * the dashboard greeting. Uses the REAL HeroCrystal component in
- * character mode so the gem behaves byte-for-byte like the lab at
- * /gem-library and the V crystal on /welcome.
+ * DashboardHeaderGem — the PR Portfolio seal mounted next to the dashboard
+ * greeting. Uses the REAL HeroCrystal component (shape="seal") in character
+ * mode: a faceted glass coin/medallion instead of the old icosahedron, with
+ * an engraved "PR" monogram in place of the V. All the character-mode life
+ * (jolts, nods, happy events, scripted moves) is unchanged — only the form
+ * and the face mark changed.
  *
  * Behaviors (from HeroCrystal character mode):
- *   - Mint glass icosahedron with engraved V + micro-flicker
+ *   - Amber glass seal (faceted coin) with engraved PR + micro-flicker
  *   - Sporadic Destiny-Ghost rotation jolts + periodic forward nod
  *   - Autonomous happy event every 9-16s firing onHappyStart, plus the
- *     full happyHello scripted move with eyebrows, slight tilt, and V→
- *     waving-hand→V flicker (matches the v2 lab "happy hello" exactly)
+ *     full happyHello scripted move with eyebrows, slight tilt, and PR→
+ *     waving-hand→PR flicker
  *
  * Pulse bursts (CSS-driven DOM overlays, fired on each happy event):
- *   - rings:     3 mint rings expanding outward, staggered
- *   - particles: 14 mint motes radiating out at evenly-spaced angles
+ *   - rings:     3 amber rings expanding outward, staggered
+ *   - particles: 14 amber motes radiating out at evenly-spaced angles
  *   - sparkles:  14 sparkle dots at random perimeter positions, twinkling
  *
  * No ponder or curious mood: those are dropped (no question mark).
@@ -144,6 +146,8 @@ export default function DashboardHeaderGem({
         <HeroCrystal
           mode="character"
           tint="amber"
+          shape="seal"
+          sealText="PR"
           onHappyStart={firePulse}
           controlRef={gemControl}
         />
