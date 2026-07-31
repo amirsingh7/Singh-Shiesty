@@ -780,8 +780,13 @@ export default function HeroCrystal({
       opacity: 0,
     })
     /* Bigger plane (was 0.42 → 0.62) — V reads more prominently while
-       still fitting within the icosahedron face triangle (side ≈ 1.05). */
-    const vGeo = new THREE.PlaneGeometry(0.62, 0.62)
+       still fitting within the icosahedron face triangle (side ≈ 1.05).
+       The seal coin's flat face is much bigger (radius 0.92, no triangle
+       constraint), so the monogram + laurel wreath get their own larger
+       plane — they're painted on the same 512² canvas either way, so
+       this scales both together without touching their drawn coordinates. */
+    const vPlaneSize = sealText ? 1.3 : 0.62
+    const vGeo = new THREE.PlaneGeometry(vPlaneSize, vPlaneSize)
     const vMesh = new THREE.Mesh(vGeo, vMat)
     vMesh.renderOrder = 3
     // hideGlyph: keep the mesh allocated so animation code can still
