@@ -136,7 +136,7 @@ const mcpHandler = createMcpHandler(
       {
         title: 'Create or replace a tile',
         description:
-          'WRITE. Put a sealed, self-contained HTML tile into a dashboard slot, replacing any existing tile there (use this to edit too). The HTML MUST be one complete standalone document — all CSS and JS inline, no external requests, no network calls (it runs sandboxed with allow-scripts only). Match the look: near-black background, mint accent #D98E4A, clean sans headings. To persist data it may call window.Vitality.save(data) / window.Vitality.load(). The tile appears on the dashboard on next reload.',
+          'WRITE. Put a sealed, self-contained HTML tile into a dashboard slot, replacing any existing tile there (use this to edit too). The HTML MUST be one complete standalone document — all CSS and JS inline, no external requests, no network calls (it runs sandboxed with allow-scripts only). Match the look: near-black background, mint accent #2554E8, clean sans headings. To persist data it may call window.Vitality.save(data) / window.Vitality.load(). The tile appears on the dashboard on next reload.',
         inputSchema: {
           slot: z.enum(SLOTS),
           html: z.string().min(1).max(MAX_TILE_HTML).describe('The complete sealed tile HTML document'),

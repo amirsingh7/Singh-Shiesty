@@ -291,7 +291,7 @@ export default function MentorPage({
   if (!mounted) return null
 
   const act = list.find((g) => g.id === active) ?? list[0]
-  const accent = act?.accent ?? '#D98E4A'
+  const accent = act?.accent ?? '#2554E8'
   const entries = Object.entries(act?.weights ?? {}).sort((a, b) => b[1] - a[1])
   const advice = noticedFeed()[0]
 
@@ -447,7 +447,7 @@ export default function MentorPage({
         <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap', marginTop: 34, animation: 'fadeUp .8s ease .25s both' }}>
           {list.map((g) => {
             const on = g.id === active
-            const gA = g.accent ?? '#D98E4A'
+            const gA = g.accent ?? '#2554E8'
             return (
               <button
                 key={g.id}
@@ -701,7 +701,7 @@ export default function MentorPage({
             style={{
               flex: '0 0 auto',
               background: accent,
-              color: '#0a0f0c',
+              color: '#f4f6ff',
               border: 'none',
               borderRadius: 10,
               padding: '9px 16px',
@@ -818,7 +818,7 @@ export default function MentorPage({
                 aria-label="Send to your mentor"
                 style={{
                   background: asking || !question.trim() ? 'var(--border, #262626)' : accent,
-                  color: asking || !question.trim() ? 'var(--muted, #8a8f98)' : '#0a0f0c',
+                  color: asking || !question.trim() ? 'var(--muted, #8a8f98)' : '#f4f6ff',
                   border: 'none',
                   borderRadius: 10,
                   padding: '9px 18px',
@@ -867,7 +867,7 @@ export default function MentorPage({
                         alignItems: 'flex-start',
                         gap: 10,
                         padding: '10px 12px',
-                        border: '1px solid var(--border, #1d1d22)',
+                        border: '1px solid var(--border, #202636)',
                         borderRadius: 12,
                         background: 'rgba(255,255,255,.015)',
                       }}

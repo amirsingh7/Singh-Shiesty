@@ -11,8 +11,8 @@
      lost" void + the mentor's reflection prompts. Reskinned to Vitality mint,
      no external assets, persisting through the dashboard bridge (window.Vitality). */
   :root{
-    --bg:#100c09;--surface:#171310;--border:#241c15;--brand:#D98E4A;
-    --brand-soft:rgba(217, 142, 74,.08);--brand-line:rgba(217, 142, 74,.35);
+    --bg:#0A0D14;--surface:#12161F;--border:#202636;--brand:#2554E8;
+    --brand-soft:rgba(37, 84, 232,.08);--brand-line:rgba(37, 84, 232,.35);
     --muted:#8c8175;--muted-strong:#ada395;--fg:#f5ede2;--neg:#ff6b6b;--neg-line:rgba(255,107,107,.4);
     --track:#1c1610;--radius-md:12px;--radius-pill:999px;
     --font-display:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;
@@ -26,7 +26,7 @@
   .header{display:flex;align-items:center;gap:14px;margin-bottom:22px}
   .orb{width:44px;height:44px;flex-shrink:0;border-radius:50%;
     background:radial-gradient(circle at 35% 30%,#c8ffe8,var(--brand) 46%,#2b8f6b 100%);
-    box-shadow:0 0 26px rgba(217, 142, 74,.35);animation:orbBreathe 3.6s ease-in-out infinite}
+    box-shadow:0 0 26px rgba(37, 84, 232,.35);animation:orbBreathe 3.6s ease-in-out infinite}
   @keyframes orbBreathe{0%,100%{transform:scale(1);opacity:.92}50%{transform:scale(1.06);opacity:1}}
   @media(prefers-reduced-motion:reduce){.orb{animation:none}}
   .title{font-size:24px;font-weight:600;letter-spacing:-.01em;margin:0}
@@ -42,7 +42,7 @@
   .prompt{font-size:12.5px;color:var(--muted-strong);background:var(--bg);border:1px solid var(--border);padding:7px 13px;border-radius:var(--radius-pill);cursor:pointer;transition:border-color var(--duration),color var(--duration)}
   .prompt:hover{border-color:var(--brand);color:var(--fg)}
   .btn{border:1px solid var(--border);background:var(--bg);color:var(--fg);border-radius:10px;padding:10px 16px;font:inherit;cursor:pointer}
-  .btn-primary{background:var(--brand);color:#04140d;border:none;font-weight:600}
+  .btn-primary{background:var(--brand);color:#f4f6ff;border:none;font-weight:600}
   .voidHead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:28px 0 0}
   .sectionTitle{font-weight:600;font-size:17px;margin:0}
   .count{font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}

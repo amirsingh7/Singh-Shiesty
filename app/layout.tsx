@@ -59,7 +59,7 @@ export const metadata: Metadata = {
 // userScalable:false stops double-tap-zoom fighting tap targets in the dense
 // logger UI.
 export const viewport: Viewport = {
-  themeColor: '#14100d',
+  themeColor: '#0A0D14',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,

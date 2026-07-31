@@ -33,7 +33,7 @@ function db(): SupabaseClient | null {
 }
 
 function pageHtml(message: string): string {
-  return `<!doctype html><html><body style="background:#050506;color:#ededf0;font-family:-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center;padding:20px">
+  return `<!doctype html><html><body style="background:#0A0D14;color:#f5ede2;font-family:-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center;padding:20px">
 <div><p>${message}</p><p style="opacity:.6;font-size:13px">You can close this window.</p></div>
 <script>try{window.close()}catch(e){}</script>
 </body></html>`
