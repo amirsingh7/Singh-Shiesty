@@ -194,6 +194,13 @@
      what let a long two-word name push into the icon cluster's space. */
   min-width: 0;
   flex: 1 1 auto;
+  /* Guaranteed clearance from the gear/profile icon cluster: margin-left:auto
+     on .profileAvatar only pushes it flush right when there's leftover row
+     space, which shrinks to ~nothing once a long two-word name wraps to fill
+     the column — leaving the last line running right up to the icons. A
+     fixed margin here reserves the gap regardless of how much the greeting
+     wraps. */
+  margin-right: var(--space-4);
 }
 
 .greeting {

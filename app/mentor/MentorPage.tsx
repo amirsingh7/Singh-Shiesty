@@ -380,7 +380,18 @@ export default function MentorPage({
         }}
       />
 
-      <div style={{ position: 'relative', zIndex: 5, width: 'min(880px, calc(100vw - 40px))', margin: '0 auto', padding: '26px 0 90px', textAlign: 'center' }}>
+      <div
+        style={{
+          position: 'relative',
+          zIndex: 5,
+          width: 'min(880px, calc(100vw - 40px))',
+          margin: '0 auto',
+          // Clears the status bar / Dynamic Island on iPhone (0 inset on desktop) —
+          // this page (and its board-overlay variant) has no other top chrome.
+          padding: 'calc(26px + env(safe-area-inset-top)) 0 90px',
+          textAlign: 'center',
+        }}
+      >
         {overlay ? (
           <button
             type="button"
