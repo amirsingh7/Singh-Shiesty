@@ -67,13 +67,15 @@
    offset — flex flow guarantees they can never overlap, regardless of name
    length or viewport width. align-self:flex-start keeps it pinned to the
    top of the row (matching its old fixed-offset look) instead of centering
-   against the row's full, possibly-tall, height. margin-left:auto pushes
-   the icon cluster (this + .profileLink) to the row's right edge. */
+   against the row's full, possibly-tall, height. Rendered after .profileLink
+   in the DOM (see Dashboard.tsx) so it's the outermost icon — furthest from
+   the greeting, since it's the one a long wrapped name was crowding. The
+   margin-left:auto that pushes the whole icon cluster to the row's right
+   edge now lives on .profileLink, the first icon in the cluster. */
 .profileAvatar {
   position: relative;
   flex: 0 0 auto;
   align-self: flex-start;
-  margin-left: auto;
   z-index: 10;
   display: inline-flex;
   align-items: center;
@@ -123,6 +125,7 @@
   position: relative;
   flex: 0 0 auto;
   align-self: flex-start;
+  margin-left: auto;
   z-index: 10;
   display: inline-flex;
   align-items: center;
