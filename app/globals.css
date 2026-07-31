@@ -1,14 +1,16 @@
 /* ----- Tokens ----- */
 
 :root {
-  /* Colors — PR Blue on warm near-black: the credibility-blue from the PR
-     Portfolio concept doc's own header/table color, paired with the warm
-     dark canvas the Forge rebrand established. "--mint" is legacy naming
-     (mint green, pre-Forge) kept through two rebrands now to avoid a
+  /* Colors — PR Blue on a cool near-black: the credibility-blue from the PR
+     Portfolio concept doc's own header/table color, on a canvas retuned cool
+     to pair with it (the Forge rebrand's near-black was warm, to pair with
+     amber — that pairing no longer applies). "--mint" is legacy naming
+     (mint green, pre-Forge) kept through three rebrands now to avoid a
      sweeping variable-name churn across every consumer — only the values
-     change. */
-  --bg: #14100d;
-  --bg-elevated: #1c1611;
+     change. --fg stays the same warm off-white; warm text on a cool ground
+     reads clean and doesn't need to match the base tone. */
+  --bg: #0a0d14;
+  --bg-elevated: #12161f;
   --fg: #f5ede2;
   --mint: #2554e8;
   --mint-hover: #4472ff;
@@ -78,9 +80,9 @@ html, body {
   height: 100%;
   /* Rubber-band / overscroll past the top of any page must show the app's
      near-black, never a pure-black band. Tint the root the editorial
-     atmosphere's darkest stop (#04060a) so the reveal is seamless, and damp the
+     atmosphere's darkest stop (#05060d) so the reveal is seamless, and damp the
      bounce so it barely shows at all. body keeps var(--bg) below. */
-  background: #0c0805;
+  background: #05060d;
   overscroll-behavior-y: none;
 }
 

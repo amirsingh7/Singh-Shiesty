@@ -85,7 +85,7 @@ function consentPage(p: Params, opts: { error?: string } = {}): Response {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Connect to PR Portfolio</title>
 <style>
-  :root { --bg:#14100d; --mint:#2554E8; --ink:#f5ede2; --dim:rgba(245,237,226,.62);
+  :root { --bg:#0A0D14; --mint:#2554E8; --ink:#f5ede2; --dim:rgba(245,237,226,.62);
     --line:rgba(37, 84, 232,.25); --err:#ff8a8a; }
   * { box-sizing:border-box; } body { margin:0; background:var(--bg); color:var(--ink);
     font-family:Inter,-apple-system,system-ui,sans-serif; display:flex; min-height:100vh;
@@ -97,13 +97,13 @@ function consentPage(p: Params, opts: { error?: string } = {}): Response {
   .host { font-family:ui-monospace,Menlo,monospace; font-size:13px; color:var(--mint); }
   label { display:block; font-size:13px; color:var(--dim); margin:0 0 8px; }
   input[type=password] { width:100%; font:inherit; font-size:15px; padding:12px;
-    border-radius:10px; border:1px solid var(--line); background:#0e0a07; color:var(--ink);
+    border-radius:10px; border:1px solid var(--line); background:#0D111A; color:var(--ink);
     margin:0 0 20px; }
   .err { color:var(--err); font-size:13px; margin:0 0 16px; }
   .row { display:flex; gap:12px; } button, a.deny { flex:1; font:inherit; font-size:15px;
     font-weight:600; padding:12px; border-radius:10px; cursor:pointer; text-align:center;
     text-decoration:none; border:1px solid var(--line); }
-  .allow { background:var(--mint); color:#04060a; border:none; }
+  .allow { background:var(--mint); color:#f4f6ff; border:none; }
   a.deny { background:transparent; color:var(--ink); line-height:1.4; }
 </style></head><body>
 <div class="card">
