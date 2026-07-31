@@ -60,11 +60,22 @@
   outline-offset: 2px;
 }
 
-/* Top-bar profile avatar — pinned top-right, just left of the gear. */
+/* Top-bar profile avatar (the settings gear, despite the name) — sits in the
+   header's own flex row rather than floating position:absolute over the
+   page. Absolute-against-.page meant a long two-word name that wraps the
+   greeting to 3 lines pushed text right up under this icon's fixed corner
+   offset — flex flow guarantees they can never overlap, regardless of name
+   length or viewport width. align-self:flex-start keeps it pinned to the
+   top of the row (matching its old fixed-offset look) instead of centering
+   against the row's full, possibly-tall, height. Rendered after .profileLink
+   in the DOM (see Dashboard.tsx) so it's the outermost icon — furthest from
+   the greeting, since it's the one a long wrapped name was crowding. The
+   margin-left:auto that pushes the whole icon cluster to the row's right
+   edge now lives on .profileLink, the first icon in the cluster. */
 .profileAvatar {
-  position: absolute;
-  top: calc(var(--space-6) + env(safe-area-inset-top));
-  right: calc(var(--space-6) + 40px + var(--space-3));
+  position: relative;
+  flex: 0 0 auto;
+  align-self: flex-start;
   z-index: 10;
   display: inline-flex;
   align-items: center;
@@ -111,9 +122,10 @@
    .settingsBtn, kept as its own class so the gear's existing meaning isn't
    repurposed. */
 .profileLink {
-  position: absolute;
-  top: calc(var(--space-6) + env(safe-area-inset-top));
-  right: var(--space-6);
+  position: relative;
+  flex: 0 0 auto;
+  align-self: flex-start;
+  margin-left: auto;
   z-index: 10;
   display: inline-flex;
   align-items: center;
@@ -179,14 +191,27 @@
   gap: var(--space-2);
   opacity: 0;
   animation: fadeUp 700ms var(--ease-premium) forwards;
+  /* Lets the greeting shrink and wrap within its own column instead of
+     forcing .headerRow wider than the viewport — a flex item's default
+     min-width is auto (= "never shrink below content"), which is exactly
+     what let a long two-word name push into the icon cluster's space. */
+  min-width: 0;
+  flex: 1 1 auto;
+  /* Guaranteed clearance from the gear/profile icon cluster: margin-left:auto
+     on .profileAvatar only pushes it flush right when there's leftover row
+     space, which shrinks to ~nothing once a long two-word name wraps to fill
+     the column — leaving the last line running right up to the icons. A
+     fixed margin here reserves the gap regardless of how much the greeting
+     wraps. */
+  margin-right: var(--space-4);
 }
 
 .greeting {
-  font-family: var(--font-serif), 'Times New Roman', Georgia, serif;
-  font-style:normal;font-weight:700;
-  font-weight: 400;
-  /* --greet-scale (default 1) lets the user size their greeting; the font stays
-     Instrument Serif italic, the unified voice. */
+  font-family: var(--font-serif), Georgia, serif;
+  font-style: normal;
+  font-weight: 700;
+  /* --greet-scale (default 1) lets the user size their greeting; the font is
+     the bold slab now, not the old italic Instrument Serif. */
   font-size: calc(clamp(2.25rem, 4.5vw, 3.25rem) * var(--greet-scale, 1));
   line-height: 1;
   letter-spacing: -0.02em;
@@ -614,14 +639,16 @@
 
 .headerGem {
   flex: 0 0 auto;
-  width: 180px;
-  height: 180px;
+  /* Grand on purpose — the seal is the identity mark now, not a supporting
+     glyph next to the greeting, so it gets more presence than the old gem did. */
+  width: 220px;
+  height: 220px;
 }
 
 @media (max-width: 980px) {
   .headerGem {
-    width: 140px;
-    height: 140px;
+    width: 170px;
+    height: 170px;
   }
 }
 
@@ -630,47 +657,19 @@
     gap: var(--space-4);
   }
   .headerGem {
-    width: 100px;
-    height: 100px;
-  }
-  /* Let the greeting shrink/wrap instead of running underneath the gear. */
-  .header {
-    min-width: 0;
+    width: 120px;
+    height: 120px;
   }
   .greeting {
     font-size: clamp(1.85rem, 7vw, 2.3rem);
   }
-  /* Gear joins the header flow on phone: vertically centered with the gem +
-     greeting, pushed to the far right. No more floating, misaligned corner
-     icon overlapping the text. */
-  .settingsBtn {
-    position: static;
-    flex: 0 0 auto;
-    align-self: center;
-    margin-left: auto;
-  }
-  /* Avatar joins the header flow on phone too: it takes the auto margin so the
-     avatar + gear sit together as a right-aligned cluster. */
-  .profileAvatar {
-    position: static;
-    flex: 0 0 auto;
-    align-self: center;
-    margin-left: auto;
-    width: 36px;
-    height: 36px;
-  }
-  .profileAvatar + .settingsBtn {
-    margin-left: var(--space-3);
-  }
+  /* Icons just shrink a touch on phone — they're in normal flex flow at
+     every width now (see base .profileAvatar/.profileLink rules above), so
+     there's no separate "joins the flow" step needed here any more. */
+  .profileAvatar,
   .profileLink {
-    position: static;
-    flex: 0 0 auto;
-    align-self: center;
     width: 36px;
     height: 36px;
-  }
-  .profileAvatar + .profileLink {
-    margin-left: var(--space-3);
   }
 }
 

@@ -82,8 +82,8 @@
 }
 .name {
   font-family: var(--font-serif), Georgia, serif;
-  font-style:normal;font-weight:700;
-  font-weight: 400;
+  font-style: normal;
+  font-weight: 700;
   font-size: clamp(24px, 4vw, 32px);
   margin: 0;
   color: var(--fg);
