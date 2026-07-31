@@ -145,7 +145,7 @@ export default function DashboardHeaderGem({
 
         <HeroCrystal
           mode="character"
-          tint="amber"
+          tint="blue"
           shape="seal"
           sealText="PR"
           onHappyStart={firePulse}

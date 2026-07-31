@@ -36,10 +36,10 @@ function VeeArt() {
     <>
       <div className="disc" />
       <svg className="art" viewBox="0 0 434 250">
-        <path className="wire" style={{ stroke: 'rgba(217,142,74,.2)' }} d="M216 66 V2" />
+        <path className="wire" style={{ stroke: 'rgba(37,84,232,.2)' }} d="M216 66 V2" />
         <path className="wire" style={{ stroke: 'rgba(216,120,87,.2)' }} d="M262 96 H300 V40 H760" />
         <path className="wire" style={{ stroke: 'rgba(232,200,120,.2)' }} d="M262 140 H320 V192 H760" />
-        <path className="wire" style={{ stroke: 'rgba(217,142,74,.2)' }} d="M190 158 V248" />
+        <path className="wire" style={{ stroke: 'rgba(37,84,232,.2)' }} d="M190 158 V248" />
         <path className="wire" style={{ stroke: 'rgba(216,120,87,.2)' }} d="M170 140 H114 V192 H-326" />
         <path className="wire" style={{ stroke: 'rgba(232,200,120,.2)' }} d="M170 96 H134 V56 H-326" />
         <g className="feedgrp">
@@ -198,7 +198,7 @@ function TileFace({
           {isValidElement(core.glyph) ? cloneElement(core.glyph as React.ReactElement<{ width?: number; height?: number }>, { width: 44, height: 44 }) : null}
         </span>
       ) : (
-        weight != null && <RollPct value={weight} color={accent ?? '#D98E4A'} />
+        weight != null && <RollPct value={weight} color={accent ?? '#2554E8'} />
       )}
 
       {/* Inert: clicking opens the slot (filled tile or connector), never navigates. */}
@@ -286,7 +286,7 @@ function OpenTileOverlay({
 /* ── the connector: how to build (and hook up) an empty slot ── */
 function ConnectorOverlay({ id, label, onClose }: { id: string; label: string; onClose: () => void }) {
   const path = `public/tiles/${id}.html`
-  const prompt = `Build a "${label}" tile for my Vitality dashboard as ONE self-contained HTML file (all CSS and JS inline, no external requests). Dark background, mint #D98E4A. Save and load with await window.Vitality.save(data) and await window.Vitality.load() (the dashboard provides window.Vitality, do not use localStorage). Write it to ${path}.`
+  const prompt = `Build a "${label}" tile for my Vitality dashboard as ONE self-contained HTML file (all CSS and JS inline, no external requests). Dark background, mint #2554E8. Save and load with await window.Vitality.save(data) and await window.Vitality.load() (the dashboard provides window.Vitality, do not use localStorage). Write it to ${path}.`
   const [copied, setCopied] = useState(false)
   const copy = () => {
     navigator.clipboard?.writeText(prompt).then(() => {
@@ -359,7 +359,7 @@ function ConnectorOverlay({ id, label, onClose }: { id: string; label: string; o
               padding: '0.65rem 1.2rem',
               borderRadius: 10,
               background: 'var(--mint)',
-              color: 'var(--mint-ink, #042a1c)',
+              color: 'var(--mint-ink, #f4f6ff)',
               fontWeight: 600,
               border: 'none',
               cursor: 'pointer',
@@ -430,7 +430,7 @@ function NewTileOverlay({ onClose }: { onClose: () => void; onSaved?: (slot: str
               style={{
                 flex: '0 0 auto',
                 background: 'var(--mint)',
-                color: 'var(--mint-ink, #042a1c)',
+                color: 'var(--mint-ink, #f4f6ff)',
                 borderRadius: 10,
                 padding: '8px 14px',
                 fontWeight: 600,
@@ -477,7 +477,7 @@ function EmptyCanvas({ onBack }: { onBack: () => void }) {
       >
         See the vision.
       </h1>
-      <p style={{ color: '#D98E4A', fontSize: 'clamp(15px, 2.4vw, 21px)', margin: '18px 0 0', letterSpacing: '.02em' }}>
+      <p style={{ color: '#2554E8', fontSize: 'clamp(15px, 2.4vw, 21px)', margin: '18px 0 0', letterSpacing: '.02em' }}>
         You can create anything.
       </p>
       <button
@@ -485,8 +485,8 @@ function EmptyCanvas({ onBack }: { onBack: () => void }) {
         onClick={onBack}
         style={{
           marginTop: 42,
-          background: '#D98E4A',
-          color: '#04140d',
+          background: '#2554E8',
+          color: '#f4f6ff',
           border: 'none',
           borderRadius: 10,
           padding: '13px 28px',
@@ -528,12 +528,12 @@ function VisionEmptyState({ onNewTile }: { onNewTile: () => void }) {
       >
         See the vision.
       </h1>
-      <p style={{ color: '#D98E4A', fontSize: 'clamp(15px, 2.4vw, 20px)', margin: '16px 0 0', letterSpacing: '.02em' }}>
+      <p style={{ color: '#2554E8', fontSize: 'clamp(15px, 2.4vw, 20px)', margin: '16px 0 0', letterSpacing: '.02em' }}>
         You can create anything.
       </p>
       <p style={{ color: 'var(--muted, #8a8f98)', fontSize: 14, margin: '28px 0 0', maxWidth: 460, lineHeight: 1.65 }}>
         This board is yours, and empty. Build your own tile with <strong style={{ color: 'var(--fg, #fff)' }}>+ New
-        tile</strong> — or run <code style={{ color: '#D98E4A' }}>/vitality</code> in Claude Code to load the full
+        tile</strong> — or run <code style={{ color: '#2554E8' }}>/vitality</code> in Claude Code to load the full
         dashboard we built.
       </p>
       <button
@@ -541,8 +541,8 @@ function VisionEmptyState({ onNewTile }: { onNewTile: () => void }) {
         onClick={onNewTile}
         style={{
           marginTop: 30,
-          background: '#D98E4A',
-          color: '#04140d',
+          background: '#2554E8',
+          color: '#f4f6ff',
           border: 'none',
           borderRadius: 10,
           padding: '12px 26px',
@@ -768,8 +768,8 @@ export default function DashboardGrid({ userId }: DashboardGridProps) {
                 fontStyle: 'normal',
                 fontWeight: 700,
                 fontSize: 'clamp(22px, 3.2vw, 34px)',
-                color: goal?.accent ?? 'var(--mint, #D98E4A)',
-                textShadow: `0 0 34px ${goal?.accent ?? '#D98E4A'}44`,
+                color: goal?.accent ?? 'var(--mint, #2554E8)',
+                textShadow: `0 0 34px ${goal?.accent ?? '#2554E8'}44`,
                 animation: 'goalPop .7s cubic-bezier(.22,1,.36,1) both',
               }}
             >
@@ -781,7 +781,7 @@ export default function DashboardGrid({ userId }: DashboardGridProps) {
 
           {/* y = the goal picker — every goal visible, one tap to switch */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontStyle: 'normal', fontSize: 22, color: goal?.accent ?? 'var(--mint, #D98E4A)', transition: 'color .8s ease' }}>y</span>
+            <span style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontStyle: 'normal', fontSize: 22, color: goal?.accent ?? 'var(--mint, #2554E8)', transition: 'color .8s ease' }}>y</span>
             <span style={{ fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 11, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--muted, #8a8f98)' }}>=</span>
 
             {/* main (★) goal stands alone; the standalone goals share ONE border */}
@@ -801,7 +801,7 @@ export default function DashboardGrid({ userId }: DashboardGridProps) {
               const btn = (g: Goal, grouped: boolean) => {
                 const on = g.id === goal?.id
                 const main = g.id === 'overall'
-                const gA = g.accent ?? '#D98E4A'
+                const gA = g.accent ?? '#2554E8'
                 return (
                   <button
                     key={g.id}
@@ -855,7 +855,7 @@ export default function DashboardGrid({ userId }: DashboardGridProps) {
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <a href="/mentor" style={{ display: 'flex', alignItems: 'baseline', gap: 10, textDecoration: 'none' }}>
-              <span style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontStyle: 'normal', fontSize: 22, color: goal?.accent ?? 'var(--mint, #D98E4A)', transition: 'color .8s ease' }}>x</span>
+              <span style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontStyle: 'normal', fontSize: 22, color: goal?.accent ?? 'var(--mint, #2554E8)', transition: 'color .8s ease' }}>x</span>
               <span
                 aria-hidden
                 style={{
@@ -865,7 +865,7 @@ export default function DashboardGrid({ userId }: DashboardGridProps) {
                   textTransform: 'uppercase',
                   whiteSpace: 'nowrap',
                   pointerEvents: 'none',
-                  color: goal?.accent ?? 'var(--mint, #D98E4A)',
+                  color: goal?.accent ?? 'var(--mint, #2554E8)',
                   opacity: xPeek ? 0.8 : 0,
                   transform: xPeek ? 'translateX(0)' : 'translateX(-6px)',
                   filter: xPeek ? 'blur(0)' : 'blur(3px)',
@@ -881,7 +881,7 @@ export default function DashboardGrid({ userId }: DashboardGridProps) {
               onClick={() => setEditing((v) => !v)}
               style={{
                 background: editing ? 'var(--mint)' : 'transparent',
-                color: editing ? 'var(--mint-ink, #042a1c)' : 'var(--muted)',
+                color: editing ? 'var(--mint-ink, #f4f6ff)' : 'var(--muted)',
                 border: editing ? 'none' : '1px solid var(--border)',
                 borderRadius: 10,
                 padding: '5px 14px',
@@ -917,7 +917,7 @@ export default function DashboardGrid({ userId }: DashboardGridProps) {
                     style={{
                       flex: '0 0 auto',
                       alignSelf: 'center',
-                      color: 'rgba(217, 142, 74,.45)',
+                      color: 'rgba(37, 84, 232,.45)',
                       fontFamily: 'var(--font-serif), Georgia, serif',
                       fontSize: 30,
                       fontWeight: 300,
@@ -964,7 +964,7 @@ export default function DashboardGrid({ userId }: DashboardGridProps) {
                 style={{
                   flex: '0 0 auto',
                   alignSelf: 'center',
-                  color: 'rgba(217, 142, 74,.45)',
+                  color: 'rgba(37, 84, 232,.45)',
                   fontFamily: 'var(--font-serif), Georgia, serif',
                   fontSize: 30,
                   fontWeight: 300,
@@ -984,9 +984,9 @@ export default function DashboardGrid({ userId }: DashboardGridProps) {
                 width: 300,
                 height: 340,
                 borderRadius: 20,
-                border: '1px dashed rgba(217, 142, 74,.35)',
+                border: '1px dashed rgba(37, 84, 232,.35)',
                 background: 'transparent',
-                color: 'var(--mint, #D98E4A)',
+                color: 'var(--mint, #2554E8)',
                 fontSize: 46,
                 fontWeight: 300,
                 cursor: 'pointer',

@@ -166,7 +166,7 @@ function ScratchPanel({ userId, onClose }: { userId: string; onClose: () => void
               <strong style={{ color: 'var(--fg)' }}>Rowan teaches every piece on YouTube</strong> — how to automate
               it and build your own input tiles, one video at a time.
             </p>
-            <p style={{ ...mono, fontSize: 10, letterSpacing: '.16em', color: 'var(--mint, #D98E4A)', margin: '18px 0 8px', textTransform: 'uppercase' }}>
+            <p style={{ ...mono, fontSize: 10, letterSpacing: '.16em', color: 'var(--mint, #2554E8)', margin: '18px 0 8px', textTransform: 'uppercase' }}>
               how data gets in
             </p>
             <ul style={{ margin: 0, padding: 0, listStyle: 'none', color: 'var(--muted)', fontSize: 13, lineHeight: 2 }}>
@@ -211,8 +211,8 @@ function ScratchPanel({ userId, onClose }: { userId: string; onClose: () => void
                 marginTop: 16,
                 padding: '0.7rem 1rem',
                 borderRadius: 10,
-                background: 'var(--mint, #D98E4A)',
-                color: 'var(--mint-ink, #042a1c)',
+                background: 'var(--mint, #2554E8)',
+                color: 'var(--mint-ink, #f4f6ff)',
                 border: 'none',
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -356,8 +356,8 @@ function ScratchPanel({ userId, onClose }: { userId: string; onClose: () => void
                   flex: 1.4,
                   padding: '0.7rem 1rem',
                   borderRadius: 10,
-                  background: 'var(--mint, #D98E4A)',
-                  color: 'var(--mint-ink, #042a1c)',
+                  background: 'var(--mint, #2554E8)',
+                  color: 'var(--mint-ink, #f4f6ff)',
                   border: 'none',
                   fontWeight: 600,
                   cursor: 'pointer',
@@ -403,7 +403,7 @@ export default function Dashboard({ firstName, userId }: DashboardProps) {
   }, [userId])
 
   // The active goal tints the whole room — the main goal turns it gold.
-  const wallAccent = goalAccent ?? (chrome ? backgroundAccent(chrome.background) : '#D98E4A')
+  const wallAccent = goalAccent ?? (chrome ? backgroundAccent(chrome.background) : '#2554E8')
   // In scratch mode there's no gem and no avatar. The greeting stays only when the
   // background was kept (world); a pure-black scratch drops it too. The gear (settings)
   // is always there — the way into scratch and back.

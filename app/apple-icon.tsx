@@ -26,11 +26,11 @@ export default function AppleIcon() {
             width: 148,
             height: 148,
             borderRadius: 18,
-            border: '6px solid #D98E4A',
+            border: '6px solid #2554E8',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: 'rgba(217,142,74,0.06)',
+            background: 'rgba(37,84,232,0.06)',
           }}
         >
           <div

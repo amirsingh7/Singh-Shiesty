@@ -29,7 +29,7 @@
 -->
 <style>
   :root{
-    --bg:#100c09;--fg:#f5ede2;--brand:#D98E4A;--brand-soft:rgba(217, 142, 74,.08);
+    --bg:#100c09;--fg:#f5ede2;--brand:#2554E8;--brand-soft:rgba(37, 84, 232,.08);
     --muted:#8c8175;--muted-strong:#ada395;--border:#241c15;
     --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
     --serif:'Rockwell','Roboto Slab',Georgia,serif;
@@ -40,7 +40,7 @@
   html,body{height:100%}
   body{background:var(--bg);color:var(--fg);font:15px/1.5 var(--font);display:flex;justify-content:center;padding:40px 20px;-webkit-font-smoothing:antialiased;position:relative}
   body::before{content:'';position:fixed;inset:0;z-index:-2;pointer-events:none;background:
-    radial-gradient(58% 44% at 50% -6%, rgba(217, 142, 74,.13), transparent 62%),
+    radial-gradient(58% 44% at 50% -6%, rgba(37, 84, 232,.13), transparent 62%),
     radial-gradient(1.5px 1.5px at 14% 16%, rgba(255,255,255,.5), transparent 100%),
     radial-gradient(1px 1px at 76% 10%, rgba(255,255,255,.4), transparent 100%),
     radial-gradient(1.5px 1.5px at 52% 6%, rgba(255,255,255,.32), transparent 100%),
@@ -60,16 +60,16 @@
   .uTabs button{background:none;border:1px solid var(--border);color:var(--muted);font-family:var(--font);font-size:11px;
     font-weight:600;padding:7px 14px;border-radius:10px;cursor:pointer;transition:color .2s,background .2s,border-color .2s}
   .uTabs button:hover{color:#f5ede2;border-color:var(--muted)}
-  .uTabs button.on{background:var(--brand);color:#04140d;border-color:var(--brand)}
+  .uTabs button.on{background:var(--brand);color:#f4f6ff;border-color:var(--brand)}
   .count{font-family:var(--serif);font-style:normal;font-weight:700;font-size:clamp(72px,18vw,110px);line-height:1;color:#f5ede2;margin-top:10px;
-    text-shadow:0 0 44px rgba(217, 142, 74,.25)}
+    text-shadow:0 0 44px rgba(37, 84, 232,.25)}
   .of{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-top:8px}
   .hydrateNote{margin:26px auto 0;max-width:38ch;text-align:center;color:var(--muted);font-size:12px;line-height:1.55}
   .hydrateNote b{color:var(--brand)}
   .btnRow{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:30px}
   .minus{width:46px;height:46px;border-radius:999px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:20px;cursor:pointer;transition:all .15s}
   .minus:hover{color:#f5ede2;border-color:var(--muted)}
-  .glass{padding:16px 40px;border-radius:10px;border:none;background:linear-gradient(180deg,#E8B17E,var(--brand));color:#04140d;
+  .glass{padding:16px 40px;border-radius:10px;border:none;background:linear-gradient(180deg,#8CA6FF,var(--brand));color:#f4f6ff;
     font-weight:700;font-size:16px;cursor:pointer;box-shadow:0 10px 34px -12px var(--brand);transition:transform .15s var(--ease)}
   .glass:hover{transform:translateY(-1px)}
   .glass:active{transform:scale(.97)}
@@ -81,7 +81,7 @@
   .mlInput:focus{outline:none;border-color:var(--brand)}
   .mlSubmit{padding:9px 18px;border-radius:10px;border:1px solid var(--brand);background:transparent;color:var(--brand);
     font-weight:600;font-size:13px;cursor:pointer;transition:all .15s}
-  .mlSubmit:hover{background:var(--brand);color:#04140d}
+  .mlSubmit:hover{background:var(--brand);color:#f4f6ff}
 
   .gallonWrap{width:60px;margin:14px auto 2px}
   .gallonWrap svg{display:block;image-rendering:pixelated}
@@ -95,12 +95,12 @@
 
   .week{display:flex;justify-content:center;align-items:flex-end;gap:10px;margin-top:52px;height:64px}
   .day{display:flex;flex-direction:column;align-items:center;gap:7px;height:100%;justify-content:flex-end}
-  .bar{width:16px;border-radius:5px 5px 3px 3px;background:linear-gradient(180deg,var(--brand),rgba(217, 142, 74,.25));min-height:3px;transition:height .5s var(--ease)}
+  .bar{width:16px;border-radius:5px 5px 3px 3px;background:linear-gradient(180deg,var(--brand),rgba(37, 84, 232,.25));min-height:3px;transition:height .5s var(--ease)}
   .bar.zero{background:var(--border)}
   .dLab{font-family:var(--mono);font-size:8.5px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
   .dLab.today{color:var(--brand)}
   .foot{font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-top:34px}
-  .starterTag{width:max-content;max-width:92%;margin:0 auto 20px;padding:6px 14px;border:1px solid rgba(217, 142, 74,.25);border-radius:10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#8c8175;text-align:center}
+  .starterTag{width:max-content;max-width:92%;margin:0 auto 20px;padding:6px 14px;border:1px solid rgba(37, 84, 232,.25);border-radius:10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#8c8175;text-align:center}
   .starterTag,.starterTag *{line-height:1.6}
 
   /* section tabs: Water / Macros */
@@ -108,7 +108,7 @@
   .secTab{flex:1;background:none;border:1px solid var(--border);color:var(--muted);font-family:var(--font);font-size:12.5px;
     font-weight:600;padding:10px;border-radius:12px;cursor:pointer;transition:color .2s,background .2s,border-color .2s}
   .secTab:hover{color:#f5ede2;border-color:var(--muted)}
-  .secTab.on{background:var(--brand-soft);color:var(--brand);border-color:rgba(217, 142, 74,.4)}
+  .secTab.on{background:var(--brand-soft);color:var(--brand);border-color:rgba(37, 84, 232,.4)}
 
   /* MACROS tab */
   .macrosHead{display:flex;align-items:center;justify-content:space-between;margin-top:26px;text-align:left}
@@ -122,15 +122,15 @@
   .meterNum{font-family:var(--serif);font-style:normal;font-weight:700;font-size:15px;color:#f5ede2}
   .meterNum i{font-style:normal;color:var(--muted);font-size:12px}
   .meterTrack{height:7px;border-radius:99px;background:var(--border);margin-top:7px;overflow:hidden}
-  .meterFill{height:100%;background:linear-gradient(90deg,rgba(217, 142, 74,.55),var(--brand));border-radius:99px;transition:width .5s var(--ease)}
+  .meterFill{height:100%;background:linear-gradient(90deg,rgba(37, 84, 232,.55),var(--brand));border-radius:99px;transition:width .5s var(--ease)}
   .meterFill.over{background:linear-gradient(90deg,var(--brand),#fff)}
   .meterSub{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;color:var(--muted);margin-top:5px;text-transform:uppercase}
 
   .logHead{display:flex;justify-content:space-between;align-items:center;margin-top:30px;text-align:left}
   .logTitle{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
-  .addFoodBtn{background:var(--brand-soft);border:1px solid rgba(217, 142, 74,.4);color:var(--brand);font-family:var(--font);
+  .addFoodBtn{background:var(--brand-soft);border:1px solid rgba(37, 84, 232,.4);color:var(--brand);font-family:var(--font);
     font-weight:600;font-size:12px;padding:7px 14px;border-radius:10px;cursor:pointer;transition:background .2s}
-  .addFoodBtn:hover{background:rgba(217, 142, 74,.16)}
+  .addFoodBtn:hover{background:rgba(37, 84, 232,.16)}
   .mealList{margin-top:12px;display:flex;flex-direction:column;gap:6px;text-align:left}
   .mealRow{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.015)}
   .mealMain{flex:1;min-width:0}
@@ -163,8 +163,8 @@
   .ovBtn{flex:1;padding:11px;border-radius:11px;border:1px solid var(--border);background:none;color:var(--muted-strong);
     font-family:var(--font);font-weight:600;font-size:13px;cursor:pointer;transition:all .15s}
   .ovBtn:hover{border-color:var(--muted)}
-  .ovBtn.primary{background:var(--brand);border-color:var(--brand);color:#04140d}
-  .ovBtn.primary:hover{background:#B8703A}
+  .ovBtn.primary{background:var(--brand);border-color:var(--brand);color:#f4f6ff}
+  .ovBtn.primary:hover{background:#1B3FB0}
   .ovHint{font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:6px}
   .ovDivider{border-top:1px solid var(--border);margin:20px 0}
 

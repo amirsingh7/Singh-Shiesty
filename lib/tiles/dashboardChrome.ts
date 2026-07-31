@@ -56,7 +56,7 @@ export const DEFAULT_CHROME: DashboardChrome = {
 
 /** Wallpaper accent swatches (World tint + Solid + theme-from-wallpaper). */
 export const WALLPAPER_ACCENTS: { name: string; hex: string }[] = [
-  { name: 'Mint', hex: '#D98E4A' },
+  { name: 'Cobalt', hex: '#2554E8' },
   { name: 'Azure', hex: '#6EA8FF' },
   { name: 'Ice', hex: '#CFE9FF' },
   { name: 'Amber', hex: '#F5B044' },
@@ -146,8 +146,8 @@ function reset(userId: string): DashboardChrome {
 /** The accent a chosen background publishes into --wall-accent (themes the UI). */
 export function backgroundAccent(bg: Background): string {
   if (bg.mode === 'world') return bg.accent
-  if (bg.mode === 'gradient') return '#D98E4A'
-  return '#D98E4A'
+  if (bg.mode === 'gradient') return '#2554E8'
+  return '#2554E8'
 }
 
 export const dashboardChrome = { get, update, setBackground, reset }

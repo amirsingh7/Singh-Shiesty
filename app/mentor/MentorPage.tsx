@@ -291,7 +291,7 @@ export default function MentorPage({
   if (!mounted) return null
 
   const act = list.find((g) => g.id === active) ?? list[0]
-  const accent = act?.accent ?? '#D98E4A'
+  const accent = act?.accent ?? '#2554E8'
   const entries = Object.entries(act?.weights ?? {}).sort((a, b) => b[1] - a[1])
   const advice = noticedFeed()[0]
 
@@ -447,7 +447,7 @@ export default function MentorPage({
         <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap', marginTop: 34, animation: 'fadeUp .8s ease .25s both' }}>
           {list.map((g) => {
             const on = g.id === active
-            const gA = g.accent ?? '#D98E4A'
+            const gA = g.accent ?? '#2554E8'
             return (
               <button
                 key={g.id}
