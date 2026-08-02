@@ -7,6 +7,8 @@
 
 import type { RecordStatus } from './profile'
 import type { CompetitionRecord } from './competitions'
+import type { EvidenceRecord } from './evidence'
+import { evidenceKey } from './evidence'
 
 const LB = 0.45359237
 
@@ -27,6 +29,11 @@ export interface HistoryEntry {
    *  honest default until competition import / evidence upload / endorsement
    *  (later phases) start setting the others. */
   recordStatus?: RecordStatus
+  /** Set once combinedHistory finds a matching evidence upload — the storage
+   *  path a signed URL can be generated from, never a public URL itself
+   *  (the bucket is private; visibility/token enforcement already happened
+   *  before this ever gets used, same as the rest of a profile's data). */
+  evidencePath?: string
 }
 export interface Lift {
   id: string
@@ -59,12 +66,20 @@ export function allLifts(split: TrainSplit | null): Lift[] {
  *  as one array a normal bestOf()/prMoments() can treat like any other
  *  history — competition entries carry their own weight/date and are always
  *  tagged 'competition-result', regardless of what Train separately has for
- *  the same lift. */
-export function combinedHistory(lift: Lift, competitions: CompetitionRecord[]): HistoryEntry[] {
+ *  the same lift. A self-reported entry with a matching evidence upload gets
+ *  upgraded to 'evidence-attached' — a competition result doesn't need the
+ *  upgrade, it's already the more specific, more credible signal. */
+export function combinedHistory(lift: Lift, competitions: CompetitionRecord[], evidence: EvidenceRecord[] = []): HistoryEntry[] {
   const fromComps: HistoryEntry[] = competitions
     .filter((c) => c.liftId === lift.id)
     .map((c) => ({ w: c.weightKg, r: c.reps, date: c.date, recordStatus: 'competition-result' as RecordStatus }))
-  return [...(lift.history || []), ...fromComps]
+  const evidenceByKey = new Map(evidence.map((e) => [e.id, e]))
+  const fromTrain: HistoryEntry[] = (lift.history || []).map((h) => {
+    if (h.recordStatus) return h
+    const match = evidenceByKey.get(evidenceKey(lift.id, h.date, h.w, h.r))
+    return match ? { ...h, recordStatus: 'evidence-attached' as RecordStatus, evidencePath: match.storagePath } : h
+  })
+  return [...fromTrain, ...fromComps]
 }
 
 export function bestOf(history: HistoryEntry[]): HistoryEntry | null {
