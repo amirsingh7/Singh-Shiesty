@@ -20,7 +20,14 @@ export function supabaseAdmin(): SupabaseClient | null {
   if (!url || !serviceKey) return null
   if (!client) {
     try {
-      client = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } })
+      client = createClient(url, serviceKey, {
+        auth: { persistSession: false, autoRefreshToken: false },
+        // Next.js patches global fetch to cache GET requests by default —
+        // without this override a page/route reading through this client
+        // can serve a stale row after a write, since Supabase's own selects
+        // are plain GETs Next has no way to know just went stale.
+        global: { fetch: (input, init) => fetch(input, { ...init, cache: 'no-store' }) },
+      })
     } catch {
       return null
     }

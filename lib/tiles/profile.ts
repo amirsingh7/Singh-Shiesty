@@ -41,8 +41,13 @@ export interface Profile {
   weightClass?: string
   ageDivision?: string
   primaryGoals?: string[]
-  /** UI concept only — no real access control, there's one owner. */
+  /** 'public' = visible to anyone at /p/[userId]. 'private' (or unset) =
+   *  visible only via that same URL plus the matching `shareToken` — both
+   *  enforced server-side in app/p/[userId]/page.tsx, not just hidden in the UI. */
   visibility?: 'public' | 'private'
+  /** Secret used to view a private profile without signing in. Generated
+   *  once, on first share, and reused after that — see ProfilePage's share(). */
+  shareToken?: string
   personalStatement?: string
 
   // ── Founder background (business-context doc, section 2) — the story
