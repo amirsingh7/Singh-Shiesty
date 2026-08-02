@@ -1,9 +1,10 @@
 import { createMcpHandler } from 'mcp-handler'
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { z } from 'zod'
 
 import { constantTimeEquals, looksLikeJwt, verifyAccessToken } from '../oauth/crypto'
 import { MCP_SCOPE, mcpResourceUrl, oauthSecret, originOf, resourceMetadataUrl } from '../oauth/shared'
+import { supabaseAdmin } from '@/lib/auth/supabaseAdmin'
 
 /**
  * The Vitality Base connector — a personal, single-user MCP server.
@@ -39,36 +40,40 @@ const SLOTS = ['train', 'fuel', 'vitals', 'vee', 'brand', 'peak', 'finance', 've
 const MAX_TILE_HTML = 1024 * 1024 // 1MB — one tile can never be pathological
 const MAX_TILE_DATA = 512 * 1024 // 512KB — mirrors tileStore's cap so a tile can always load what we save
 
-/** The dashboard's constant per-browser user id (app/page.tsx renders
- *  <Dashboard userId="me">).
+/** The connector is single-owner: the founder's real account id, set once in
+ *  OWNER_USER_ID after signing up in the app (there is no browser session
+ *  here — Claude Code/claude.ai authenticate via MCP_TOKEN/OAuth, not login).
+ *  A service-role client is required alongside it since it bypasses RLS —
+ *  every query below filters by user_id explicitly instead of relying on it.
  *
  *  A tile's saved data lives under TWO tile_data keys, mirroring the browser:
- *  tileStore.saveData writes `me:<slot>` and useTileHost also writes the bare
- *  `<slot>` via lib/sync.ts — and on LOAD the bare row wins when present
- *  (useTileHost prefers syncLoad). So the data lane must dual-write both keys
- *  and read with the same precedence, or a sweep's write would be silently
- *  shadowed by any past browser save. */
-const USER_ID = 'me'
-const dataKey = (slot: string) => `${USER_ID}:${slot}`
+ *  tileStore.saveData writes `<ownerId>:<slot>` and useTileHost also writes
+ *  the bare `<slot>` via lib/sync.ts — and on LOAD the bare row wins when
+ *  present (useTileHost prefers syncLoad). So the data lane must dual-write
+ *  both keys and read with the same precedence, or a sweep's write would be
+ *  silently shadowed by any past browser save. */
+const dataKey = (ownerId: string, slot: string) => `${ownerId}:${slot}`
 
 /** Slots whose tiles actually persist data. `vee` is the Mentor — it opens the
  *  mentor page, hosts no sealed tile, and reads no tile_data row; writing there
  *  would land nowhere, so the data tools refuse it up front. */
 const DATA_SLOTS = ['train', 'fuel', 'vitals', 'brand', 'peak', 'finance'] as const
 
-/** The board's own load precedence: bare `<slot>` row first, else `me:<slot>`. */
+/** The board's own load precedence: bare `<slot>` row first, else `<ownerId>:<slot>`. */
 async function loadTileData(
   c: SupabaseClient,
+  ownerId: string,
   slot: string,
 ): Promise<{ ok: true; value: unknown } | { ok: false }> {
   const { data, error } = await c
     .from('tile_data')
     .select('tile_id, data')
-    .in('tile_id', [slot, dataKey(slot)])
+    .eq('user_id', ownerId)
+    .in('tile_id', [slot, dataKey(ownerId, slot)])
   if (error) return { ok: false }
   const rows = data ?? []
   const bare = rows.find((r: { tile_id: string }) => r.tile_id === slot)
-  const scoped = rows.find((r: { tile_id: string }) => r.tile_id === dataKey(slot))
+  const scoped = rows.find((r: { tile_id: string }) => r.tile_id === dataKey(ownerId, slot))
   const row = bare ?? scoped
   return { ok: true, value: row ? (row.data ?? null) : undefined }
 }
@@ -78,19 +83,16 @@ const text = (t: string): ToolResult => ({ content: [{ type: 'text', text: t }] 
 const fail = (t: string): ToolResult => ({ content: [{ type: 'text', text: t }], isError: true })
 
 const NO_DB = fail(
-  'Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, then run supabase/tiles.sql.',
+  'Not configured. Add NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, and OWNER_USER_ID (your account id after signing up), then run supabase/auth_migration.sql.',
 )
 
-/** Anon client (open RLS policy on a personal instance). Null if unconfigured. */
-function db(): SupabaseClient | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url || !key) return null
-  try {
-    return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } })
-  } catch {
-    return null
-  }
+/** Service-role client + the founder's account id, or null if either piece of
+ *  config is missing. */
+function db(): { c: SupabaseClient; ownerId: string } | null {
+  const c = supabaseAdmin()
+  const ownerId = process.env.OWNER_USER_ID
+  if (!c || !ownerId) return null
+  return { c, ownerId }
 }
 
 const mcpHandler = createMcpHandler(
@@ -104,10 +106,11 @@ const mcpHandler = createMcpHandler(
         inputSchema: {},
       },
       async (): Promise<ToolResult> => {
-        const c = db()
-        if (!c) return NO_DB
-        const { data, error } = await c.from('tiles').select('slot')
-        if (error) return fail('Could not read the tiles table. Did you run supabase/tiles.sql?')
+        const conn = db()
+        if (!conn) return NO_DB
+        const { c, ownerId } = conn
+        const { data, error } = await c.from('tiles').select('slot').eq('user_id', ownerId)
+        if (error) return fail('Could not read the tiles table. Did you run supabase/auth_migration.sql?')
         const filled = new Set((data ?? []).map((r: { slot: string }) => r.slot))
         return text(SLOTS.map((s) => `- ${s}${filled.has(s) ? ' — filled' : ' — empty'}`).join('\n'))
       },
@@ -122,9 +125,10 @@ const mcpHandler = createMcpHandler(
         inputSchema: { slot: z.enum(SLOTS) },
       },
       async ({ slot }): Promise<ToolResult> => {
-        const c = db()
-        if (!c) return NO_DB
-        const { data, error } = await c.from('tiles').select('html').eq('slot', slot).maybeSingle()
+        const conn = db()
+        if (!conn) return NO_DB
+        const { c, ownerId } = conn
+        const { data, error } = await c.from('tiles').select('html').eq('user_id', ownerId).eq('slot', slot).maybeSingle()
         if (error) return fail('Could not read that slot.')
         if (!data) return text(`Slot "${slot}" is empty. Use create_tile to fill it.`)
         return text(data.html as string)
@@ -144,13 +148,14 @@ const mcpHandler = createMcpHandler(
         },
       },
       async ({ slot, html, name }): Promise<ToolResult> => {
-        const c = db()
-        if (!c) return NO_DB
+        const conn = db()
+        if (!conn) return NO_DB
+        const { c, ownerId } = conn
         const { error } = await c
           .from('tiles')
           .upsert(
-            { slot, html, name: name ?? null, updated_at: new Date().toISOString() },
-            { onConflict: 'slot' },
+            { user_id: ownerId, slot, html, name: name ?? null, updated_at: new Date().toISOString() },
+            { onConflict: 'user_id,slot' },
           )
         if (error) return fail('Could not save the tile.')
         return text(`Saved the "${slot}" tile. Reload your dashboard to see it.`)
@@ -166,9 +171,10 @@ const mcpHandler = createMcpHandler(
         inputSchema: { slot: z.enum(SLOTS) },
       },
       async ({ slot }): Promise<ToolResult> => {
-        const c = db()
-        if (!c) return NO_DB
-        const { error } = await c.from('tiles').delete().eq('slot', slot)
+        const conn = db()
+        if (!conn) return NO_DB
+        const { c, ownerId } = conn
+        const { error } = await c.from('tiles').delete().eq('user_id', ownerId).eq('slot', slot)
         if (error) return fail('Could not clear that slot.')
         return text(`Cleared the "${slot}" slot.`)
       },
@@ -188,10 +194,10 @@ const mcpHandler = createMcpHandler(
         inputSchema: { slot: z.enum(DATA_SLOTS) },
       },
       async ({ slot }): Promise<ToolResult> => {
-        const c = db()
-        if (!c) return NO_DB
-        const res = await loadTileData(c, slot)
-        if (!res.ok) return fail('Could not read tile_data. Did you run supabase/sync.sql?')
+        const conn = db()
+        if (!conn) return NO_DB
+        const res = await loadTileData(conn.c, conn.ownerId, slot)
+        if (!res.ok) return fail('Could not read tile_data. Did you run supabase/auth_migration.sql?')
         if (res.value === undefined) return text(`No saved data for "${slot}" yet.`)
         return text(JSON.stringify(res.value, null, 2))
       },
@@ -219,8 +225,9 @@ const mcpHandler = createMcpHandler(
         },
       },
       async ({ slot, data, merge }): Promise<ToolResult> => {
-        const c = db()
-        if (!c) return NO_DB
+        const conn = db()
+        if (!conn) return NO_DB
+        const { c, ownerId } = conn
 
         let incoming: unknown
         try {
@@ -232,8 +239,8 @@ const mcpHandler = createMcpHandler(
         const doMerge = merge !== false
         let next: unknown = incoming
         if (doMerge) {
-          const res = await loadTileData(c, slot)
-          if (!res.ok) return fail('Could not read tile_data before merging. Did you run supabase/sync.sql?')
+          const res = await loadTileData(c, ownerId, slot)
+          if (!res.ok) return fail('Could not read tile_data before merging. Did you run supabase/auth_migration.sql?')
           const existing = res.value
           const isObj = (v: unknown): v is Record<string, unknown> =>
             !!v && typeof v === 'object' && !Array.isArray(v)
@@ -256,20 +263,20 @@ const mcpHandler = createMcpHandler(
           return fail('Merged payload exceeds the 512KB tile-data cap; trim old entries before saving.')
         }
 
-        // Dual-write, mirroring the browser (tileStore → me:<slot>, sync → <slot>).
-        // The bare row wins on load, so writing only one key would let the other
-        // shadow it. Bare row first: it's the one the board renders.
+        // Dual-write, mirroring the browser (tileStore → <ownerId>:<slot>, sync →
+        // <slot>). The bare row wins on load, so writing only one key would let
+        // the other shadow it. Bare row first: it's the one the board renders.
         const stamp = new Date().toISOString()
         const { error } = await c
           .from('tile_data')
           .upsert(
             [
-              { tile_id: slot, data: next, updated_at: stamp },
-              { tile_id: dataKey(slot), data: next, updated_at: stamp },
+              { user_id: ownerId, tile_id: slot, data: next, updated_at: stamp },
+              { user_id: ownerId, tile_id: dataKey(ownerId, slot), data: next, updated_at: stamp },
             ],
-            { onConflict: 'tile_id' },
+            { onConflict: 'user_id,tile_id' },
           )
-        if (error) return fail('Could not save tile data. Did you run supabase/sync.sql?')
+        if (error) return fail('Could not save tile data. Did you run supabase/auth_migration.sql?')
         return text(
           `Filed into "${slot}" (${doMerge ? 'merged' : 'replaced'}). The tile renders it on next dashboard load.`,
         )

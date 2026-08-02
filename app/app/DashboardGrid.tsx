@@ -641,7 +641,7 @@ export default function DashboardGrid({ userId }: DashboardGridProps) {
       for (const p of pairs) if (p) map[p[0]] = p[1]
 
       if (syncEnabled()) {
-        const remote = await syncLoadTiles()
+        const remote = await syncLoadTiles(userId)
         for (const id of SLOT_ORDER) if (remote[id]) map[id] = remote[id].html
       }
 
@@ -653,7 +653,7 @@ export default function DashboardGrid({ userId }: DashboardGridProps) {
     return () => {
       alive = false
     }
-  }, [])
+  }, [userId])
 
   // The board shows ONLY tiles that actually exist. A fresh scaffold has none, so
   // it boots to the blank "see the vision" canvas; tiles appear as they're built

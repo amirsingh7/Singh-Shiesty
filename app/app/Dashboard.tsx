@@ -1,6 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useSession } from '@/lib/auth/AuthProvider'
+import { syncEnabled } from '@/lib/sync'
 import styles from './dashboard.module.css'
 import DashboardHeader from './DashboardHeader'
 import WelcomeBackdrop from '@/components/WelcomeBackdrop'
@@ -30,6 +33,9 @@ const MAKE_IT_YOURS_PROMPT =
   "Make this dashboard MINE. Before you touch anything, talk it through with me — one question at a time: do I keep the gem avatar? The art on each tile? The mentor tile's design? The background (mountains + particles)? Then ask how I want it to FEEL — mood, colors, energy. Only after my answers: strip every piece of Vitality style I let go of, restyle the board to me, and keep every tile and all my data working."
 
 function ScratchPanel({ userId, onClose }: { userId: string; onClose: () => void }) {
+  const router = useRouter()
+  const { user, signOut } = useSession()
+  const [signingOut, setSigningOut] = useState(false)
   const [tab, setTab] = useState<'how' | 'yours' | 'data' | 'scratch'>('how')
   const [keepBg, setKeepBg] = useState(false)
   const [copied, setCopied] = useState<string | null>(null)
@@ -138,17 +144,40 @@ function ScratchPanel({ userId, onClose }: { userId: string; onClose: () => void
             {pill('data', 'Tile data')}
             {pill('scratch', 'Detonate')}
           </div>
-          <button
-            type="button"
-            aria-label="Close"
-            onClick={onClose}
-            style={{ background: 'transparent', border: 'none', color: 'var(--muted, #8a8f98)', cursor: 'pointer', padding: 4, display: 'flex' }}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="6" y1="6" x2="18" y2="18" />
-              <line x1="18" y1="6" x2="6" y2="18" />
-            </svg>
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {syncEnabled() && user && (
+              <button
+                type="button"
+                disabled={signingOut}
+                onClick={async () => {
+                  setSigningOut(true)
+                  await signOut()
+                  router.replace('/login')
+                }}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--muted, #8a8f98)',
+                  cursor: signingOut ? 'default' : 'pointer',
+                  fontSize: 12.5,
+                  padding: '4px 2px',
+                }}
+              >
+                {signingOut ? 'Signing out…' : 'Sign out'}
+              </button>
+            )}
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={onClose}
+              style={{ background: 'transparent', border: 'none', color: 'var(--muted, #8a8f98)', cursor: 'pointer', padding: 4, display: 'flex' }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="6" y1="6" x2="18" y2="18" />
+                <line x1="18" y1="6" x2="6" y2="18" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {tab === 'how' && (

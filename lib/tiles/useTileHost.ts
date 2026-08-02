@@ -192,7 +192,7 @@ export function useTileHost(
         }
         let data = await tileStore.loadData(userId, slot)
         if (syncEnabled()) {
-          const remote = await syncLoad(slot)
+          const remote = await syncLoad(userId, slot)
           if (remote != null) data = remote as typeof data
         }
         src.postMessage({ source: 'vitality-host', type: 'read:result', id: msg.id, data }, '*')
@@ -220,7 +220,7 @@ export function useTileHost(
         }
         let current = await tileStore.loadData(userId, slot)
         if (syncEnabled()) {
-          const remote = await syncLoad(slot)
+          const remote = await syncLoad(userId, slot)
           if (remote != null) current = remote
         }
         const merged: Record<string, unknown> =
@@ -232,7 +232,7 @@ export function useTileHost(
           return
         }
         src.postMessage({ source: 'vitality-host', type: 'write:ok', id: msg.id }, '*')
-        if (syncEnabled()) void syncSave(slot, merged, new Date().toISOString())
+        if (syncEnabled()) void syncSave(userId, slot, merged, new Date().toISOString())
         activity.current?.({ tileId: slot, type: 'save', count: 0 })
         return
       }
@@ -264,7 +264,7 @@ export function useTileHost(
         src.postMessage({ source: 'vitality-host', type: 'save:ok', id: msg.id }, '*')
         // then mirror to the owner's Supabase (if configured) so the same data shows
         // up on their other devices. Fire-and-forget — never blocks the tile.
-        if (syncEnabled()) void syncSave(tileId, msg.data, new Date().toISOString())
+        if (syncEnabled()) void syncSave(userId, tileId, msg.data, new Date().toISOString())
         const count = Array.isArray(msg.data) ? msg.data.length : 0
         activity.current?.({ tileId, type: 'save', count })
         return
@@ -275,7 +275,7 @@ export function useTileHost(
         // gets the real data); fall back to this browser's local copy otherwise.
         let data = await tileStore.loadData(userId, tileId)
         if (syncEnabled()) {
-          const remote = await syncLoad(tileId)
+          const remote = await syncLoad(userId, tileId)
           if (remote != null) data = remote as typeof data
         }
         // reply to the exact sender, never a broadcast. targetOrigin stays '*'

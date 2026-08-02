@@ -1,5 +1,5 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { timingSafeEqual } from 'node:crypto'
+import { supabaseAdmin } from '@/lib/auth/supabaseAdmin'
 
 /**
  * Vitals ingest — a plain REST endpoint (no MCP/JSON-RPC) so an iOS Shortcut's
@@ -20,9 +20,7 @@ import { timingSafeEqual } from 'node:crypto'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const USER_ID = 'me'
 const SLOT = 'vitals'
-const dataKey = `${USER_ID}:${SLOT}`
 
 function constantTimeEquals(a: string, b: string): boolean {
   const bufA = Buffer.from(a)
@@ -36,17 +34,6 @@ function bearerToken(req: Request): string | null {
   if (!h) return null
   const m = h.match(/^Bearer\s+(.+)$/i)
   return m ? m[1].trim() : null
-}
-
-function db(): SupabaseClient | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url || !key) return null
-  try {
-    return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } })
-  } catch {
-    return null
-  }
 }
 
 const USER_TIMEZONE = 'America/Los_Angeles'
@@ -97,20 +84,26 @@ export async function POST(req: Request): Promise<Response> {
     )
   }
 
-  const c = db()
-  if (!c) {
+  const ownerId = process.env.OWNER_USER_ID
+  const c = supabaseAdmin()
+  if (!c || !ownerId) {
     return Response.json(
-      { error: 'Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL / _ANON_KEY, then run supabase/sync.sql.' },
+      {
+        error:
+          'Vitals ingest needs SUPABASE_SERVICE_ROLE_KEY and OWNER_USER_ID (your account id after signing up), on top of NEXT_PUBLIC_SUPABASE_URL / _ANON_KEY.',
+      },
       { status: 503 },
     )
   }
 
+  const dataKey = `${ownerId}:${SLOT}`
   const { data: rows, error: readErr } = await c
     .from('tile_data')
     .select('tile_id, data')
+    .eq('user_id', ownerId)
     .in('tile_id', [SLOT, dataKey])
   if (readErr) {
-    return Response.json({ error: 'Could not read tile_data. Did you run supabase/sync.sql?' }, { status: 500 })
+    return Response.json({ error: 'Could not read tile_data. Did you run supabase/auth_migration.sql?' }, { status: 500 })
   }
   const bareRow = (rows ?? []).find((r: { tile_id: string }) => r.tile_id === SLOT)
   const scopedRow = (rows ?? []).find((r: { tile_id: string }) => r.tile_id === dataKey)
@@ -131,13 +124,13 @@ export async function POST(req: Request): Promise<Response> {
   const stamp = new Date().toISOString()
   const { error: writeErr } = await c.from('tile_data').upsert(
     [
-      { tile_id: SLOT, data: store, updated_at: stamp },
-      { tile_id: dataKey, data: store, updated_at: stamp },
+      { user_id: ownerId, tile_id: SLOT, data: store, updated_at: stamp },
+      { user_id: ownerId, tile_id: dataKey, data: store, updated_at: stamp },
     ],
-    { onConflict: 'tile_id' },
+    { onConflict: 'user_id,tile_id' },
   )
   if (writeErr) {
-    return Response.json({ error: 'Could not save. Did you run supabase/sync.sql?' }, { status: 500 })
+    return Response.json({ error: 'Could not save. Did you run supabase/auth_migration.sql?' }, { status: 500 })
   }
 
   return Response.json({ ok: true, date, saved: day })

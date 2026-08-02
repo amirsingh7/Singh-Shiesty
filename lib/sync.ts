@@ -1,6 +1,7 @@
 'use client'
 
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { supabaseBrowser } from '@/lib/auth/supabaseBrowser'
 
 /**
  * Optional cross-device sync for tile data.
@@ -10,42 +11,31 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
  * public keys in Vercel), tile data is ALSO written to a single `tile_data` table
  * — so opening the same site on another device (their phone) loads the same data.
  *
- * No login: the deployment is personal, so the anon key + an open policy on the
- * owner's own project is the whole model. If the keys are absent, everything here
- * no-ops and the app stays purely local.
+ * Every row is scoped to the signed-in user (`user_id`, enforced by RLS —
+ * `auth.uid() = user_id`) so this same table safely holds many users' data.
+ * `userId` here is the authenticated session's real id, never a placeholder —
+ * callers get it from useSession()/the Dashboard's userId prop. If the keys
+ * are absent, everything here no-ops and the app stays purely local.
  */
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-let client: SupabaseClient | null = null
-
 /** Whether cross-device sync is configured (both public keys present). */
 export const syncEnabled = (): boolean => !!(url && anonKey)
 
 function syncClient(): SupabaseClient | null {
-  if (!url || !anonKey) return null
-  if (!client) {
-    try {
-      client = createClient(url, anonKey)
-    } catch {
-      // Malformed URL/key: stay purely local rather than crash the caller —
-      // an uncaught throw here would abort the tile-discovery effect in
-      // DashboardGrid before setLoaded(true), leaving the whole board blank.
-      return null
-    }
-  }
-  return client
+  return supabaseBrowser()
 }
 
 /** Push a tile's data to the owner's Supabase. Best-effort; returns false on any failure. */
-export async function syncSave(tileId: string, data: unknown, isoNow: string): Promise<boolean> {
+export async function syncSave(userId: string, tileId: string, data: unknown, isoNow: string): Promise<boolean> {
   const c = syncClient()
   if (!c) return false
   try {
     const { error } = await c
       .from('tile_data')
-      .upsert({ tile_id: tileId, data, updated_at: isoNow }, { onConflict: 'tile_id' })
+      .upsert({ user_id: userId, tile_id: tileId, data, updated_at: isoNow }, { onConflict: 'user_id,tile_id' })
     return !error
   } catch {
     return false
@@ -53,11 +43,16 @@ export async function syncSave(tileId: string, data: unknown, isoNow: string): P
 }
 
 /** Read a tile's data from Supabase, or null if unconfigured / missing / offline. */
-export async function syncLoad(tileId: string): Promise<unknown | null> {
+export async function syncLoad(userId: string, tileId: string): Promise<unknown | null> {
   const c = syncClient()
   if (!c) return null
   try {
-    const { data, error } = await c.from('tile_data').select('data').eq('tile_id', tileId).maybeSingle()
+    const { data, error } = await c
+      .from('tile_data')
+      .select('data')
+      .eq('user_id', userId)
+      .eq('tile_id', tileId)
+      .maybeSingle()
     if (error) return null
     return data?.data ?? null
   } catch {
@@ -77,11 +72,11 @@ export interface RemoteTile {
  * the static public/tiles files, so a tile made from Claude — on the laptop or the
  * phone — appears without a redeploy. Requires the `tiles` table (supabase/tiles.sql).
  */
-export async function syncLoadTiles(): Promise<Record<string, RemoteTile>> {
+export async function syncLoadTiles(userId: string): Promise<Record<string, RemoteTile>> {
   const c = syncClient()
   if (!c) return {}
   try {
-    const { data, error } = await c.from('tiles').select('slot, html, name')
+    const { data, error } = await c.from('tiles').select('slot, html, name').eq('user_id', userId)
     if (error || !data) return {}
     const map: Record<string, RemoteTile> = {}
     for (const row of data as Array<{ slot: string; html: string; name: string | null }>) {
@@ -101,13 +96,16 @@ export async function syncLoadTiles(): Promise<Record<string, RemoteTile>> {
  * and one made from Claude land in the same place. Returns false if unconfigured or
  * the write fails (e.g. tiles.sql not run yet).
  */
-export async function syncSaveTile(slot: string, html: string, name?: string): Promise<boolean> {
+export async function syncSaveTile(userId: string, slot: string, html: string, name?: string): Promise<boolean> {
   const c = syncClient()
   if (!c) return false
   try {
     const { error } = await c
       .from('tiles')
-      .upsert({ slot, html, name: name ?? null, updated_at: new Date().toISOString() }, { onConflict: 'slot' })
+      .upsert(
+        { user_id: userId, slot, html, name: name ?? null, updated_at: new Date().toISOString() },
+        { onConflict: 'user_id,slot' },
+      )
     return !error
   } catch {
     return false
@@ -119,13 +117,12 @@ export async function syncSaveTile(slot: string, html: string, name?: string): P
  * (the connector / "+ New tile" store). Used by the dashboard's Reset button. No-op
  * if sync is unconfigured. Best-effort; never throws.
  */
-export async function syncWipe(): Promise<void> {
+export async function syncWipe(userId: string): Promise<void> {
   const c = syncClient()
   if (!c) return
   try {
-    // PostgREST refuses an unfiltered delete, so match every real row.
-    await c.from('tile_data').delete().neq('tile_id', '')
-    await c.from('tiles').delete().neq('slot', '')
+    await c.from('tile_data').delete().eq('user_id', userId)
+    await c.from('tiles').delete().eq('user_id', userId)
   } catch {
     /* best-effort */
   }
