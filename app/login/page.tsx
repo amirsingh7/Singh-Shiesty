@@ -12,7 +12,7 @@ import { site } from '@/content/site'
  */
 export default function LoginPage() {
   const router = useRouter()
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin')
+  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
@@ -38,6 +38,24 @@ export default function LoginPage() {
       return
     }
     setBusy(true)
+    if (mode === 'forgot') {
+      // Explicit redirectTo, unlike the Supabase dashboard's own "send
+      // recovery email" button — that one redirects to the project's Site
+      // URL instead, which for this app is `/`, a page that immediately
+      // bounces signed-out visitors to /login before any reset code can be
+      // read. Requesting it from here sends the link straight to the one
+      // page built to handle it.
+      const { error: err } = await c.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      })
+      setBusy(false)
+      if (err) {
+        setError(err.message)
+        return
+      }
+      setMessage('Check your email for a reset link.')
+      return
+    }
     if (mode === 'signup') {
       const { error: err } = await c.auth.signUp({ email, password })
       setBusy(false)
@@ -89,7 +107,7 @@ export default function LoginPage() {
             {site.name ? `${site.name}'s` : 'Your'} PR Portfolio
           </div>
           <h1 style={{ fontSize: 22, fontWeight: 700, marginTop: 4 }}>
-            {mode === 'signin' ? 'Sign in' : 'Create your account'}
+            {mode === 'signin' ? 'Sign in' : mode === 'signup' ? 'Create your account' : 'Reset your password'}
           </h1>
         </div>
 
@@ -104,18 +122,20 @@ export default function LoginPage() {
             style={inputStyle}
           />
         </label>
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, color: '#b7bdc9' }}>
-          Password
-          <input
-            type="password"
-            required
-            minLength={6}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-            style={inputStyle}
-          />
-        </label>
+        {mode !== 'forgot' && (
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, color: '#b7bdc9' }}>
+            Password
+            <input
+              type="password"
+              required
+              minLength={6}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+              style={inputStyle}
+            />
+          </label>
+        )}
 
         {error && <div style={{ color: '#ff8080', fontSize: 13 }}>{error}</div>}
         {message && <div style={{ color: '#7fd88f', fontSize: 13 }}>{message}</div>}
@@ -134,13 +154,33 @@ export default function LoginPage() {
             cursor: busy ? 'default' : 'pointer',
           }}
         >
-          {busy ? 'Please wait…' : mode === 'signin' ? 'Sign in' : 'Create account'}
+          {busy
+            ? 'Please wait…'
+            : mode === 'signin'
+              ? 'Sign in'
+              : mode === 'signup'
+                ? 'Create account'
+                : 'Send reset link'}
         </button>
+
+        {mode === 'signin' && (
+          <button
+            type="button"
+            onClick={() => {
+              setMode('forgot')
+              setError(null)
+              setMessage(null)
+            }}
+            style={{ background: 'transparent', border: 'none', color: '#8a92a3', fontSize: 13, cursor: 'pointer' }}
+          >
+            Forgot password?
+          </button>
+        )}
 
         <button
           type="button"
           onClick={() => {
-            setMode(mode === 'signin' ? 'signup' : 'signin')
+            setMode(mode === 'signup' ? 'signin' : mode === 'forgot' ? 'signin' : 'signup')
             setError(null)
             setMessage(null)
           }}
