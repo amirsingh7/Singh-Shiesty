@@ -6,6 +6,7 @@ import {
   allLifts,
   bestOf,
   prMoments,
+  combinedHistory,
   wDisp,
   dateLabel,
   initials,
@@ -14,6 +15,7 @@ import {
   type Lift,
   type HistoryEntry,
 } from '@/lib/tiles/profileDerive'
+import type { CompetitionRecord } from '@/lib/tiles/competitions'
 import styles from '../../profile/profile.module.css'
 
 /**
@@ -63,7 +65,7 @@ export default async function PublicProfilePage({
     .from('tile_data')
     .select('tile_id, data')
     .eq('user_id', userId)
-    .in('tile_id', ['profile', 'train'])
+    .in('tile_id', ['profile', 'train', 'competitions'])
 
   const profileData = (rows ?? []).find((r: { tile_id: string }) => r.tile_id === 'profile')?.data as
     | Profile
@@ -93,13 +95,16 @@ export default async function PublicProfilePage({
     }
   }
 
+  const competitionsData = (rows ?? []).find((r: { tile_id: string }) => r.tile_id === 'competitions')?.data
+  const competitions: CompetitionRecord[] = Array.isArray(competitionsData) ? (competitionsData as CompetitionRecord[]) : []
+
   const compoundLifts = allLifts(split).filter((l) => l.tier === 1 && !l.hidden)
   const featured = compoundLifts
-    .map((l) => ({ lift: l, best: bestOf(l.history || []) }))
+    .map((l) => ({ lift: l, best: bestOf(combinedHistory(l, competitions)) }))
     .filter((x): x is { lift: Lift; best: HistoryEntry } => !!x.best)
 
   const achievements = allLifts(split)
-    .flatMap(prMoments)
+    .flatMap((l) => prMoments({ ...l, history: combinedHistory(l, competitions) }))
     .sort((a, b) => b.date.localeCompare(a.date))
     .slice(0, 8)
 

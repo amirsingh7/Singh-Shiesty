@@ -11,6 +11,7 @@ import {
   allLifts,
   bestOf,
   prMoments,
+  combinedHistory,
   wDisp,
   dateLabel,
   initials,
@@ -19,6 +20,15 @@ import {
   type Lift,
   type HistoryEntry,
 } from '@/lib/tiles/profileDerive'
+import { parseImportCsv, type StagedRow } from '@/lib/tiles/importCsv'
+import {
+  loadCompetitionRecords,
+  saveCompetitionRecords,
+  mergeCompetitionRecords,
+  syncCompetitionsToCloud,
+  loadCompetitionsFromCloud,
+  type CompetitionRecord,
+} from '@/lib/tiles/competitions'
 import styles from './profile.module.css'
 
 // Class names read as plain words below instead of styles.someKey
@@ -69,6 +79,14 @@ export default function ProfilePage() {
   const [split, setSplit] = useState<TrainSplit | null>(null)
   const [unit, setUnit] = useState<'kg' | 'lb'>('kg')
 
+  const [competitions, setCompetitions] = useState<CompetitionRecord[]>([])
+  const [importing, setImporting] = useState(false)
+  const [csvText, setCsvText] = useState('')
+  const [staged, setStaged] = useState<StagedRow[] | null>(null)
+  const [stageWarnings, setStageWarnings] = useState<string[]>([])
+  const [mapping, setMapping] = useState<Record<string, string>>({})
+  const [importSaving, setImportSaving] = useState(false)
+
   const [copied, setCopied] = useState(false)
   const [photoBroken, setPhotoBroken] = useState(false)
   const [coverBroken, setCoverBroken] = useState(false)
@@ -86,6 +104,11 @@ export default function ProfilePage() {
     ;(async () => {
       const cloud = await loadProfileFromCloud(userId)
       if (cloud) setP(cloud)
+    })()
+    setCompetitions(loadCompetitionRecords())
+    ;(async () => {
+      const cloud = await loadCompetitionsFromCloud(userId)
+      if (cloud) setCompetitions(cloud)
     })()
     ;(async () => {
       try {
@@ -141,13 +164,65 @@ export default function ProfilePage() {
 
   const compoundLifts = allLifts(split).filter((l) => l.tier === 1 && !l.hidden)
   const featured = compoundLifts
-    .map((l) => ({ lift: l, best: bestOf(l.history || []) }))
+    .map((l) => ({ lift: l, best: bestOf(combinedHistory(l, competitions)) }))
     .filter((x): x is { lift: Lift; best: HistoryEntry } => !!x.best)
 
   const achievements = allLifts(split)
-    .flatMap(prMoments)
+    .flatMap((l) => prMoments({ ...l, history: combinedHistory(l, competitions) }))
     .sort((a, b) => b.date.localeCompare(a.date))
     .slice(0, 8)
+
+  const startImport = () => {
+    setCsvText('')
+    setStaged(null)
+    setStageWarnings([])
+    setMapping({})
+    setImporting(true)
+  }
+
+  const onCsvFile = async (file: File) => {
+    setCsvText(await file.text())
+  }
+
+  const onParseCsv = () => {
+    const result = parseImportCsv(csvText)
+    setStaged(result.rows)
+    setStageWarnings(result.warnings)
+    const trainLifts = allLifts(split)
+    const guess: Record<string, string> = {}
+    for (const r of result.rows) {
+      if (guess[r.liftLabel]) continue
+      const match = trainLifts.find((l) => l.name.toLowerCase().includes(r.liftLabel.toLowerCase()))
+      if (match) guess[r.liftLabel] = match.id
+    }
+    setMapping(guess)
+  }
+
+  const stagedCategories = staged ? Array.from(new Set(staged.map((r) => r.liftLabel))) : []
+
+  const confirmImport = async () => {
+    if (!staged) return
+    setImportSaving(true)
+    const records: CompetitionRecord[] = staged.map((r) => ({
+      id: [r.source, r.liftLabel, r.weightKg, r.reps, r.date, r.meetName || ''].join('|'),
+      liftId: mapping[r.liftLabel] || undefined,
+      liftLabel: r.liftLabel,
+      weightKg: r.weightKg,
+      reps: r.reps,
+      date: r.date,
+      meetName: r.meetName,
+      federation: r.federation,
+      place: r.place,
+      source: r.source,
+      importedAt: new Date().toISOString(),
+    }))
+    const merged = mergeCompetitionRecords(competitions, records)
+    saveCompetitionRecords(merged)
+    setCompetitions(merged)
+    await syncCompetitionsToCloud(userId, merged)
+    setImportSaving(false)
+    setImporting(false)
+  }
 
   /** A private profile needs a secret to be viewable without signing in —
    *  generated once, on first share, and reused after that so the link the
@@ -499,6 +574,120 @@ export default function ProfilePage() {
             </div>
           </div>
         )}
+
+        <div className={cx('section', 'noPrint')}>
+          <div className={c('sectionHeadRow')}>
+            <div className={c('sectionHead')}>Import competition history</div>
+            {!importing && (
+              <button type="button" className="btn btn-ghost" onClick={startImport}>
+                Import CSV
+              </button>
+            )}
+          </div>
+          {!importing && (
+            <p className={c('hint')}>
+              Paste an OpenPowerlifting export (from your own lifter page) or a simple lift/weight/date CSV — this
+              tags matching PRs &ldquo;Competition Result&rdquo; instead of self-reported. Never overwrites what
+              Train already has.
+            </p>
+          )}
+          {importing && (
+            <div>
+              <div className="field">
+                <label className="label">Paste CSV, or choose a file</label>
+                <textarea
+                  className="input"
+                  rows={4}
+                  value={csvText}
+                  onChange={(e) => {
+                    setCsvText(e.target.value)
+                    setStaged(null)
+                  }}
+                  placeholder="Date,MeetName,Federation,Place,Best3SquatKg,Best3BenchKg,Best3DeadliftKg…"
+                />
+                <input
+                  type="file"
+                  accept=".csv,text/csv"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0]
+                    if (f) onCsvFile(f)
+                    setStaged(null)
+                  }}
+                />
+              </div>
+              {!staged && (
+                <div className={c('editActions')}>
+                  <button type="button" className="btn btn-primary" onClick={onParseCsv} disabled={!csvText.trim()}>
+                    Preview
+                  </button>
+                  <button type="button" className="btn btn-ghost" onClick={() => setImporting(false)}>
+                    Cancel
+                  </button>
+                </div>
+              )}
+              {staged && (
+                <>
+                  {!staged.length && (
+                    <p className={c('empty')}>Nothing usable found in that CSV — check the format and try again.</p>
+                  )}
+                  {!!staged.length && (
+                    <>
+                      <p className={c('hint')}>
+                        Found {staged.length} result{staged.length === 1 ? '' : 's'}. Point each category at the
+                        matching Train lift so it counts toward that lift&rsquo;s PRs:
+                      </p>
+                      <div className={c('editGrid')}>
+                        {stagedCategories.map((label) => (
+                          <div className="field" key={label}>
+                            <label className="label">{label}</label>
+                            <select
+                              className="input"
+                              value={mapping[label] || ''}
+                              onChange={(e) => setMapping((m) => ({ ...m, [label]: e.target.value }))}
+                            >
+                              <option value="">— skip —</option>
+                              {allLifts(split).map((l) => (
+                                <option key={l.id} value={l.id}>
+                                  {l.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        ))}
+                      </div>
+                      {!allLifts(split).length && (
+                        <p className={c('hint')}>
+                          No lifts in Train yet to map these to — log at least one session there first, or import
+                          again later once you have.
+                        </p>
+                      )}
+                    </>
+                  )}
+                  {!!stageWarnings.length && (
+                    <ul className={c('warnings')}>
+                      {stageWarnings.map((w, i) => (
+                        <li key={i}>{w}</li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className={c('editActions')}>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={confirmImport}
+                      disabled={importSaving || !staged.length}
+                    >
+                      {importSaving ? 'Importing…' : `Import ${staged.length} result${staged.length === 1 ? '' : 's'}`}
+                    </button>
+                    <button type="button" className="btn btn-ghost" onClick={() => setImporting(false)} disabled={importSaving}>
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
 
         <div className={c('section')}>
           <div className={c('sectionHead')}>Featured personal records</div>
