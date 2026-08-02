@@ -6,6 +6,7 @@
  */
 
 import type { RecordStatus } from './profile'
+import type { CompetitionRecord } from './competitions'
 
 const LB = 0.45359237
 
@@ -52,6 +53,18 @@ export function allLifts(split: TrainSplit | null): Lift[] {
     }
   }
   return out
+}
+
+/** A lift's Train-logged history plus any competition records mapped to it,
+ *  as one array a normal bestOf()/prMoments() can treat like any other
+ *  history — competition entries carry their own weight/date and are always
+ *  tagged 'competition-result', regardless of what Train separately has for
+ *  the same lift. */
+export function combinedHistory(lift: Lift, competitions: CompetitionRecord[]): HistoryEntry[] {
+  const fromComps: HistoryEntry[] = competitions
+    .filter((c) => c.liftId === lift.id)
+    .map((c) => ({ w: c.weightKg, r: c.reps, date: c.date, recordStatus: 'competition-result' as RecordStatus }))
+  return [...(lift.history || []), ...fromComps]
 }
 
 export function bestOf(history: HistoryEntry[]): HistoryEntry | null {
