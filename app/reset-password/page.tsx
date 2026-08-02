@@ -24,13 +24,32 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     const c = supabaseBrowser()
     if (!c) return
-    // The recovery link's token exchange happens automatically; give it a
-    // moment, then just check whether a session now exists.
-    c.auth.getSession().then(({ data }) => setReady(!!data.session))
+
+    let alive = true
+    ;(async () => {
+      // @supabase/ssr's browser client defaults to the PKCE flow, so the
+      // recovery link lands here with a `?code=...` query param that has to
+      // be exchanged explicitly — it is NOT picked up automatically the way
+      // the older implicit (#access_token=...) flow was.
+      const code = new URL(window.location.href).searchParams.get('code')
+      if (code) {
+        const { error: exchangeError } = await c.auth.exchangeCodeForSession(code)
+        if (alive && !exchangeError) {
+          setReady(true)
+          return
+        }
+      }
+      const { data } = await c.auth.getSession()
+      if (alive) setReady(!!data.session)
+    })()
+
     const { data: sub } = c.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY' || session) setReady(true)
     })
-    return () => sub.subscription.unsubscribe()
+    return () => {
+      alive = false
+      sub.subscription.unsubscribe()
+    }
   }, [])
 
   const submit = async (e: React.FormEvent) => {
