@@ -6,14 +6,19 @@ import WelcomeBackdrop from '@/components/WelcomeBackdrop'
 import { tileStore } from '@/lib/tiles/tileStore'
 import { useSession } from '@/lib/auth/AuthProvider'
 import { syncEnabled } from '@/lib/sync'
+import { profile, saveProfile, syncProfileToCloud, loadProfileFromCloud, type Profile } from '@/lib/tiles/profile'
 import {
-  profile,
-  saveProfile,
-  syncProfileToCloud,
-  loadProfileFromCloud,
-  type Profile,
-  type RecordStatus,
-} from '@/lib/tiles/profile'
+  allLifts,
+  bestOf,
+  prMoments,
+  wDisp,
+  dateLabel,
+  initials,
+  RECORD_STATUS_LABEL,
+  type TrainSplit,
+  type Lift,
+  type HistoryEntry,
+} from '@/lib/tiles/profileDerive'
 import styles from './profile.module.css'
 
 // Class names read as plain words below instead of styles.someKey
@@ -34,91 +39,8 @@ function cx(...names: (keyof typeof styles)[]): string {
  * nothing here is written back to Train.
  */
 
-const LB = 0.45359237
-const RECORD_STATUS_LABEL: Record<RecordStatus, string> = {
-  'self-reported': 'Self-Reported',
-  'evidence-attached': 'Evidence Attached',
-  'competition-result': 'Competition Result',
-  'community-endorsed': 'Community Endorsed',
-}
-
-interface HistoryEntry {
-  w: number
-  r: number
-  date: string
-  off?: boolean
-}
-interface Lift {
-  id: string
-  name: string
-  tier?: number
-  hidden?: boolean
-  perHand?: boolean
-  history?: HistoryEntry[]
-}
-interface TrainSplit {
-  days: { id: string; name: string; lifts: Lift[] }[]
-}
-
-function allLifts(split: TrainSplit | null): Lift[] {
-  if (!split) return []
-  const seen = new Set<string>()
-  const out: Lift[] = []
-  for (const day of split.days || []) {
-    for (const lift of day.lifts || []) {
-      if (!seen.has(lift.id)) {
-        seen.add(lift.id)
-        out.push(lift)
-      }
-    }
-  }
-  return out
-}
-
-function bestOf(history: HistoryEntry[]): HistoryEntry | null {
-  let best: HistoryEntry | null = null
-  for (const h of history) {
-    if (h.off) continue
-    if (!best || h.w > best.w || (h.w === best.w && h.r > best.r)) best = h
-  }
-  return best
-}
-
-/** Every entry that beat everything strictly before it — a deterministic,
- *  read-only reconstruction of "was this a PR when it was logged," with no
- *  new field written onto Train's data. */
-function prMoments(lift: Lift): { date: string; w: number; r: number; liftName: string }[] {
-  const hist = (lift.history || [])
-    .filter((h) => !h.off)
-    .slice()
-    .sort((a, b) => a.date.localeCompare(b.date))
-  const out: { date: string; w: number; r: number; liftName: string }[] = []
-  let bestW = -Infinity
-  let bestR = -Infinity
-  for (const h of hist) {
-    if (h.w > bestW || (h.w === bestW && h.r > bestR)) {
-      out.push({ date: h.date, w: h.w, r: h.r, liftName: lift.name })
-      bestW = h.w
-      bestR = h.r
-    }
-  }
-  return out
-}
-
-const wDisp = (kg: number, unit: 'kg' | 'lb') => (unit === 'lb' ? Math.round((kg / LB) * 2) / 2 : Math.round(kg * 100) / 100)
-const dateLabel = (k: string) => {
-  const [y, m, d] = k.split('-').map(Number)
-  return new Date(y, (m || 1) - 1, d || 1).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-}
 const parseList = (s: string): string[] => s.split(',').map((x) => x.trim()).filter(Boolean)
 const joinList = (a?: string[]) => (a || []).join(', ')
-const initials = (name?: string) =>
-  (name || '')
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase())
-    .join('') || '—'
 
 type TrainState = 'loading' | 'ready' | 'empty' | 'error'
 
@@ -227,9 +149,32 @@ export default function ProfilePage() {
     .sort((a, b) => b.date.localeCompare(a.date))
     .slice(0, 8)
 
+  /** A private profile needs a secret to be viewable without signing in —
+   *  generated once, on first share, and reused after that so the link the
+   *  owner already handed out keeps working. */
+  const ensureShareToken = async (): Promise<string> => {
+    if (p.shareToken) return p.shareToken
+    const token = crypto.randomUUID()
+    const next = { ...p, shareToken: token }
+    saveProfile(next)
+    setP(next)
+    await syncProfileToCloud(userId, next)
+    return token
+  }
+
   const share = async () => {
     try {
-      await navigator.clipboard.writeText(window.location.origin + '/profile')
+      // A public link only resolves once the profile is actually stored
+      // server-side (app/p/[userId]/page.tsx reads it with the service-role
+      // key) — a zero-Supabase fork falls back to the old same-device link.
+      let link = window.location.origin + '/profile'
+      if (syncEnabled() && user) {
+        link =
+          p.visibility === 'public'
+            ? `${window.location.origin}/p/${userId}`
+            : `${window.location.origin}/p/${userId}?t=${await ensureShareToken()}`
+      }
+      await navigator.clipboard.writeText(link)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
@@ -404,7 +349,11 @@ export default function ProfilePage() {
                   <option value="public">Public</option>
                   <option value="private">Private</option>
                 </select>
-                <div className={c('hint')}>No real access control yet — this is a single-owner prototype.</div>
+                <div className={c('hint')}>
+                  Public: anyone with your profile link can view it. Private (default): only
+                  someone with your share link (Share profile button) can — a plain guess at the
+                  URL won&rsquo;t work.
+                </div>
               </div>
               <div className="field">
                 <label className="label">Weight class</label>
@@ -572,7 +521,7 @@ export default function ProfilePage() {
                   <div className={c('prSub')}>
                     {best.r} rep{best.r === 1 ? '' : 's'} · {dateLabel(best.date)}
                   </div>
-                  <span className={c('badge')}>{RECORD_STATUS_LABEL['self-reported']}</span>
+                  <span className={c('badge')}>{RECORD_STATUS_LABEL[best.recordStatus ?? 'self-reported']}</span>
                 </div>
               ))}
             </div>
