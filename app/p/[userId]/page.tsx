@@ -16,6 +16,7 @@ import {
   type HistoryEntry,
 } from '@/lib/tiles/profileDerive'
 import type { CompetitionRecord } from '@/lib/tiles/competitions'
+import type { EvidenceRecord } from '@/lib/tiles/evidence'
 import styles from '../../profile/profile.module.css'
 
 /**
@@ -69,7 +70,7 @@ export default async function PublicProfilePage({
     .from('tile_data')
     .select('tile_id, data')
     .eq('user_id', userId)
-    .in('tile_id', ['profile', `${userId}:train`, 'competitions'])
+    .in('tile_id', ['profile', `${userId}:train`, 'competitions', 'evidence'])
 
   const profileData = (rows ?? []).find((r: { tile_id: string }) => r.tile_id === 'profile')?.data as
     | Profile
@@ -102,15 +103,33 @@ export default async function PublicProfilePage({
   const competitionsData = (rows ?? []).find((r: { tile_id: string }) => r.tile_id === 'competitions')?.data
   const competitions: CompetitionRecord[] = Array.isArray(competitionsData) ? (competitionsData as CompetitionRecord[]) : []
 
+  const evidenceData = (rows ?? []).find((r: { tile_id: string }) => r.tile_id === 'evidence')?.data
+  const evidence: EvidenceRecord[] = Array.isArray(evidenceData) ? (evidenceData as EvidenceRecord[]) : []
+
   const compoundLifts = allLifts(split).filter((l) => l.tier === 1 && !l.hidden)
   const featured = compoundLifts
-    .map((l) => ({ lift: l, best: bestOf(combinedHistory(l, competitions)) }))
+    .map((l) => ({ lift: l, best: bestOf(combinedHistory(l, competitions, evidence)) }))
     .filter((x): x is { lift: Lift; best: HistoryEntry } => !!x.best)
 
   const achievements = allLifts(split)
-    .flatMap((l) => prMoments({ ...l, history: combinedHistory(l, competitions) }))
+    .flatMap((l) => prMoments({ ...l, history: combinedHistory(l, competitions, evidence) }))
     .sort((a, b) => b.date.localeCompare(a.date))
     .slice(0, 8)
+
+  // Signed URLs, generated server-side with the service-role client — the
+  // 'evidence' bucket is private, so a visitor can only ever see one through
+  // a URL this page handed them, and this page only runs after the
+  // visibility/token check above already passed.
+  const evidenceUrls: Record<string, string> = {}
+  const evidencePaths = featured.map((f) => f.best.evidencePath).filter((p): p is string => !!p)
+  if (evidencePaths.length) {
+    const signed = await Promise.all(
+      evidencePaths.map((path) => admin.storage.from('evidence').createSignedUrl(path, 3600)),
+    )
+    signed.forEach((res, i) => {
+      if (res.data?.signedUrl) evidenceUrls[evidencePaths[i]] = res.data.signedUrl
+    })
+  }
 
   return (
     <main className="grain-overlay" style={{ minHeight: '100vh', position: 'relative' }}>
@@ -179,19 +198,30 @@ export default async function PublicProfilePage({
           {!featured.length && <p className={c('empty')}>No featured lifts yet.</p>}
           {!!featured.length && (
             <div className={c('prGrid')}>
-              {featured.map(({ lift, best }) => (
-                <div key={lift.id} className={c('prCard')}>
-                  <div className={c('prName')}>{lift.name}</div>
-                  <div className={c('prVal')}>
-                    {wDisp(best.w, unit)} {unit}
-                    {lift.perHand ? '/ea' : ''}
+              {featured.map(({ lift, best }) => {
+                const evidenceRec = best.evidencePath ? evidence.find((e) => e.storagePath === best.evidencePath) : undefined
+                const evidenceUrl = best.evidencePath ? evidenceUrls[best.evidencePath] : undefined
+                return (
+                  <div key={lift.id} className={c('prCard')}>
+                    <div className={c('prName')}>{lift.name}</div>
+                    <div className={c('prVal')}>
+                      {wDisp(best.w, unit)} {unit}
+                      {lift.perHand ? '/ea' : ''}
+                    </div>
+                    <div className={c('prSub')}>
+                      {best.r} rep{best.r === 1 ? '' : 's'} · {dateLabel(best.date)}
+                    </div>
+                    <span className={c('badge')}>{RECORD_STATUS_LABEL[best.recordStatus ?? 'self-reported']}</span>
+                    {evidenceUrl &&
+                      (evidenceRec?.mimeType.startsWith('video/') ? (
+                        <video src={evidenceUrl} controls className={c('evidenceThumb')} />
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={evidenceUrl} alt="" className={c('evidenceThumb')} />
+                      ))}
                   </div>
-                  <div className={c('prSub')}>
-                    {best.r} rep{best.r === 1 ? '' : 's'} · {dateLabel(best.date)}
-                  </div>
-                  <span className={c('badge')}>{RECORD_STATUS_LABEL[best.recordStatus ?? 'self-reported']}</span>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>

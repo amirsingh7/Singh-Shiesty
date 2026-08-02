@@ -29,6 +29,17 @@ import {
   loadCompetitionsFromCloud,
   type CompetitionRecord,
 } from '@/lib/tiles/competitions'
+import {
+  loadEvidenceRecords,
+  saveEvidenceRecords,
+  mergeEvidenceRecords,
+  syncEvidenceToCloud,
+  loadEvidenceFromCloud,
+  uploadEvidence,
+  deleteEvidenceFile,
+  signedEvidenceUrl,
+  type EvidenceRecord,
+} from '@/lib/tiles/evidence'
 import styles from './profile.module.css'
 
 // Class names read as plain words below instead of styles.someKey
@@ -87,6 +98,11 @@ export default function ProfilePage() {
   const [mapping, setMapping] = useState<Record<string, string>>({})
   const [importSaving, setImportSaving] = useState(false)
 
+  const [evidence, setEvidence] = useState<EvidenceRecord[]>([])
+  const [evidenceUrls, setEvidenceUrls] = useState<Record<string, string>>({})
+  const [evidenceBusy, setEvidenceBusy] = useState<string | null>(null)
+  const [evidenceError, setEvidenceError] = useState<string | null>(null)
+
   const [copied, setCopied] = useState(false)
   const [photoBroken, setPhotoBroken] = useState(false)
   const [coverBroken, setCoverBroken] = useState(false)
@@ -110,6 +126,11 @@ export default function ProfilePage() {
       const cloud = await loadCompetitionsFromCloud(userId)
       if (cloud) setCompetitions(cloud)
     })()
+    setEvidence(loadEvidenceRecords())
+    ;(async () => {
+      const cloud = await loadEvidenceFromCloud(userId)
+      if (cloud) setEvidence(cloud)
+    })()
     ;(async () => {
       try {
         const mem = (await tileStore.loadData(userId, 'train')) as Record<string, unknown> | null
@@ -132,6 +153,29 @@ export default function ProfilePage() {
       }
     })()
   }, [sessionLoading, user, userId, router])
+
+  const compoundLifts = allLifts(split).filter((l) => l.tier === 1 && !l.hidden)
+  const featured = compoundLifts
+    .map((l) => ({ lift: l, best: bestOf(combinedHistory(l, competitions, evidence)) }))
+    .filter((x): x is { lift: Lift; best: HistoryEntry } => !!x.best)
+
+  const achievements = allLifts(split)
+    .flatMap((l) => prMoments({ ...l, history: combinedHistory(l, competitions, evidence) }))
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 8)
+
+  useEffect(() => {
+    const paths = featured.map((f) => f.best.evidencePath).filter((p): p is string => !!p)
+    const missing = paths.filter((p) => !evidenceUrls[p])
+    if (!missing.length) return
+    ;(async () => {
+      const entries = await Promise.all(missing.map(async (p) => [p, await signedEvidenceUrl(p)] as const))
+      const next: Record<string, string> = {}
+      for (const [p, url] of entries) if (url) next[p] = url
+      if (Object.keys(next).length) setEvidenceUrls((u) => ({ ...u, ...next }))
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [featured.map((f) => f.best.evidencePath).join(',')])
 
   if (!mounted) return null
 
@@ -162,15 +206,34 @@ export default function ProfilePage() {
   const field = (k: keyof Profile) => (draft[k] as string) ?? ''
   const set = (k: keyof Profile, v: string) => setDraft((d) => ({ ...d, [k]: v || undefined }))
 
-  const compoundLifts = allLifts(split).filter((l) => l.tier === 1 && !l.hidden)
-  const featured = compoundLifts
-    .map((l) => ({ lift: l, best: bestOf(combinedHistory(l, competitions)) }))
-    .filter((x): x is { lift: Lift; best: HistoryEntry } => !!x.best)
+  const uploadEvidenceFor = async (lift: Lift, best: HistoryEntry, file: File) => {
+    setEvidenceError(null)
+    setEvidenceBusy(best.evidencePath ? `replace:${lift.id}` : `add:${lift.id}`)
+    const prior = evidence.find((e) => e.id === `${lift.id}|${best.date}|${best.w}|${best.r}`)
+    const result = await uploadEvidence(userId, lift.id, best.date, best.w, best.r, file)
+    if (!result.ok || !result.record) {
+      setEvidenceError(result.error || 'Upload failed.')
+      setEvidenceBusy(null)
+      return
+    }
+    if (prior) await deleteEvidenceFile(prior.storagePath)
+    const merged = mergeEvidenceRecords(evidence, result.record)
+    saveEvidenceRecords(merged)
+    setEvidence(merged)
+    await syncEvidenceToCloud(userId, merged)
+    setEvidenceBusy(null)
+  }
 
-  const achievements = allLifts(split)
-    .flatMap((l) => prMoments({ ...l, history: combinedHistory(l, competitions) }))
-    .sort((a, b) => b.date.localeCompare(a.date))
-    .slice(0, 8)
+  const removeEvidenceFor = async (lift: Lift, best: HistoryEntry) => {
+    if (!best.evidencePath) return
+    setEvidenceBusy(`remove:${lift.id}`)
+    await deleteEvidenceFile(best.evidencePath)
+    const merged = evidence.filter((e) => e.id !== `${lift.id}|${best.date}|${best.w}|${best.r}`)
+    saveEvidenceRecords(merged)
+    setEvidence(merged)
+    await syncEvidenceToCloud(userId, merged)
+    setEvidenceBusy(null)
+  }
 
   const startImport = () => {
     setCsvText('')
@@ -691,6 +754,7 @@ export default function ProfilePage() {
 
         <div className={c('section')}>
           <div className={c('sectionHead')}>Featured personal records</div>
+          {evidenceError && <p className={c('evidenceError')}>{evidenceError}</p>}
           {trainState === 'loading' && <p className={c('empty')}>Loading your training data…</p>}
           {trainState === 'error' && <p className={c('empty')}>Couldn’t read Train’s saved data right now — try reloading.</p>}
           {trainState !== 'loading' && trainState !== 'error' && !featured.length && (
@@ -700,19 +764,56 @@ export default function ProfilePage() {
           )}
           {!!featured.length && (
             <div className={c('prGrid')}>
-              {featured.map(({ lift, best }) => (
-                <div key={lift.id} className={c('prCard')}>
-                  <div className={c('prName')}>{lift.name}</div>
-                  <div className={c('prVal')}>
-                    {wDisp(best.w, unit)} {unit}
-                    {lift.perHand ? '/ea' : ''}
+              {featured.map(({ lift, best }) => {
+                const evidenceRec = best.evidencePath ? evidence.find((e) => e.storagePath === best.evidencePath) : undefined
+                const evidenceUrl = best.evidencePath ? evidenceUrls[best.evidencePath] : undefined
+                const busyAdd = evidenceBusy === `add:${lift.id}`
+                const busyReplace = evidenceBusy === `replace:${lift.id}`
+                const busyRemove = evidenceBusy === `remove:${lift.id}`
+                return (
+                  <div key={lift.id} className={c('prCard')}>
+                    <div className={c('prName')}>{lift.name}</div>
+                    <div className={c('prVal')}>
+                      {wDisp(best.w, unit)} {unit}
+                      {lift.perHand ? '/ea' : ''}
+                    </div>
+                    <div className={c('prSub')}>
+                      {best.r} rep{best.r === 1 ? '' : 's'} · {dateLabel(best.date)}
+                    </div>
+                    <span className={c('badge')}>{RECORD_STATUS_LABEL[best.recordStatus ?? 'self-reported']}</span>
+
+                    {evidenceUrl &&
+                      (evidenceRec?.mimeType.startsWith('video/') ? (
+                        <video src={evidenceUrl} controls className={c('evidenceThumb')} />
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={evidenceUrl} alt="" className={c('evidenceThumb')} />
+                      ))}
+
+                    <div className={cx('evidenceRow', 'noPrint')}>
+                      <label className={c('evidenceLabel')}>
+                        {busyAdd || busyReplace ? 'Uploading…' : best.evidencePath ? 'Replace evidence' : 'Add evidence'}
+                        <input
+                          type="file"
+                          accept="image/*,video/*"
+                          style={{ display: 'none' }}
+                          disabled={busyAdd || busyReplace || busyRemove}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0]
+                            e.target.value = ''
+                            if (f) uploadEvidenceFor(lift, best, f)
+                          }}
+                        />
+                      </label>
+                      {best.evidencePath && (
+                        <label className={c('evidenceLabel')} onClick={() => removeEvidenceFor(lift, best)}>
+                          {busyRemove ? 'Removing…' : 'Remove'}
+                        </label>
+                      )}
+                    </div>
                   </div>
-                  <div className={c('prSub')}>
-                    {best.r} rep{best.r === 1 ? '' : 's'} · {dateLabel(best.date)}
-                  </div>
-                  <span className={c('badge')}>{RECORD_STATUS_LABEL[best.recordStatus ?? 'self-reported']}</span>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
