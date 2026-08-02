@@ -133,15 +133,15 @@ export function bodyWeightKg(): number {
  * Additive: profile() / saveProfile() above stay localStorage-only and
  * unchanged; callers that want the cloud copy opt in explicitly.
  */
-export async function syncProfileToCloud(p: Profile): Promise<void> {
+export async function syncProfileToCloud(userId: string, p: Profile): Promise<void> {
   const { syncEnabled, syncSave } = await import('../sync')
-  if (syncEnabled()) await syncSave('profile', p, new Date().toISOString())
+  if (syncEnabled()) await syncSave(userId, 'profile', p, new Date().toISOString())
 }
 
-export async function loadProfileFromCloud(): Promise<Profile | null> {
+export async function loadProfileFromCloud(userId: string): Promise<Profile | null> {
   const { syncEnabled, syncLoad } = await import('../sync')
   if (!syncEnabled()) return null
-  const remote = await syncLoad('profile')
+  const remote = await syncLoad(userId, 'profile')
   return remote && typeof remote === 'object' && !Array.isArray(remote)
     ? { ...DEFAULT_PROFILE, ...(remote as Profile) }
     : null

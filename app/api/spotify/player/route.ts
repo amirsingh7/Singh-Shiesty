@@ -1,4 +1,5 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { supabaseServer } from '@/lib/auth/supabaseServer'
 
 /**
  * The single proxy every Spotify action goes through — the Symphony tile is a
@@ -22,32 +23,29 @@ interface StoredAuth {
   expiresAt: number
 }
 
-function db(): SupabaseClient | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url || !key) return null
-  try {
-    return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } })
-  } catch {
-    return null
-  }
-}
-
-async function loadAuth(c: SupabaseClient): Promise<StoredAuth | null> {
-  const { data, error } = await c.from('tile_data').select('data').eq('tile_id', TILE_ID).maybeSingle()
+async function loadAuth(c: SupabaseClient, userId: string): Promise<StoredAuth | null> {
+  const { data, error } = await c
+    .from('tile_data')
+    .select('data')
+    .eq('user_id', userId)
+    .eq('tile_id', TILE_ID)
+    .maybeSingle()
   if (error || !data?.data) return null
   const d = data.data as Partial<StoredAuth>
   if (!d.accessToken || !d.refreshToken || !d.expiresAt) return null
   return d as StoredAuth
 }
 
-async function saveAuth(c: SupabaseClient, auth: StoredAuth): Promise<void> {
+async function saveAuth(c: SupabaseClient, userId: string, auth: StoredAuth): Promise<void> {
   await c
     .from('tile_data')
-    .upsert({ tile_id: TILE_ID, data: auth, updated_at: new Date().toISOString() }, { onConflict: 'tile_id' })
+    .upsert(
+      { user_id: userId, tile_id: TILE_ID, data: auth, updated_at: new Date().toISOString() },
+      { onConflict: 'user_id,tile_id' },
+    )
 }
 
-async function refreshAuth(c: SupabaseClient, auth: StoredAuth): Promise<StoredAuth | null> {
+async function refreshAuth(c: SupabaseClient, userId: string, auth: StoredAuth): Promise<StoredAuth | null> {
   const clientId = process.env.SPOTIFY_CLIENT_ID
   const clientSecret = process.env.SPOTIFY_CLIENT_SECRET
   if (!clientId || !clientSecret) return null
@@ -71,16 +69,16 @@ async function refreshAuth(c: SupabaseClient, auth: StoredAuth): Promise<StoredA
     refreshToken: j.refresh_token || auth.refreshToken,
     expiresAt: Date.now() + (j.expires_in ?? 3600) * 1000,
   }
-  await saveAuth(c, next)
+  await saveAuth(c, userId, next)
   return next
 }
 
 /** null = never connected. 'reauth_required' = refresh token itself is dead. */
-async function ensureValidAuth(c: SupabaseClient): Promise<StoredAuth | null | 'reauth_required'> {
-  const auth = await loadAuth(c)
+async function ensureValidAuth(c: SupabaseClient, userId: string): Promise<StoredAuth | null | 'reauth_required'> {
+  const auth = await loadAuth(c, userId)
   if (!auth) return null
   if (Date.now() < auth.expiresAt - 30_000) return auth
-  const refreshed = await refreshAuth(c, auth)
+  const refreshed = await refreshAuth(c, userId, auth)
   return refreshed ?? 'reauth_required'
 }
 
@@ -142,15 +140,20 @@ export async function POST(req: Request): Promise<Response> {
   const action = typeof body.action === 'string' ? body.action : ''
   if (!action) return Response.json({ error: 'no_action' }, { status: 400 })
 
-  const c = db()
+  const c = await supabaseServer()
   if (!c) return Response.json({ error: 'supabase_not_configured' }, { status: 503 })
 
+  const {
+    data: { user },
+  } = await c.auth.getUser()
+  if (!user) return Response.json({ error: 'unauthorized' }, { status: 401 })
+
   if (action === 'disconnect') {
-    await c.from('tile_data').delete().eq('tile_id', TILE_ID)
+    await c.from('tile_data').delete().eq('user_id', user.id).eq('tile_id', TILE_ID)
     return Response.json({ connected: false })
   }
 
-  const auth = await ensureValidAuth(c)
+  const auth = await ensureValidAuth(c, user.id)
   if (auth === null) return Response.json({ connected: false })
   if (auth === 'reauth_required') return Response.json({ error: 'reauth_required' }, { status: 401 })
 

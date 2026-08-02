@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter, Roboto_Slab, Hanken_Grotesk, JetBrains_Mono } from 'next/font/google'
+import { AuthProvider } from '@/lib/auth/AuthProvider'
 import './globals.css'
 
 const inter = Inter({
@@ -77,7 +78,9 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} ${instrumentSerif.variable} ${hankenGrotesk.variable} ${jetBrainsMono.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   )
 }

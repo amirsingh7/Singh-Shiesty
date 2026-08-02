@@ -1,5 +1,5 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { spotifyRedirectUri } from '../shared'
+import { supabaseServer } from '@/lib/auth/supabaseServer'
 
 /**
  * Step 2 of Spotify's Authorization Code flow — this is where the OAuth
@@ -19,17 +19,6 @@ function readCookie(req: Request, name: string): string | null {
   const header = req.headers.get('cookie') || ''
   const match = header.match(new RegExp('(?:^|; )' + name + '=([^;]+)'))
   return match ? decodeURIComponent(match[1]) : null
-}
-
-function db(): SupabaseClient | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url || !key) return null
-  try {
-    return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } })
-  } catch {
-    return null
-  }
 }
 
 function pageHtml(message: string): string {
@@ -82,17 +71,23 @@ export async function GET(req: Request): Promise<Response> {
     return closePage('Could not reach Spotify. Try again.')
   }
 
-  const c = db()
+  const c = await supabaseServer()
   if (!c) return closePage('Supabase is not configured — cannot save the connection.')
+
+  const {
+    data: { user },
+  } = await c.auth.getUser()
+  if (!user) return closePage('You need to be signed in to connect Spotify. Sign in, then try again.')
 
   const expiresAt = Date.now() + (tokenJson.expires_in ?? 3600) * 1000
   const { error: writeErr } = await c.from('tile_data').upsert(
     {
+      user_id: user.id,
       tile_id: TILE_ID,
       data: { accessToken: tokenJson.access_token, refreshToken: tokenJson.refresh_token, expiresAt },
       updated_at: new Date().toISOString(),
     },
-    { onConflict: 'tile_id' },
+    { onConflict: 'user_id,tile_id' },
   )
   if (writeErr) return closePage('Connected, but saving failed. Try again.')
 

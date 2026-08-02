@@ -516,6 +516,66 @@ export default function HeroCrystal({
       }
     }
 
+    // Laurel wreath flanking the seal's monogram — a verified/earned mark
+    // (medal, certification seal), fitting for a record of physical
+    // performance. Each leaf is a hand-placed pointed-oval outline (matches
+    // the codebase's existing hand-plotted-path convention for glyphs
+    // rather than sampling points off the stem bezier at runtime), stroked
+    // with the same 5-layer glow so it reads as one engraved family with
+    // the monogram and every other face mark.
+    const LAUREL_LEFT: Array<[number, number, number, number]> = [
+      // [x, y, angleDeg (0 = leaf points straight up, + tilts right), length]
+      [198, 398, -100, 34],
+      [162, 360, -78, 32],
+      [130, 314, -58, 30],
+      [106, 262, -38, 27],
+      [92, 206, -18, 24],
+      [88, 152, 6, 20],
+    ]
+    function drawLeafOn(c: CanvasRenderingContext2D, x: number, y: number, angleDeg: number, length: number) {
+      const width = length * 0.62
+      c.save()
+      c.translate(x, y)
+      c.rotate((angleDeg * Math.PI) / 180)
+      c.beginPath()
+      c.moveTo(0, 0)
+      c.quadraticCurveTo(width / 2, -length * 0.35, 0, -length)
+      c.quadraticCurveTo(-width / 2, -length * 0.35, 0, 0)
+      c.stroke()
+      c.restore()
+    }
+    function drawStemOn(c: CanvasRenderingContext2D, mirror: boolean) {
+      const sx = mirror ? 512 - 206 : 206
+      const ex = mirror ? 512 - 96 : 96
+      const c1x = mirror ? 512 - 130 : 130
+      const c2x = mirror ? 512 - 70 : 70
+      c.beginPath()
+      c.moveTo(sx, 402)
+      c.bezierCurveTo(c1x, 380, c2x, 260, ex, 168)
+      c.stroke()
+    }
+    function paintLaurelOn(c: CanvasRenderingContext2D) {
+      const layers: Array<[string, number, number]> = [
+        ['rgba(37, 84, 232, 0.10)', 12, 60],
+        ['rgba(37, 84, 232, 0.22)',  8, 34],
+        ['rgba(167, 243, 208, 0.50)', 4, 16],
+        ['rgba(196, 250, 220, 0.85)', 2.4, 8],
+        ['rgba(240, 255, 245, 1.00)', 1.2, 3],
+      ]
+      for (const [color, lineWidth, blur] of layers) {
+        c.shadowColor = '#2554E8'
+        c.shadowBlur = blur
+        c.strokeStyle = color
+        c.lineWidth = lineWidth
+        drawStemOn(c, false)
+        drawStemOn(c, true)
+        for (const [x, y, angle, length] of LAUREL_LEFT) {
+          drawLeafOn(c, x, y, angle, length)
+          drawLeafOn(c, 512 - x, y, -angle, length)
+        }
+      }
+    }
+
     // ── Hello glyph (waving hand) — a greeting mark in the SAME engraved
     //    glow format as the V. Used only by the "happy hello" scripted move,
     //    which flickers the V into this and back. Kept stroke-minimal so it
@@ -647,8 +707,10 @@ export default function HeroCrystal({
     const paintHeartOn = (c: CanvasRenderingContext2D) => paintMoodGlyph(c, traceHeartOn)
     const paintCheckOn = (c: CanvasRenderingContext2D) => paintMoodGlyph(c, traceCheckOn)
 
-    if (sealText) paintSealTextOn(vCtx, sealText)
-    else paintGlyphOn(vCtx, glyph)
+    if (sealText) {
+      paintLaurelOn(vCtx)
+      paintSealTextOn(vCtx, sealText)
+    } else paintGlyphOn(vCtx, glyph)
 
     const vTex = new THREE.CanvasTexture(vCanvas)
     vTex.colorSpace = THREE.SRGBColorSpace
@@ -718,8 +780,13 @@ export default function HeroCrystal({
       opacity: 0,
     })
     /* Bigger plane (was 0.42 → 0.62) — V reads more prominently while
-       still fitting within the icosahedron face triangle (side ≈ 1.05). */
-    const vGeo = new THREE.PlaneGeometry(0.62, 0.62)
+       still fitting within the icosahedron face triangle (side ≈ 1.05).
+       The seal coin's flat face is much bigger (radius 0.92, no triangle
+       constraint), so the monogram + laurel wreath get their own larger
+       plane — they're painted on the same 512² canvas either way, so
+       this scales both together without touching their drawn coordinates. */
+    const vPlaneSize = sealText ? 1.3 : 0.62
+    const vGeo = new THREE.PlaneGeometry(vPlaneSize, vPlaneSize)
     const vMesh = new THREE.Mesh(vGeo, vMat)
     vMesh.renderOrder = 3
     // hideGlyph: keep the mesh allocated so animation code can still

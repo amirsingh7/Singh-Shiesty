@@ -1,8 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import WelcomeBackdrop from '@/components/WelcomeBackdrop'
 import { tileStore } from '@/lib/tiles/tileStore'
+import { useSession } from '@/lib/auth/AuthProvider'
+import { syncEnabled } from '@/lib/sync'
 import {
   profile,
   saveProfile,
@@ -129,6 +132,9 @@ const FOUNDER_FACTS: [keyof Profile, string][] = [
 ]
 
 export default function ProfilePage() {
+  const router = useRouter()
+  const { user, loading: sessionLoading } = useSession()
+  const userId = user?.id ?? 'me'
   const [mounted, setMounted] = useState(false)
   const [p, setP] = useState<Profile>({})
   const [editing, setEditing] = useState(false)
@@ -147,16 +153,21 @@ export default function ProfilePage() {
   const [founderPhotoBroken, setFounderPhotoBroken] = useState(false)
 
   useEffect(() => {
+    if (sessionLoading) return
+    if (syncEnabled() && !user) {
+      router.replace('/login')
+      return
+    }
     setMounted(true)
     const local = profile()
     setP(local)
     ;(async () => {
-      const cloud = await loadProfileFromCloud()
+      const cloud = await loadProfileFromCloud(userId)
       if (cloud) setP(cloud)
     })()
     ;(async () => {
       try {
-        const mem = (await tileStore.loadData('me', 'train')) as Record<string, unknown> | null
+        const mem = (await tileStore.loadData(userId, 'train')) as Record<string, unknown> | null
         const rawUnit = mem?.['vitality.logger.unit']
         if (rawUnit === 'kg' || rawUnit === 'lb') setUnit(rawUnit)
         const raw = mem?.['vitality.logger.v4']
@@ -175,7 +186,7 @@ export default function ProfilePage() {
         setTrainState('error')
       }
     })()
-  }, [])
+  }, [sessionLoading, user, userId, router])
 
   if (!mounted) return null
 
@@ -199,7 +210,7 @@ export default function ProfilePage() {
     saveProfile(next)
     setP(next)
     setEditing(false)
-    await syncProfileToCloud(next)
+    await syncProfileToCloud(userId, next)
     setSaving(false)
   }
 

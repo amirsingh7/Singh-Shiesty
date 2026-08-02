@@ -264,7 +264,10 @@ async function saveData(userId: string, id: string, data: TileData): Promise<Sav
     try {
       const { error } = await db
         .from('tile_data')
-        .upsert({ tile_id: `${userId}:${id}`, data, updated_at: new Date().toISOString() })
+        .upsert(
+          { user_id: userId, tile_id: `${userId}:${id}`, data, updated_at: new Date().toISOString() },
+          { onConflict: 'user_id,tile_id' },
+        )
       return error ? { ok: false, reason: `db_error:${error.message}` } : { ok: true }
     } catch (e) {
       return { ok: false, reason: `db_exception:${e instanceof Error ? e.message : String(e)}` }
@@ -289,6 +292,7 @@ async function loadData(userId: string, id: string): Promise<TileData> {
       const { data, error } = await db
         .from('tile_data')
         .select('data')
+        .eq('user_id', userId)
         .eq('tile_id', `${userId}:${id}`)
         .maybeSingle()
       if (error || !data) return []
@@ -338,7 +342,7 @@ async function clearData(userId: string, id: string): Promise<void> {
   const db = supa()
   if (db) {
     try {
-      await db.from('tile_data').delete().eq('tile_id', `${userId}:${id}`)
+      await db.from('tile_data').delete().eq('user_id', userId).eq('tile_id', `${userId}:${id}`)
     } catch {
       /* network fail — still clear local below */
     }

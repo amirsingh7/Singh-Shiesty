@@ -1,10 +1,13 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import WelcomeBackdrop from '@/components/WelcomeBackdrop'
 import DashboardHeaderGem from '@/app/app/DashboardHeaderGem'
 import { CORE_TILES } from '@/lib/tiles/coreTiles'
 import { tileStore } from '@/lib/tiles/tileStore'
+import { useSession } from '@/lib/auth/AuthProvider'
+import { syncEnabled } from '@/lib/sync'
 import {
   allGoals,
   activeGoalId,
@@ -169,11 +172,11 @@ function summarizeNutritionData(data: unknown): string {
  *  into a compact block, same "context in, no key, no server" pattern as
  *  Train's rcAskPrompt. Never includes anything outside training/nutrition/
  *  recovery — no founder bio, no unrelated profile fields. */
-async function buildMentorContext(prefs: ChatPrefs, goalTitle: string | undefined): Promise<string> {
+async function buildMentorContext(userId: string, prefs: ChatPrefs, goalTitle: string | undefined): Promise<string> {
   const blocks: string[] = []
   if (goalTitle) blocks.push(`My current goal: ${goalTitle}.`)
   if (prefs.workout || prefs.recovery) {
-    const train = await tileStore.loadData('me', 'train')
+    const train = await tileStore.loadData(userId, 'train')
     if (prefs.workout) {
       const w = summarizeWorkoutData(train)
       if (w) blocks.push(w)
@@ -184,7 +187,7 @@ async function buildMentorContext(prefs: ChatPrefs, goalTitle: string | undefine
     }
   }
   if (prefs.nutrition) {
-    const fuel = await tileStore.loadData('me', 'fuel')
+    const fuel = await tileStore.loadData(userId, 'fuel')
     const n = summarizeNutritionData(fuel)
     if (n) blocks.push(n)
   }
@@ -251,6 +254,9 @@ export default function MentorPage({
   overlay?: boolean
   onClose?: () => void
 }) {
+  const router = useRouter()
+  const { user, loading: sessionLoading } = useSession()
+  const userId = user?.id ?? 'me'
   const [mounted, setMounted] = useState(false)
   const [list, setList] = useState<Goal[]>([])
   const [active, setActive] = useState('')
@@ -265,12 +271,19 @@ export default function MentorPage({
   const [asking, setAsking] = useState(false)
 
   useEffect(() => {
+    if (sessionLoading) return
+    // Only a bare page load (not the board's overlay, which is already behind
+    // app/page.tsx's own gate) needs to check this itself.
+    if (!overlay && syncEnabled() && !user) {
+      router.replace('/login')
+      return
+    }
     setMounted(true)
     setList(allGoals())
     setActive(activeGoalId())
     setChatHistory(loadChatHistory())
     setChatPrefs(loadChatPrefs())
-  }, [])
+  }, [sessionLoading, user, overlay, router])
 
   // Pulse the gem when the goal changes — WAAPI on the wrapper, NO remount.
   // (Remounting would re-init the WebGL gem: heavy, and it visibly glitches.)
@@ -320,7 +333,7 @@ export default function MentorPage({
     if (!q || asking) return
     setAsking(true)
     try {
-      const context = await buildMentorContext(chatPrefs, act?.title)
+      const context = await buildMentorContext(userId, chatPrefs, act?.title)
       const prompt =
         (context ? context + '\n\n' : '') +
         'My question: ' +

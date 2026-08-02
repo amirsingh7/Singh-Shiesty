@@ -6,14 +6,9 @@
 <title>Your peak today — a Vitality plug</title>
 <!--
   YOUR PEAK TODAY · a Vitality PLUG  (·01 Your day + ·02 Your schedule)
-  Rebuilt on the real Peak page, then lifted a level for the Lab:
-    app/app/peak/StimQuickLog.tsx  → the one-tap stack cards (now they FEED the curve)
-    app/app/peak/CurveChart.tsx    → the hero chart (line/bars/stack, hover scrub, feel line)
-    app/app/peak/HoverGauge.tsx    → the header ring (score · tier · right now)
-    app/app/peak/ScheduleStrip.tsx → today's plan lane on the same x-axis
-    app/app/peak/QuickAddConsole   → natural-language plan line
-    app/app/peak/YourDaySchedule   → the "Open block" now/next card
-    app/app/peak/curve.ts          → the math (circadian baseline + substance PK + wearable mult)
+  Self-contained: one-tap stack cards, hero curve chart (line/bars/stack, hover
+  scrub, feel line), header ring (score · tier · right now), today's schedule
+  lane on the same x-axis, and natural-language quick-add — all in this file.
   Sealed: no network, no keys. Every tap is live — log a coffee and the solid line
   lifts off the dotted baseline in real time. Plugs into your saved data through the
   dashboard bridge (window.Vitality).
@@ -504,7 +499,7 @@ async function boot(){
 /* save the WHOLE store — a feel drag must never wipe what the mentor filed */
 function persist(){ if(BRIDGE&&typeof BRIDGE.save==='function'){try{BRIDGE.save({weightKg:D.weightKg,whoop:D.whoop,taps:D.taps,logs:D.logs,events:D.events,quickKeys});}catch(e){}} }
 
-/* ═══ CurveChart.tsx — ported render ═══ */
+/* ═══ curve chart render ═══ */
 const PAD={top:18,right:24,bottom:32,left:24},RANGE=24,HEIGHT=320;
 let mode='line',width=960,hoverHour=null;
 const wrap=document.getElementById('wrap'),stage=document.getElementById('stage');

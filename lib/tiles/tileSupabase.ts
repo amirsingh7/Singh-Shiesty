@@ -2,24 +2,14 @@
  * Optional Supabase client for real cross-device tile saving.
  *
  * Created lazily and ONLY when both env vars are present; otherwise the base
- * stays on localStorage and never touches Supabase. Single-user personal setup:
- * the anon key is public in the browser by design (see the README level-up
- * section), so treat the data as not-secret or add auth later.
+ * stays on localStorage and never touches Supabase. Delegates to the shared
+ * cookie-backed browser client (lib/auth/supabaseBrowser.ts) so every tile
+ * read/write carries the signed-in user's session — RLS (`auth.uid() =
+ * user_id`) depends on that session being present, not just the anon key.
  */
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-
-let client: SupabaseClient | null = null
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { supabaseBrowser } from '@/lib/auth/supabaseBrowser'
 
 export function supa(): SupabaseClient | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url || !key) return null
-  if (!client) {
-    try {
-      client = createClient(url, key)
-    } catch {
-      return null
-    }
-  }
-  return client
+  return supabaseBrowser()
 }
