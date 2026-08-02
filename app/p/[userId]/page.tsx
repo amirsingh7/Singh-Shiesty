@@ -61,11 +61,15 @@ export default async function PublicProfilePage({
   const admin = supabaseAdmin()
   if (!admin) notFound()
 
+  // 'profile'/'competitions' are bare keys (written via lib/sync.ts, scoped
+  // only by the user_id column) but Train's data goes through the sealed-tile
+  // bridge (lib/tiles/tileStore.ts), which prefixes every key with the owner's
+  // own id — `${userId}:train`, not a bare 'train' row.
   const { data: rows } = await admin
     .from('tile_data')
     .select('tile_id, data')
     .eq('user_id', userId)
-    .in('tile_id', ['profile', 'train', 'competitions'])
+    .in('tile_id', ['profile', `${userId}:train`, 'competitions'])
 
   const profileData = (rows ?? []).find((r: { tile_id: string }) => r.tile_id === 'profile')?.data as
     | Profile
@@ -78,7 +82,7 @@ export default async function PublicProfilePage({
 
   let split: TrainSplit | null = null
   let unit: 'kg' | 'lb' = 'kg'
-  const trainData = (rows ?? []).find((r: { tile_id: string }) => r.tile_id === 'train')?.data as
+  const trainData = (rows ?? []).find((r: { tile_id: string }) => r.tile_id === `${userId}:train`)?.data as
     | Record<string, unknown>
     | undefined
   if (trainData) {
