@@ -5,8 +5,8 @@ import type { Profile } from '@/lib/tiles/profile'
 import {
   allLifts,
   bestOf,
-  prMoments,
   combinedHistory,
+  timelineEvents,
   wDisp,
   dateLabel,
   initials,
@@ -17,6 +17,8 @@ import {
 } from '@/lib/tiles/profileDerive'
 import type { CompetitionRecord } from '@/lib/tiles/competitions'
 import type { EvidenceRecord } from '@/lib/tiles/evidence'
+import type { WitnessRecord } from '@/lib/tiles/witnesses'
+import WitnessForm from './WitnessForm'
 import styles from '../../profile/profile.module.css'
 
 /**
@@ -70,7 +72,7 @@ export default async function PublicProfilePage({
     .from('tile_data')
     .select('tile_id, data')
     .eq('user_id', userId)
-    .in('tile_id', ['profile', `${userId}:train`, 'competitions', 'evidence'])
+    .in('tile_id', ['profile', `${userId}:train`, 'competitions', 'evidence', 'witnesses'])
 
   const profileData = (rows ?? []).find((r: { tile_id: string }) => r.tile_id === 'profile')?.data as
     | Profile
@@ -106,15 +108,15 @@ export default async function PublicProfilePage({
   const evidenceData = (rows ?? []).find((r: { tile_id: string }) => r.tile_id === 'evidence')?.data
   const evidence: EvidenceRecord[] = Array.isArray(evidenceData) ? (evidenceData as EvidenceRecord[]) : []
 
+  const witnessesData = (rows ?? []).find((r: { tile_id: string }) => r.tile_id === 'witnesses')?.data
+  const witnesses: WitnessRecord[] = Array.isArray(witnessesData) ? (witnessesData as WitnessRecord[]) : []
+
   const compoundLifts = allLifts(split).filter((l) => l.tier === 1 && !l.hidden)
   const featured = compoundLifts
-    .map((l) => ({ lift: l, best: bestOf(combinedHistory(l, competitions, evidence)) }))
+    .map((l) => ({ lift: l, best: bestOf(combinedHistory(l, competitions, evidence, witnesses)) }))
     .filter((x): x is { lift: Lift; best: HistoryEntry } => !!x.best)
 
-  const achievements = allLifts(split)
-    .flatMap((l) => prMoments({ ...l, history: combinedHistory(l, competitions, evidence) }))
-    .sort((a, b) => b.date.localeCompare(a.date))
-    .slice(0, 8)
+  const timeline = timelineEvents(allLifts(split), competitions, evidence, witnesses).slice(0, 20)
 
   // Signed URLs, generated server-side with the service-role client — the
   // 'evidence' bucket is private, so a visitor can only ever see one through
@@ -212,6 +214,11 @@ export default async function PublicProfilePage({
                       {best.r} rep{best.r === 1 ? '' : 's'} · {dateLabel(best.date)}
                     </div>
                     <span className={c('badge')}>{RECORD_STATUS_LABEL[best.recordStatus ?? 'self-reported']}</span>
+                    {!!best.witnessCount && (
+                      <div className={c('hint')}>
+                        Witnessed by {best.witnessCount} {best.witnessCount === 1 ? 'person' : 'people'}
+                      </div>
+                    )}
                     {evidenceUrl &&
                       (evidenceRec?.mimeType.startsWith('video/') ? (
                         <video src={evidenceUrl} controls className={c('evidenceThumb')} />
@@ -219,6 +226,16 @@ export default async function PublicProfilePage({
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={evidenceUrl} alt="" className={c('evidenceThumb')} />
                       ))}
+                    <div className={c('witnessRow')}>
+                      <WitnessForm
+                        userId={userId}
+                        token={searchParams.t}
+                        liftId={lift.id}
+                        date={best.date}
+                        weightKg={best.w}
+                        reps={best.r}
+                      />
+                    </div>
                   </div>
                 )
               })}
@@ -227,16 +244,23 @@ export default async function PublicProfilePage({
         </div>
 
         <div className={c('section')}>
-          <div className={c('sectionHead')}>Recent achievements</div>
-          {!achievements.length && <p className={c('empty')}>No milestones logged yet.</p>}
-          {!!achievements.length && (
+          <div className={c('sectionHead')}>Timeline</div>
+          {!timeline.length && <p className={c('empty')}>No milestones logged yet.</p>}
+          {!!timeline.length && (
             <div className={c('achList')}>
-              {achievements.map((a, i) => (
+              {timeline.map((ev, i) => (
                 <div key={i} className={c('achRow')}>
                   <span>
-                    New PR — {a.liftName}: {wDisp(a.w, unit)} {unit} × {a.r}
+                    New PR — {ev.liftName}: {wDisp(ev.w, unit)} {unit} × {ev.r}
+                    <span className={c('badge')}>{RECORD_STATUS_LABEL[ev.recordStatus]}</span>
+                    {ev.outlier && (
+                      <span className={c('outlierFlag')} title="Unusually large jump from the previous best — self-reported, unverified.">
+                        ⚠ large jump
+                      </span>
+                    )}
+                    {!!ev.witnessCount && <span className={c('witnessChip')}>{ev.witnessCount} witness{ev.witnessCount === 1 ? '' : 'es'}</span>}
                   </span>
-                  <span className={c('achDate')}>{dateLabel(a.date)}</span>
+                  <span className={c('achDate')}>{dateLabel(ev.date)}</span>
                 </div>
               ))}
             </div>
