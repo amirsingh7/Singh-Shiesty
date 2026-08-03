@@ -36,6 +36,12 @@ export function useTileHost(
   onReport?: (stream: unknown, tileId: string) => void,
 ) {
   const reg = useRef<WeakMap<Window, string>>(new WeakMap())
+  // Count of saveData() calls currently in flight (any tile). The actual
+  // Supabase write happens HERE, in the host's own top-level window — a
+  // sealed tile can't reach the network itself — so this is the one place
+  // that can tell whether closing the tab right now would kill a write
+  // mid-flight (see the beforeunload guard below).
+  const pendingSaves = useRef(0)
 
   // reset the map synchronously when the user changes (before any new register)
   const lastUser = useRef(userId)
@@ -226,7 +232,13 @@ export function useTileHost(
         const merged: Record<string, unknown> =
           current && typeof current === 'object' && !Array.isArray(current) ? { ...(current as Record<string, unknown>) } : {}
         merged[key] = msg.value
-        const result = await tileStore.saveData(userId, slot, merged)
+        pendingSaves.current++
+        let result
+        try {
+          result = await tileStore.saveData(userId, slot, merged)
+        } finally {
+          pendingSaves.current--
+        }
         if (!result.ok) {
           src.postMessage({ source: 'vitality-host', type: 'write:error', id: msg.id, reason: result.reason || 'unknown' }, '*')
           return
@@ -251,7 +263,13 @@ export function useTileHost(
       }
 
       if (msg.type === 'save') {
-        const result = await tileStore.saveData(userId, tileId, msg.data)
+        pendingSaves.current++
+        let result
+        try {
+          result = await tileStore.saveData(userId, tileId, msg.data)
+        } finally {
+          pendingSaves.current--
+        }
         if (!result.ok) {
           // the write was dropped — could be the per-tile cap, a storage quota,
           // or (if a Supabase project is configured) the tile_data table not
@@ -302,6 +320,25 @@ export function useTileHost(
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
   }, [userId])
+
+  // Closing the tab/app while a tile's save is still writing to Supabase kills
+  // that request mid-flight with no error surfaced anywhere — the tile that
+  // triggered it (and the user) is already gone. The save path already
+  // retries and force-flushes on backgrounding (see train.html's __flush),
+  // but nothing stops the user from leaving before that flush lands. This is
+  // the backstop: browsers show a native "leave site?" prompt only while
+  // pendingSaves is actually nonzero, so the vast majority of navigations
+  // (nothing in flight) are completely unaffected.
+  useEffect(() => {
+    function onBeforeUnload(e: BeforeUnloadEvent) {
+      if (pendingSaves.current > 0) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [])
 
   return { register, unregister }
 }
