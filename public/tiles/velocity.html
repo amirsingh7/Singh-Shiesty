@@ -158,7 +158,121 @@
 
   .footnote{text-align:center;color:var(--muted);font-size:11.5px;margin-top:26px;opacity:.8}
 
-  @media (prefers-reduced-motion: reduce){ .vline{transition:none !important} }
+  /* ---------- Ask Gobind (coach chat box) ---------- */
+  .coach-head-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .coach-style-btn{background:none;border:1px solid var(--rule-strong);color:var(--muted);font-family:var(--sans);
+    font-size:11.5px;font-weight:600;padding:6px 12px;border-radius:8px;cursor:pointer;flex:none;
+    transition:color .2s,border-color .2s,background .2s}
+  .coach-style-btn:hover{color:var(--fg);background:rgba(245,237,226,.05)}
+  .coach-style-btn.on{color:var(--coach-accent);border-color:var(--coach-accent)}
+
+  .coach-box{--coach-accent:#A78BFA;margin-top:16px;border:1px solid var(--rule);border-radius:16px;
+    overflow:hidden;background:rgba(245,237,226,.015)}
+  .coach-face-row{display:flex;align-items:center;gap:11px;padding:14px 16px;border-bottom:1px solid var(--rule)}
+  .coach-face{position:relative;width:38px;height:38px;border-radius:50%;flex:none;
+    background:radial-gradient(circle at 32% 28%,#F0ABFC,#A78BFA 45%,#67E8F9 100%);
+    box-shadow:0 0 0 1px rgba(245,237,226,.1),0 0 20px -4px var(--coach-accent);
+    animation:coachBreathe 3.6s var(--ease) infinite}
+  @keyframes coachBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+  .coach-face svg{position:absolute;inset:0;width:100%;height:100%}
+  .coach-face-id{min-width:0}
+  .coach-face-name{font-size:13px;font-weight:600}
+  .coach-face-sub{font-size:11px;color:var(--muted);margin-top:1px}
+
+  .coach-feed{max-height:300px;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+  .coach-empty{text-align:center;color:var(--muted);font-size:12.5px;padding:14px 8px;line-height:1.6}
+
+  .bubble{max-width:82%;padding:10px 13px;font-size:13.5px;line-height:1.48;border-radius:var(--coach-radius,14px);width:fit-content}
+  .bubble.user{align-self:flex-end;background:var(--coach-accent);color:#0c0704;font-weight:500}
+  .bubble.gobind{align-self:flex-start;background:rgba(245,237,226,.05);border:1px solid var(--rule)}
+  .bubble.typing::after{content:'';display:inline-block;width:2px;height:12px;background:var(--coach-accent);
+    margin-left:2px;vertical-align:-2px;animation:coachCaret .8s step-end infinite}
+  @keyframes coachCaret{50%{opacity:0}}
+
+  .reveal-fade{animation:coachFadeIn .5s var(--ease) both}
+  @keyframes coachFadeIn{from{opacity:0}to{opacity:1}}
+  .reveal-rise{animation:coachRiseIn .45s var(--ease) both}
+  @keyframes coachRiseIn{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
+
+  /* bubble design variants, keyed off data-bubble on .coach-box */
+  .coach-box[data-bubble="glass"] .bubble{background:rgba(245,237,226,.07);backdrop-filter:blur(10px);border:1px solid rgba(245,237,226,.14)}
+  .coach-box[data-bubble="glass"] .bubble.user{background:color-mix(in srgb,var(--coach-accent) 34%,transparent);border-color:color-mix(in srgb,var(--coach-accent) 55%,transparent);color:var(--fg)}
+  .coach-box[data-bubble="solid"] .bubble{border:none}
+  .coach-box[data-bubble="solid"] .bubble.user{background:var(--coach-accent);color:#0c0704}
+  .coach-box[data-bubble="solid"] .bubble.gobind{background:rgba(245,237,226,.08)}
+  .coach-box[data-bubble="outline"] .bubble{background:transparent;border:1.5px solid var(--rule-strong)}
+  .coach-box[data-bubble="outline"] .bubble.user{border-color:var(--coach-accent);color:var(--coach-accent);background:transparent}
+  .coach-box[data-bubble="glow"] .bubble{background:rgba(245,237,226,.045);border:1px solid var(--rule)}
+  .coach-box[data-bubble="glow"] .bubble.user{color:var(--fg);background:rgba(245,237,226,.045);border-color:var(--coach-accent);box-shadow:0 0 18px -3px var(--coach-accent),0 0 0 1px var(--coach-accent) inset}
+  .coach-box[data-bubble="glow"] .bubble.gobind{box-shadow:0 0 14px -5px var(--coach-accent)}
+
+  .coach-thinking{padding:0 16px 14px}
+  .think{display:inline-flex;align-items:center;gap:5px;padding:9px 13px;border-radius:var(--coach-radius,14px);
+    background:rgba(245,237,226,.05);border:1px solid var(--rule)}
+  .think-dots span{width:5px;height:5px;border-radius:50%;background:var(--coach-accent);display:inline-block;
+    animation:coachThinkDots 1.1s ease-in-out infinite}
+  .think-dots span:nth-child(2){animation-delay:.15s}
+  .think-dots span:nth-child(3){animation-delay:.3s}
+  @keyframes coachThinkDots{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+  .think-bars{align-items:flex-end;gap:3px;height:26px}
+  .think-bars span{width:3px;background:var(--coach-accent);border-radius:2px;display:inline-block;height:16px;
+    animation:coachThinkBars .9s ease-in-out infinite}
+  .think-bars span:nth-child(1){animation-delay:0s}
+  .think-bars span:nth-child(2){animation-delay:.12s}
+  .think-bars span:nth-child(3){animation-delay:.24s}
+  .think-bars span:nth-child(4){animation-delay:.36s}
+  @keyframes coachThinkBars{0%,100%{transform:scaleY(.35)}50%{transform:scaleY(1)}}
+  .think-pulse span{width:9px;height:9px;border-radius:50%;background:var(--coach-accent);display:inline-block;
+    animation:coachThinkPulse 1.1s ease-in-out infinite}
+  @keyframes coachThinkPulse{0%,100%{transform:scale(.7);opacity:.5}50%{transform:scale(1.2);opacity:1}}
+  .think-shimmer{width:120px;height:11px;border-radius:6px;padding:0;border:none;background:rgba(245,237,226,.08);
+    position:relative;overflow:hidden}
+  .think-shimmer::after{content:'';position:absolute;inset:0;
+    background:linear-gradient(90deg,transparent,var(--coach-accent),transparent);
+    background-size:60% 100%;animation:coachShimmer 1.3s linear infinite}
+  @keyframes coachShimmer{0%{background-position:-60% 0}100%{background-position:160% 0}}
+
+  .coach-input-row{display:flex;gap:8px;padding:12px 14px;border-top:1px solid var(--rule)}
+  .coach-input{flex:1;min-width:0;background:rgba(245,237,226,.04);border:1px solid var(--rule-strong);
+    border-radius:calc(var(--coach-radius,14px) * 0.65);color:var(--fg);font-family:var(--sans);font-size:13.5px;padding:9px 12px}
+  .coach-input:focus{outline:none;border-color:var(--coach-accent)}
+  .coach-send{background:var(--coach-accent);color:#0c0704;border:none;font-family:var(--sans);font-size:13px;
+    font-weight:700;padding:9px 16px;border-radius:calc(var(--coach-radius,14px) * 0.65);cursor:pointer;flex:none;
+    transition:filter .2s,opacity .2s}
+  .coach-send:hover{filter:brightness(1.08)}
+  .coach-send:disabled{opacity:.5;cursor:default}
+  .coach-err{font-size:11.5px;color:var(--rose);padding:0 16px 12px}
+
+  .coach-panel{margin-top:14px;border:1px solid var(--rule);border-radius:14px;padding:16px;
+    display:flex;flex-direction:column;gap:14px;background:rgba(245,237,226,.02)}
+  .coach-panel-h{display:flex;align-items:center;justify-content:space-between;font-size:11px;font-weight:700;
+    text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
+  .coach-panel-close{background:none;border:none;color:var(--muted);font-size:19px;line-height:1;cursor:pointer;padding:0 2px}
+  .coach-panel-close:hover{color:var(--fg)}
+  .coach-panel-row{display:flex;flex-direction:column;gap:8px}
+  .coach-panel-label{font-size:11.5px;color:var(--muted);font-weight:600}
+  .swatches{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+  .swatch{width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0;
+    transition:transform .15s,border-color .15s}
+  .swatch.on{border-color:var(--fg);transform:scale(1.14)}
+  .swatch-custom{-webkit-appearance:none;appearance:none;background:conic-gradient(from 0deg,#F0ABFC,#A78BFA,#67E8F9,#34D399,#F97316,#FB7185,#F0ABFC)}
+  .swatch-custom::-webkit-color-swatch{border-radius:50%;border:none}
+  .swatch-custom::-moz-color-swatch{border-radius:50%;border:none}
+  .opts{display:flex;gap:6px;flex-wrap:wrap}
+  .opt-btn{background:rgba(245,237,226,.03);border:1px solid var(--rule);color:var(--muted);font-family:var(--sans);
+    font-size:12px;font-weight:600;padding:7px 12px;border-radius:9px;cursor:pointer;
+    transition:color .2s,border-color .2s,background .2s}
+  .opt-btn.on{color:var(--fg);border-color:var(--coach-accent);background:rgba(245,237,226,.06)}
+  .coach-copy{background:none;border:1px solid var(--rule-strong);color:var(--fg);font-family:var(--sans);
+    font-size:12.5px;font-weight:700;padding:9px 14px;border-radius:10px;cursor:pointer;align-self:flex-start;
+    transition:background .2s,border-color .2s}
+  .coach-copy:hover{border-color:var(--coach-accent);background:rgba(245,237,226,.04)}
+  .coach-copy-note{font-size:11px;color:var(--mint)}
+
+  @media (prefers-reduced-motion: reduce){
+    .vline{transition:none !important}
+    .coach-face,.think-dots span,.think-bars span,.think-pulse span,.think-shimmer::after,.bubble.typing::after{animation:none !important}
+  }
 </style>
 </head>
 <body>
@@ -168,6 +282,70 @@
     <div class="eyebrow">Progress</div>
     <h1>Velocity</h1>
     <p class="sub">Your compound lifts and full workout log, pulled straight from Train. Finish a session there and it shows up here.</p>
+  </div>
+
+  <div class="sheet">
+    <div class="coach-head-row">
+      <div class="sheet-h">Ask Gobind</div>
+      <button class="coach-style-btn" id="coachStyleBtn" type="button">Style</button>
+    </div>
+    <p class="sub" style="margin-top:4px">Gobind can already see your PRs and volume on this page &mdash; ask about a lift, a plateau, or what's next.</p>
+
+    <div class="coach-box" id="coachBox">
+      <div class="coach-face-row">
+        <div class="coach-face" id="coachFace">
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <g id="cfFace">
+              <ellipse id="cfEyeL" cx="37" cy="46" rx="5" ry="6" fill="#140d08"></ellipse>
+              <ellipse id="cfEyeR" cx="63" cy="46" rx="5" ry="6" fill="#140d08"></ellipse>
+              <path id="cfMouth" d="M39 64 Q50 64 61 64" stroke="#140d08" stroke-width="4.5" stroke-linecap="round" fill="none"></path>
+            </g>
+            <g id="cfSymbol" style="display:none"></g>
+          </svg>
+        </div>
+        <div class="coach-face-id">
+          <div class="coach-face-name">Gobind</div>
+          <div class="coach-face-sub" id="coachFaceSub">your mentor, reading this page</div>
+        </div>
+      </div>
+      <div class="coach-feed" id="coachFeed">
+        <div class="coach-empty" id="coachEmpty">Ask about a lift, a plateau, or what to do next.</div>
+      </div>
+      <div class="coach-thinking" id="coachThinking" hidden></div>
+      <div class="coach-err" id="coachErr" hidden></div>
+      <form class="coach-input-row" id="coachForm">
+        <input class="coach-input" id="coachInput" placeholder="Ask Gobind&hellip;" autocomplete="off" maxlength="400" />
+        <button class="coach-send" id="coachSend" type="submit">Send</button>
+      </form>
+    </div>
+
+    <div class="coach-panel" id="coachPanel" hidden>
+      <div class="coach-panel-h">Restyle this chat box
+        <button class="coach-panel-close" id="coachPanelClose" type="button">&times;</button>
+      </div>
+      <div class="coach-panel-row">
+        <span class="coach-panel-label">Accent</span>
+        <div class="swatches" id="swAccent"></div>
+      </div>
+      <div class="coach-panel-row">
+        <span class="coach-panel-label">Bubble</span>
+        <div class="opts" id="optBubble"></div>
+      </div>
+      <div class="coach-panel-row">
+        <span class="coach-panel-label">Corners</span>
+        <div class="opts" id="optRadius"></div>
+      </div>
+      <div class="coach-panel-row">
+        <span class="coach-panel-label">Thinking</span>
+        <div class="opts" id="optThink"></div>
+      </div>
+      <div class="coach-panel-row">
+        <span class="coach-panel-label">Reveal</span>
+        <div class="opts" id="optReveal"></div>
+      </div>
+      <button class="coach-copy" id="coachCopy" type="button">Copy CSS</button>
+      <div class="coach-copy-note" id="coachCopyNote" hidden>Copied &mdash; paste it anywhere.</div>
+    </div>
   </div>
 
   <div class="sheet">
@@ -222,10 +400,25 @@
   let SPLIT = null; // { days: [...], activeDayId } from Train, or null if unavailable
   let STATE = { active: 'ALL', confirmDate: null, editDate: null, editRows: null, busy: false, err: null, prOpen: new Set() };
 
+  // ---------- Ask Gobind ----------
+  const RADIUS_PX = { sharp: 6, soft: 14, round: 22, pill: 999 };
+  const ACCENTS = ['#A78BFA', '#67E8F9', '#F0ABFC', '#F97316', '#34D399', '#FB7185'];
+  const COACH = {
+    style: { accent: ACCENTS[0], bubble: 'glass', radius: 'soft', think: 'dots', reveal: 'fade' },
+    history: [], // [{role:'user'|'assistant', text}]
+    busy: false,
+  };
+  function persistCoach(){
+    try { window.Vitality.save({ range: STATE.active, coachStyle: COACH.style }); } catch (e) {}
+  }
+
   async function loadTrain(){
     try {
       const saved = await window.Vitality.load();
-      if (saved && typeof saved === 'object' && saved.range) STATE.active = saved.range;
+      if (saved && typeof saved === 'object'){
+        if (saved.range) STATE.active = saved.range;
+        if (saved.coachStyle && typeof saved.coachStyle === 'object') Object.assign(COACH.style, saved.coachStyle);
+      }
     } catch (e) {}
     try {
       const data = await window.Vitality.read('train');
@@ -256,7 +449,7 @@
       '<button class="' + (k === STATE.active ? 'on' : '') + '" data-r="' + k + '">' + k + '</button>').join('');
     el.querySelectorAll('button').forEach(b => b.onclick = () => {
       STATE.active = b.dataset.r;
-      try { window.Vitality.save({ range: STATE.active }); } catch (e) {}
+      persistCoach();
       drawRange(); renderPlot();
     });
   }
@@ -754,12 +947,287 @@
     });
   }
 
+  // ---------- Ask Gobind: context, face, chat ----------
+  function buildCoachContext(){
+    if (!SPLIT) return '';
+    const lifts = compoundLifts();
+    const prLines = lifts.map(l => {
+      const stats = liftPRStats(l);
+      if (!stats) return null;
+      const u = uLabel(l.perHand);
+      return l.name + ': ' + wDisp(stats.pr.w) + u + ' x ' + stats.pr.r + ' best, set ' + label(stats.pr.date);
+    }).filter(Boolean);
+    const thisWeek = volumeInRange(dateKeyOffset(6), dateKeyOffset(0));
+    const lastWeek = volumeInRange(dateKeyOffset(13), dateKeyOffset(7));
+    let ctx = 'Velocity tile (a progress view of Train\'s data), weight unit ' + UNIT + '.\n';
+    if (prLines.length) ctx += 'Compound lift PRs:\n' + prLines.join('\n') + '\n';
+    ctx += 'Training volume: this week ' + fmtVol(thisWeek) + ' ' + UNIT + ', last week ' + fmtVol(lastWeek) + ' ' + UNIT + '.';
+    return ctx.slice(0, 3500);
+  }
+
+  // eye/mouth/symbol table mirrors GobindAvatar's expression set (see
+  // components/GobindAvatar.tsx) so the tile-embedded face and the full 3D
+  // avatar read as the same character, just rendered differently — this one
+  // in plain SVG since a sealed tile can't load Three.js from a CDN.
+  const HEART_D = 'M50 70 C20 48 25 20 46 24 C48 25 50 28 50 32 C50 28 52 25 54 24 C75 20 80 48 50 70 Z';
+  const STAR_D = 'M50 20 L58 42 L82 42 L62 56 L70 78 L50 64 L30 78 L38 56 L18 42 L42 42 Z';
+  function setFace(mood){
+    const eyeL = document.getElementById('cfEyeL'), eyeR = document.getElementById('cfEyeR');
+    const mouth = document.getElementById('cfMouth');
+    const face = document.getElementById('cfFace'), symbol = document.getElementById('cfSymbol');
+    if (!eyeL || !eyeR || !mouth || !face || !symbol) return;
+    face.style.display = ''; symbol.style.display = 'none'; symbol.innerHTML = '';
+    eyeL.setAttribute('rx', 5); eyeL.setAttribute('ry', 6); eyeL.setAttribute('cx', 37); eyeL.setAttribute('cy', 46); eyeL.style.display = '';
+    eyeR.setAttribute('rx', 5); eyeR.setAttribute('ry', 6); eyeR.setAttribute('cx', 63); eyeR.setAttribute('cy', 46); eyeR.style.display = '';
+    if (mood === 'happy'){
+      mouth.setAttribute('d', 'M37 58 Q50 74 63 58');
+    } else if (mood === 'sad'){
+      mouth.setAttribute('d', 'M37 68 Q50 56 63 68');
+      eyeL.setAttribute('cy', 48); eyeR.setAttribute('cy', 48);
+    } else if (mood === 'surprised'){
+      eyeL.setAttribute('rx', 6); eyeL.setAttribute('ry', 7.5); eyeR.setAttribute('rx', 6); eyeR.setAttribute('ry', 7.5);
+      mouth.setAttribute('d', 'M45 60 Q50 58 55 60 Q55 70 50 70 Q45 70 45 60 Z');
+    } else if (mood === 'thinking'){
+      eyeL.setAttribute('cx', 39); eyeR.setAttribute('cx', 65);
+      mouth.setAttribute('d', 'M41 65 Q50 63 58 65');
+    } else if (mood === 'wink'){
+      eyeR.style.display = 'none';
+      mouth.setAttribute('d', 'M37 58 Q50 72 63 58');
+    } else if (mood === 'love'){
+      face.style.display = 'none'; symbol.style.display = '';
+      symbol.innerHTML = '<path d="' + HEART_D + '" fill="#FB7185"></path>';
+    } else if (mood === 'star'){
+      face.style.display = 'none'; symbol.style.display = '';
+      symbol.innerHTML = '<path d="' + STAR_D + '" fill="#FACC15"></path>';
+    } else {
+      mouth.setAttribute('d', 'M39 64 Q50 64 61 64'); // neutral
+    }
+  }
+
+  function renderCoachStyle(){
+    const box = document.getElementById('coachBox');
+    const s = COACH.style;
+    box.dataset.bubble = s.bubble;
+    box.style.setProperty('--coach-accent', s.accent);
+    box.style.setProperty('--coach-radius', RADIUS_PX[s.radius] + 'px');
+
+    const swAccent = document.getElementById('swAccent');
+    swAccent.innerHTML = ACCENTS.map(c =>
+      '<button class="swatch' + (s.accent === c ? ' on' : '') + '" type="button" data-accent="' + c + '" style="background:' + c + '" aria-label="accent"></button>'
+    ).join('') + '<input class="swatch swatch-custom" id="swAccentCustom" type="color" value="' + (ACCENTS.includes(s.accent) ? '#A78BFA' : s.accent) + '" aria-label="custom accent" />';
+    swAccent.querySelectorAll('[data-accent]').forEach(btn => btn.onclick = () => {
+      COACH.style.accent = btn.dataset.accent; persistCoach(); renderCoachStyle();
+    });
+    document.getElementById('swAccentCustom').oninput = e => {
+      COACH.style.accent = e.target.value; persistCoach(); renderCoachStyle();
+    };
+
+    const opt = (id, options, key) => {
+      const el = document.getElementById(id);
+      el.innerHTML = options.map(o =>
+        '<button class="opt-btn' + (s[key] === o ? ' on' : '') + '" type="button" data-v="' + o + '">' + o + '</button>'
+      ).join('');
+      el.querySelectorAll('button').forEach(b => b.onclick = () => {
+        COACH.style[key] = b.dataset.v; persistCoach(); renderCoachStyle();
+      });
+    };
+    opt('optBubble', ['glass', 'solid', 'outline', 'glow'], 'bubble');
+    opt('optRadius', ['sharp', 'soft', 'round', 'pill'], 'radius');
+    opt('optThink', ['dots', 'bars', 'pulse', 'shimmer'], 'think');
+    opt('optReveal', ['fade', 'rise', 'typewriter'], 'reveal');
+  }
+
+  function scrollFeed(){
+    const feed = document.getElementById('coachFeed');
+    feed.scrollTop = feed.scrollHeight;
+  }
+
+  function appendBubble(role, text){
+    const feed = document.getElementById('coachFeed');
+    const empty = document.getElementById('coachEmpty');
+    if (empty) empty.remove();
+    const el = document.createElement('div');
+    el.className = 'bubble ' + (role === 'user' ? 'user' : 'gobind');
+    feed.appendChild(el);
+    const reveal = COACH.style.reveal;
+    if (role === 'user' || reveal !== 'typewriter'){
+      el.textContent = text;
+      el.classList.add(reveal === 'rise' ? 'reveal-rise' : 'reveal-fade');
+      scrollFeed();
+      return;
+    }
+    // typewriter: reveal Gobind's reply one character at a time
+    el.classList.add('typing');
+    let i = 0;
+    const step = () => {
+      i += Math.max(1, Math.round(text.length / 120)); // stays snappy on long replies
+      el.textContent = text.slice(0, i);
+      scrollFeed();
+      if (i < text.length) requestAnimationFrame(() => setTimeout(step, 14));
+      else el.classList.remove('typing');
+    };
+    step();
+  }
+
+  function showThinking(){
+    const el = document.getElementById('coachThinking');
+    const kind = COACH.style.think;
+    let inner = '';
+    if (kind === 'dots') inner = '<div class="think think-dots"><span></span><span></span><span></span></div>';
+    else if (kind === 'bars') inner = '<div class="think think-bars"><span></span><span></span><span></span><span></span></div>';
+    else if (kind === 'pulse') inner = '<div class="think think-pulse"><span></span></div>';
+    else inner = '<div class="think think-shimmer"></div>';
+    el.innerHTML = inner;
+    el.hidden = false;
+    setFace('thinking');
+    document.getElementById('coachFaceSub').textContent = 'thinking…';
+    scrollFeed();
+  }
+  function hideThinking(){
+    document.getElementById('coachThinking').hidden = true;
+  }
+
+  async function sendCoach(text){
+    if (COACH.busy || !text.trim()) return;
+    COACH.busy = true;
+    const input = document.getElementById('coachInput'), send = document.getElementById('coachSend');
+    const errEl = document.getElementById('coachErr');
+    input.value = ''; send.disabled = true; errEl.hidden = true;
+    appendBubble('user', text);
+    COACH.history.push({ role: 'user', text });
+    showThinking();
+    try {
+      const res = await window.Vitality.mentor(text, buildCoachContext(), COACH.history, '');
+      hideThinking();
+      const mood = (res && res.mood) || 'neutral';
+      const reply = (res && res.reply) || "I didn't catch that — try again?";
+      setFace(mood);
+      document.getElementById('coachFaceSub').textContent = 'your mentor, reading this page';
+      appendBubble('gobind', reply);
+      COACH.history.push({ role: 'assistant', text: reply });
+    } catch (e) {
+      hideThinking();
+      setFace('neutral');
+      document.getElementById('coachFaceSub').textContent = 'your mentor, reading this page';
+      const reason = (e && e.message) || 'mentor_failed';
+      errEl.textContent = reason === 'unauthorized' ? 'Sign in to chat with Gobind.'
+        : (reason === 'fetch_failed' || reason === 'mentor_failed') ? 'Gobind is unreachable right now — try again in a moment.'
+        : reason;
+      errEl.hidden = false;
+    } finally {
+      COACH.busy = false;
+      send.disabled = false;
+      input.focus();
+    }
+  }
+
+  function bakedCSS(s){
+    const r = RADIUS_PX[s.radius];
+    const bubbleCSS = {
+      glass:
+`.gobind-chatbox .bubble{background:rgba(255,255,255,.07);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14)}
+.gobind-chatbox .bubble.user{background:${s.accent}55;border-color:${s.accent}90;color:#fff}`,
+      solid:
+`.gobind-chatbox .bubble{border:none}
+.gobind-chatbox .bubble.user{background:${s.accent};color:#140d08}
+.gobind-chatbox .bubble.gobind{background:rgba(255,255,255,.08);color:#fff}`,
+      outline:
+`.gobind-chatbox .bubble{background:transparent;border:1.5px solid rgba(255,255,255,.24);color:#fff}
+.gobind-chatbox .bubble.user{border-color:${s.accent};color:${s.accent}}`,
+      glow:
+`.gobind-chatbox .bubble{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#fff}
+.gobind-chatbox .bubble.user{border-color:${s.accent};box-shadow:0 0 18px -3px ${s.accent},0 0 0 1px ${s.accent} inset}
+.gobind-chatbox .bubble.gobind{box-shadow:0 0 14px -5px ${s.accent}}`,
+    }[s.bubble];
+    const thinkCSS = {
+      dots:
+`.gobind-thinking span{width:5px;height:5px;border-radius:50%;background:${s.accent};display:inline-block;animation:gobindThinkDots 1.1s ease-in-out infinite}
+.gobind-thinking span:nth-child(2){animation-delay:.15s}
+.gobind-thinking span:nth-child(3){animation-delay:.3s}
+@keyframes gobindThinkDots{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}`,
+      bars:
+`.gobind-thinking{display:flex;align-items:flex-end;gap:3px;height:16px}
+.gobind-thinking span{width:3px;background:${s.accent};border-radius:2px;animation:gobindThinkBars .9s ease-in-out infinite}
+.gobind-thinking span:nth-child(1){height:6px}.gobind-thinking span:nth-child(2){height:12px;animation-delay:.12s}
+.gobind-thinking span:nth-child(3){height:16px;animation-delay:.24s}.gobind-thinking span:nth-child(4){height:9px;animation-delay:.36s}
+@keyframes gobindThinkBars{0%,100%{transform:scaleY(.35)}50%{transform:scaleY(1)}}`,
+      pulse:
+`.gobind-thinking span{width:9px;height:9px;border-radius:50%;background:${s.accent};display:inline-block;animation:gobindThinkPulse 1.1s ease-in-out infinite}
+@keyframes gobindThinkPulse{0%,100%{transform:scale(.7);opacity:.5}50%{transform:scale(1.2);opacity:1}}`,
+      shimmer:
+`.gobind-thinking{width:120px;height:11px;border-radius:6px;background:rgba(255,255,255,.08);position:relative;overflow:hidden}
+.gobind-thinking::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,${s.accent},transparent);background-size:60% 100%;animation:gobindShimmer 1.3s linear infinite}
+@keyframes gobindShimmer{0%{background-position:-60% 0}100%{background-position:160% 0}}`,
+    }[s.think];
+    const revealCSS = s.reveal === 'typewriter'
+      ? `/* typewriter: JS reveals the reply a few characters at a time; only the caret is CSS */
+.gobind-chatbox .bubble.typing::after{content:'';display:inline-block;width:2px;height:12px;background:${s.accent};margin-left:2px;animation:gobindCaret .8s step-end infinite}
+@keyframes gobindCaret{50%{opacity:0}}`
+      : s.reveal === 'rise'
+      ? `.gobind-chatbox .bubble.reveal{animation:gobindRiseIn .45s cubic-bezier(.16,1,.3,1) both}
+@keyframes gobindRiseIn{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}`
+      : `.gobind-chatbox .bubble.reveal{animation:gobindFadeIn .5s cubic-bezier(.16,1,.3,1) both}
+@keyframes gobindFadeIn{from{opacity:0}to{opacity:1}}`;
+    return `/* Gobind chat box — baked from Velocity's live style panel
+   bubble:${s.bubble}  corners:${s.radius}  thinking:${s.think}  reveal:${s.reveal} */
+.gobind-chatbox{border:1px solid rgba(255,255,255,.12);border-radius:${r}px;overflow:hidden;background:#0c0704}
+.gobind-chatbox .bubble{border-radius:${r}px;max-width:82%;width:fit-content;padding:10px 13px;font-size:13.5px;line-height:1.48}
+.gobind-chatbox .bubble.user{align-self:flex-end}
+.gobind-chatbox .bubble.gobind{align-self:flex-start}
+
+${bubbleCSS}
+
+${thinkCSS}
+
+${revealCSS}`;
+  }
+
+  async function copyCoachCSS(){
+    const css = bakedCSS(COACH.style);
+    const note = document.getElementById('coachCopyNote');
+    const done = () => { note.hidden = false; setTimeout(() => { note.hidden = true; }, 2200); };
+    try {
+      await navigator.clipboard.writeText(css);
+      done();
+    } catch (e) {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = css; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        done();
+      } catch (e2) {}
+    }
+  }
+
+  function initCoach(){
+    renderCoachStyle();
+    setFace('neutral');
+
+    const styleBtn = document.getElementById('coachStyleBtn'), panel = document.getElementById('coachPanel');
+    styleBtn.onclick = () => {
+      panel.hidden = !panel.hidden;
+      styleBtn.classList.toggle('on', !panel.hidden);
+    };
+    document.getElementById('coachPanelClose').onclick = () => {
+      panel.hidden = true; styleBtn.classList.remove('on');
+    };
+    document.getElementById('coachCopy').onclick = copyCoachCSS;
+
+    document.getElementById('coachForm').addEventListener('submit', e => {
+      e.preventDefault();
+      sendCoach(document.getElementById('coachInput').value);
+    });
+  }
+
   await loadTrain();
   drawRange();
   renderPlot();
   renderPR();
   renderVolume();
   renderLog();
+  initCoach();
 })();
 </script>
 </body>

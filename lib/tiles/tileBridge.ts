@@ -41,6 +41,8 @@ const SHIM = `<script>
     else if (m.type === 'stock:error') p.reject(new Error(m.reason || 'stock_failed'));
     else if (m.type === 'spotify:result') p.resolve(m.data);
     else if (m.type === 'spotify:error') p.reject(new Error(m.reason || 'spotify_failed'));
+    else if (m.type === 'mentor:result') p.resolve(m.data);
+    else if (m.type === 'mentor:error') p.reject(new Error(m.reason || 'mentor_failed'));
   });
   function call(type, extra) {
     return new Promise(function (resolve, reject) {
@@ -79,6 +81,12 @@ const SHIM = `<script>
     stock: function (symbol) { return call('stock', { symbol: symbol }); },
     read: function (slot) { return call('read', { slot: slot }); },
     write: function (slot, key, value) { return callWrite(slot, key, value); },
+    // Gobind's live chat, proxied the same way as youtube/stock — a sealed
+    // tile has no network, so the host makes the actual call to
+    // /api/mentor/chat and hands back { reply, mood }.
+    mentor: function (message, context, history, goalTitle) {
+      return call('mentor', { message: message, context: context, history: history, goalTitle: goalTitle });
+    },
     report: function (stream) {
       parent.postMessage({ source: 'vitality-tile', type: 'report', stream: stream }, '*');
     },

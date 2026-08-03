@@ -184,6 +184,41 @@ export function useTileHost(
         return
       }
 
+      // Gobind's live chat — routed through /api/mentor/chat, same shape as
+      // youtube/stock above, so a sealed tile (Velocity's coach box) can talk
+      // to Gobind without ever touching the network or the API key itself.
+      // The route does its own owner-gate (supabaseServer) off the browser's
+      // cookies, which this fetch carries same-origin, same as any other tile
+      // proxy call here.
+      if (msg.type === 'mentor') {
+        const message = String(msg.message || '').slice(0, 2000)
+        if (!message) {
+          src.postMessage({ source: 'vitality-host', type: 'mentor:error', id: msg.id, reason: 'no_message' }, '*')
+          return
+        }
+        try {
+          const r = await fetch('/api/mentor/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              message,
+              context: typeof msg.context === 'string' ? msg.context : '',
+              goalTitle: typeof msg.goalTitle === 'string' ? msg.goalTitle : '',
+              history: Array.isArray(msg.history) ? msg.history : [],
+            }),
+          })
+          const j = await r.json()
+          if (r.ok && typeof j?.reply === 'string') {
+            src.postMessage({ source: 'vitality-host', type: 'mentor:result', id: msg.id, data: j }, '*')
+          } else {
+            src.postMessage({ source: 'vitality-host', type: 'mentor:error', id: msg.id, reason: String(j?.error || 'no_data') }, '*')
+          }
+        } catch {
+          src.postMessage({ source: 'vitality-host', type: 'mentor:error', id: msg.id, reason: 'fetch_failed' }, '*')
+        }
+        return
+      }
+
       // Cross-tile READ — the host hands a tile another slot's saved data so
       // tiles can react to each other client-side (e.g. Peak reshaping from the
       // Vitals recovery) with no /sweep and no connector. Read-only, the user's
