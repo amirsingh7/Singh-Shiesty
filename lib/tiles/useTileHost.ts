@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef } from 'react'
 import { tileStore } from './tileStore'
-import { syncEnabled, syncSave, syncLoad } from '@/lib/sync'
 
 /**
  * useTileHost is the host side of the Vitality bridge, fixed for MANY tiles.
@@ -196,11 +195,7 @@ export function useTileHost(
           src.postMessage({ source: 'vitality-host', type: 'read:error', id: msg.id, reason: 'slot_not_allowed' }, '*')
           return
         }
-        let data = await tileStore.loadData(userId, slot)
-        if (syncEnabled()) {
-          const remote = await syncLoad(userId, slot)
-          if (remote != null) data = remote as typeof data
-        }
+        const data = await tileStore.loadData(userId, slot)
         src.postMessage({ source: 'vitality-host', type: 'read:result', id: msg.id, data }, '*')
         return
       }
@@ -224,11 +219,7 @@ export function useTileHost(
           src.postMessage({ source: 'vitality-host', type: 'write:error', id: msg.id, reason: 'no_key' }, '*')
           return
         }
-        let current = await tileStore.loadData(userId, slot)
-        if (syncEnabled()) {
-          const remote = await syncLoad(userId, slot)
-          if (remote != null) current = remote
-        }
+        const current = await tileStore.loadData(userId, slot)
         const merged: Record<string, unknown> =
           current && typeof current === 'object' && !Array.isArray(current) ? { ...(current as Record<string, unknown>) } : {}
         merged[key] = msg.value
@@ -244,7 +235,6 @@ export function useTileHost(
           return
         }
         src.postMessage({ source: 'vitality-host', type: 'write:ok', id: msg.id }, '*')
-        if (syncEnabled()) void syncSave(userId, slot, merged, new Date().toISOString())
         activity.current?.({ tileId: slot, type: 'save', count: 0 })
         return
       }
@@ -279,23 +269,18 @@ export function useTileHost(
           return
         }
         // ack success so a tile's `await window.Vitality.save(...)` resolves truthfully
+        // (tileStore.saveData already wrote through to Supabase above, when configured)
         src.postMessage({ source: 'vitality-host', type: 'save:ok', id: msg.id }, '*')
-        // then mirror to the owner's Supabase (if configured) so the same data shows
-        // up on their other devices. Fire-and-forget — never blocks the tile.
-        if (syncEnabled()) void syncSave(userId, tileId, msg.data, new Date().toISOString())
         const count = Array.isArray(msg.data) ? msg.data.length : 0
         activity.current?.({ tileId, type: 'save', count })
         return
       }
 
       if (msg.type === 'load') {
-        // Prefer the cloud copy when sync is on (so a fresh device — the phone —
-        // gets the real data); fall back to this browser's local copy otherwise.
-        let data = await tileStore.loadData(userId, tileId)
-        if (syncEnabled()) {
-          const remote = await syncLoad(userId, tileId)
-          if (remote != null) data = remote as typeof data
-        }
+        // tileStore.loadData already reads from Supabase (when configured) so a
+        // fresh device — the phone — gets the real data; falls back to this
+        // browser's local copy otherwise.
+        const data = await tileStore.loadData(userId, tileId)
         // reply to the exact sender, never a broadcast. targetOrigin stays '*'
         // because a sealed srcDoc tile has an opaque (null) origin; the sender
         // is already verified via the registered e.source, and the payload is
