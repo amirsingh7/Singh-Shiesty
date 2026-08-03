@@ -1,34 +1,32 @@
 /* ----- Tokens ----- */
 
 :root {
-  /* Colors — PR Blue on a cool near-black: the credibility-blue from the PR
-     Portfolio concept doc's own header/table color, on a canvas retuned cool
-     to pair with it (the Forge rebrand's near-black was warm, to pair with
-     amber — that pairing no longer applies). "--mint" is legacy naming
-     (mint green, pre-Forge) kept through three rebrands now to avoid a
-     sweeping variable-name churn across every consumer — only the values
-     change. --fg stays the same warm off-white; warm text on a cool ground
-     reads clean and doesn't need to match the base tone. */
-  --bg: #0a0d14;
-  --bg-elevated: #12161f;
-  --fg: #f5ede2;
-  --mint: #2554e8;
-  --mint-hover: #4472ff;
-  --mint-deep: #16255e;       /* deep navy partner to the blue accent */
-  --mint-glow: rgba(37, 84, 232, 0.4);
-  --mint-ink: #f4f6ff;        /* near-white foreground for text/icons on the blue fill (blue is dark enough that light-on-fill reads better than dark-on-fill did on amber) */
-  --verified: #2fae66;        /* trainer-verification badges/checks */
-  --tier-gold: #e0a93d;       /* Elite/Pro benchmark-tier accent only — not the brand color */
+  /* Colors — fitness-gym restyle: energy orange + success green on slate.
+     "--mint" is legacy naming (mint green, pre-Forge, then PR Blue) kept
+     through four rebrands now to avoid a sweeping variable-name churn
+     across every consumer — only the values change. --fg is now a cool
+     near-white to sit cleanly on the slate ground (the old warm off-white
+     doesn't read against a blue-gray base the way it did on near-black). */
+  --bg: #1f2937;
+  --bg-elevated: #111827;
+  --fg: #f8fafc;
+  --mint: #f97316;
+  --mint-hover: #fb923c;
+  --mint-deep: #9a3412;        /* deep burnt-orange partner to the accent */
+  --mint-glow: rgba(249, 115, 22, 0.4);
+  --mint-ink: #1f2937;         /* dark-slate foreground for text/icons on the orange fill — orange is bright enough that dark-on-fill reads cleaner than light-on-fill did on blue */
+  --verified: #22c55e;         /* trainer-verification badges/checks — the CTA green */
+  --tier-gold: #eab308;        /* Elite/Pro benchmark-tier accent only — not the brand color */
   --amber: #F59E0B;
   --amber-warm: #d97706;      /* deeper amber for duotone gradients */
   --wine: #7c2d12;            /* deep red-brown, partners with amber */
   --red: #EF4444;
-  --muted: rgba(245, 237, 226, 0.5);
-  --muted-strong: rgba(245, 237, 226, 0.7);
-  --border: rgba(245, 237, 226, 0.08);
-  --border-strong: rgba(245, 237, 226, 0.16);
-  --card: rgba(245, 237, 226, 0.03);
-  --card-elevated: rgba(245, 237, 226, 0.05);
+  --muted: rgba(248, 250, 252, 0.55);
+  --muted-strong: rgba(248, 250, 252, 0.75);
+  --border: rgba(148, 163, 184, 0.18);
+  --border-strong: rgba(148, 163, 184, 0.32);
+  --card: #111827;
+  --card-elevated: #0b1220;
 
   /* Spacing */
   --space-1: 0.25rem;
@@ -42,10 +40,10 @@
   --space-12: 3rem;
   --space-16: 4rem;
 
-  /* Radius */
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
+  /* Radius — sharp, blocky corners for the gym-poster look (was 6/8/12) */
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
   --radius-pill: 999px;
 
   /* Type */
@@ -79,10 +77,10 @@
 html, body {
   height: 100%;
   /* Rubber-band / overscroll past the top of any page must show the app's
-     near-black, never a pure-black band. Tint the root the editorial
-     atmosphere's darkest stop (#05060d) so the reveal is seamless, and damp the
+     dark slate, never a pure-black band. Tint the root the atmosphere's
+     darkest stop (#0b1220) so the reveal is seamless, and damp the
      bounce so it barely shows at all. body keeps var(--bg) below. */
-  background: #05060d;
+  background: #0b1220;
   overscroll-behavior-y: none;
 }
 
@@ -110,13 +108,13 @@ select,
 }
 
 /* Text selection — never the OS blue (reads as unprofessional). A subtle
-   on-brand mint wash, applied site-wide. Inputs are never auto-select()ed
+   on-brand orange wash, applied site-wide. Inputs are never auto-select()ed
    either, so editing shows the caret line, not a highlighted block. */
 ::selection {
-  background: rgba(37, 84, 232, 0.25);
+  background: rgba(249, 115, 22, 0.25);
 }
 ::-moz-selection {
-  background: rgba(37, 84, 232, 0.25);
+  background: rgba(249, 115, 22, 0.25);
 }
 
 /* App-like selection: UI text can't be accidentally highlighted by a drag or
@@ -183,30 +181,42 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ----- Typography ----- */
+/* Headings run on the condensed display face (Barlow Condensed) — bigger,
+   bolder, uppercase, the gym-poster type treatment. Body copy stays on
+   var(--font-inter) (now Barlow) via the base body rule above. */
 
 .heading-xl {
-  font-size: var(--text-3xl);
-  font-weight: 600;
-  letter-spacing: -0.025em;
-  line-height: 1.05;
+  font-family: var(--font-serif);
+  font-size: calc(var(--text-3xl) * 1.08);
+  font-weight: 700;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  line-height: 1.02;
 }
 
 .heading-lg {
-  font-size: var(--text-2xl);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
+  font-family: var(--font-serif);
+  font-size: calc(var(--text-2xl) * 1.08);
+  font-weight: 700;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  line-height: 1.1;
 }
 
 .heading-md {
-  font-size: var(--text-xl);
+  font-family: var(--font-serif);
+  font-size: calc(var(--text-xl) * 1.1);
   font-weight: 600;
-  letter-spacing: -0.015em;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
 }
 
 .heading-sm {
-  font-size: var(--text-lg);
+  font-family: var(--font-serif);
+  font-size: calc(var(--text-lg) * 1.1);
   font-weight: 600;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
 }
 
 .text-muted {
@@ -236,15 +246,19 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: var(--radius-md);
   background: var(--mint);
   color: var(--mint-ink);
+  font-family: var(--font-serif);
   font-weight: 700;
   font-size: var(--text-xl);
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
+  text-transform: uppercase;
 }
 
 .brand-wordmark {
+  font-family: var(--font-serif);
   font-size: var(--text-xl);
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
   color: var(--fg);
 }
 
@@ -293,8 +307,11 @@ h1, h2, h3, h4, h5, h6 {
   gap: var(--space-2);
   padding: 0.6875rem var(--space-4);
   border-radius: var(--radius-md);
+  font-family: var(--font-serif);
   font-size: var(--text-sm);
   font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
   line-height: 1;
   transition:
     background var(--duration) var(--ease),
@@ -386,7 +403,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .input:focus {
   border-color: var(--mint);
-  background: rgba(37, 84, 232, 0.04);
+  background: rgba(249, 115, 22, 0.06);
 }
 
 /* ----- Links ----- */
@@ -465,7 +482,7 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 50%;
   pointer-events: none;
   z-index: 3;
-  box-shadow: 0 0 14px rgba(37, 84, 232, 0.45);
+  box-shadow: 0 0 14px rgba(249, 115, 22, 0.45);
   animation: pkSurgeRing 1.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 @keyframes pkSurgeRing {
@@ -481,7 +498,7 @@ h1, h2, h3, h4, h5, h6 {
   margin: -1.5px 0 0 -1.5px;
   border-radius: 50%;
   background: var(--mint);
-  box-shadow: 0 0 7px rgba(37, 84, 232, 0.9);
+  box-shadow: 0 0 7px rgba(249, 115, 22, 0.9);
   pointer-events: none;
   z-index: 3;
   animation: pkSpark 1.05s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
