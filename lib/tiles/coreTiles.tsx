@@ -297,13 +297,13 @@ export type HomeTileId = CoreTileId | 'vee' | 'library'
  * drags, resizes, and can be removed. User-built tiles append.
  */
 export const DEFAULT_HOME_ORDER: HomeTileId[] = [
+  'peak',
   'train',
   'fuel',
   'library',
   'vitals',
   'vee',
   'brand',
-  'peak',
   'finance',
   'velocity',
   'symphony',

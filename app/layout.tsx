@@ -1,19 +1,23 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, Roboto_Slab, Hanken_Grotesk, JetBrains_Mono } from 'next/font/google'
+import { Barlow, Barlow_Condensed, Hanken_Grotesk, JetBrains_Mono } from 'next/font/google'
 import { AuthProvider } from '@/lib/auth/AuthProvider'
 import './globals.css'
 
-const inter = Inter({
+// Fitness-gym restyle: athletic condensed system replacing Inter. Same
+// --font-inter variable name so every existing var(--font-inter) consumer
+// just picks up the new face without a rename.
+const inter = Barlow({
   subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
   variable: '--font-inter',
   display: 'swap',
 })
 
-// PR Portfolio's display face — a bold slab, not the old Instrument Serif
-// italic. Same --font-serif variable so every existing var(--font-serif)
-// consumer (globals.css .serif/.serif-italic, inline styles) just picks up
-// the new face without a rename.
-const instrumentSerif = Roboto_Slab({
+// Display/heading face — bold condensed, the poster/gym-board look. Same
+// --font-serif variable so every existing var(--font-serif) consumer
+// (globals.css .serif/.serif-italic, inline styles) just picks up the new
+// face without a rename.
+const instrumentSerif = Barlow_Condensed({
   subsets: ['latin'],
   weight: ['600', '700'],
   variable: '--font-serif',
@@ -60,7 +64,7 @@ export const metadata: Metadata = {
 // userScalable:false stops double-tap-zoom fighting tap targets in the dense
 // logger UI.
 export const viewport: Viewport = {
-  themeColor: '#0A0D14',
+  themeColor: '#1F2937',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,

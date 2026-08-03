@@ -209,7 +209,10 @@ export function useTileHost(
       // whatever key the caller didn't send.
       if (msg.type === 'write') {
         const slot = String(msg.slot || '')
-        const WRITABLE = ['train']
+        // 'vitals' added for Peak's daily check-in: publishing today's derived
+        // sleepHours/feel into the shared vitals record so estRecovery (vitals
+        // + peak + /sweep) sees it without a separate connector round-trip.
+        const WRITABLE = ['train', 'vitals']
         if (!WRITABLE.includes(slot)) {
           src.postMessage({ source: 'vitality-host', type: 'write:error', id: msg.id, reason: 'slot_not_allowed' }, '*')
           return

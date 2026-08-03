@@ -44,11 +44,11 @@ export interface DashboardChrome {
   gem: GemConfig
 }
 
-/** Amber & clay: the warm Ember gradient replaces the mint World (no mountains,
- *  no particles), the auto time-of-day greeting keeps the accented name, the
- *  full date, the amber gem. */
+/** Fitness-gym restyle: the Slate gradient (no mountains, no particles)
+ *  replaces the warm Ember World, the auto time-of-day greeting keeps the
+ *  accented name, the full date, the accent-tinted gem. */
 export const DEFAULT_CHROME: DashboardChrome = {
-  background: { mode: 'gradient', c1: '#241405', c2: '#0c0604', angle: 150 },
+  background: { mode: 'gradient', c1: '#1F2937', c2: '#0b1220', angle: 150 },
   greeting: { mode: 'auto', text: '', showName: true, accentName: true, scale: 1 },
   date: { show: true, format: 'full' },
   gem: { show: true, tint: 'accent' },
@@ -56,9 +56,9 @@ export const DEFAULT_CHROME: DashboardChrome = {
 
 /** Wallpaper accent swatches (World tint + Solid + theme-from-wallpaper). */
 export const WALLPAPER_ACCENTS: { name: string; hex: string }[] = [
-  { name: 'Cobalt', hex: '#2554E8' },
-  { name: 'Azure', hex: '#6EA8FF' },
-  { name: 'Ice', hex: '#CFE9FF' },
+  { name: 'Ember', hex: '#F97316' },
+  { name: 'Lime', hex: '#22C55E' },
+  { name: 'Gold', hex: '#EAB308' },
   { name: 'Amber', hex: '#F5B044' },
   { name: 'Violet', hex: '#B794F6' },
   { name: 'Rose', hex: '#F49AC2' },

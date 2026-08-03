@@ -51,7 +51,7 @@ export const DEFAULT_GOALS: Goal[] = [
   {
     id: 'youtube',
     title: 'Seize Your Moment',
-    accent: '#D21F3C',
+    accent: '#F97316',
     // Train entered this goal when the mentor noticed workouts drive output —
     // see DEFAULT_NOTICED. Before: brand 70 / vitals 20 / finance 10.
     weights: { brand: 62, train: 8, vitals: 20, finance: 10 },
@@ -60,7 +60,7 @@ export const DEFAULT_GOALS: Goal[] = [
   {
     id: 'lean185',
     title: 'Be 185 lb lean',
-    accent: '#8AB4FF',
+    accent: '#22C55E',
     weights: { train: 40, fuel: 30, vitals: 20, peak: 10 },
     progress: 61,
   },
@@ -71,7 +71,7 @@ export const DEFAULT_GOALS: Goal[] = [
 export const OVERALL_GOAL: Goal = {
   id: 'overall',
   title: 'A jacked, Entrepreneur',
-  accent: '#E8C878',
+  accent: '#EAB308',
   weights: { brand: 30, train: 25, vitals: 20, fuel: 13, finance: 7, peak: 5 },
   progress: 34,
 }
