@@ -11,10 +11,14 @@ import { supabaseAdmin } from '@/lib/auth/supabaseAdmin'
  * rather than reusing the connector's broader one. Unset = disabled (503),
  * same pattern as the MCP connector.
  *
- * Body: { date?: 'YYYY-MM-DD', activeCalories?, workoutMinutes?, avgHeartRate? }
+ * Body: { date?: 'YYYY-MM-DD', activeCalories?, workoutMinutes?, avgHeartRate?, sleepHours? }
  * date defaults to today. Merges into store['<date>'] alongside whatever
  * vitals.html already saved there (sleepHours/feel/whoopRecovery) — never
- * replaces the whole day, only fills the fields sent.
+ * replaces the whole day, only fills the fields sent. sleepHours sent here
+ * (e.g. an Apple Health "sleep analysis" Shortcut, run each morning) simply
+ * overwrites that day's value the same way a manual save would — there's no
+ * separate device-wins precedence for it like whoopRecovery has, since sleep
+ * is a single raw number a user might reasonably nudge/correct by hand.
  */
 
 export const runtime = 'nodejs'
@@ -77,9 +81,10 @@ export async function POST(req: Request): Promise<Response> {
   const activeCalories = num(b.activeCalories)
   const workoutMinutes = num(b.workoutMinutes)
   const avgHeartRate = num(b.avgHeartRate)
-  if (activeCalories === undefined && workoutMinutes === undefined && avgHeartRate === undefined) {
+  const sleepHours = num(b.sleepHours)
+  if (activeCalories === undefined && workoutMinutes === undefined && avgHeartRate === undefined && sleepHours === undefined) {
     return Response.json(
-      { error: 'Send at least one of: activeCalories, workoutMinutes, avgHeartRate.' },
+      { error: 'Send at least one of: activeCalories, workoutMinutes, avgHeartRate, sleepHours.' },
       { status: 400 },
     )
   }
@@ -119,6 +124,7 @@ export async function POST(req: Request): Promise<Response> {
   if (activeCalories !== undefined) day.activeCalories = activeCalories
   if (workoutMinutes !== undefined) day.workoutMinutes = workoutMinutes
   if (avgHeartRate !== undefined) day.avgHeartRate = avgHeartRate
+  if (sleepHours !== undefined) day.sleepHours = sleepHours
   store[date] = day
 
   const stamp = new Date().toISOString()
