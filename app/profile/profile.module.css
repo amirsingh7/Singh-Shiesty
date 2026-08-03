@@ -368,6 +368,12 @@
   cursor: help;
 }
 
+.aiVerdictOk {
+  color: #2e7d47;
+  background: rgba(46, 125, 71, 0.14);
+  border-color: rgba(46, 125, 71, 0.3);
+}
+
 .witnessChip {
   display: inline-flex;
   align-items: center;
