@@ -10,8 +10,8 @@ import { profile, saveProfile, syncProfileToCloud, loadProfileFromCloud, type Pr
 import {
   allLifts,
   bestOf,
-  prMoments,
   combinedHistory,
+  timelineEvents,
   wDisp,
   dateLabel,
   initials,
@@ -40,6 +40,15 @@ import {
   signedEvidenceUrl,
   type EvidenceRecord,
 } from '@/lib/tiles/evidence'
+import {
+  loadWitnessRecords,
+  saveWitnessRecords,
+  removeWitnessRecord,
+  syncWitnessesToCloud,
+  loadWitnessesFromCloud,
+  witnessKey,
+  type WitnessRecord,
+} from '@/lib/tiles/witnesses'
 import styles from './profile.module.css'
 
 // Class names read as plain words below instead of styles.someKey
@@ -103,6 +112,9 @@ export default function ProfilePage() {
   const [evidenceBusy, setEvidenceBusy] = useState<string | null>(null)
   const [evidenceError, setEvidenceError] = useState<string | null>(null)
 
+  const [witnesses, setWitnesses] = useState<WitnessRecord[]>([])
+  const [openWitnessList, setOpenWitnessList] = useState<string | null>(null)
+
   const [copied, setCopied] = useState(false)
   const [photoBroken, setPhotoBroken] = useState(false)
   const [coverBroken, setCoverBroken] = useState(false)
@@ -131,6 +143,11 @@ export default function ProfilePage() {
       const cloud = await loadEvidenceFromCloud(userId)
       if (cloud) setEvidence(cloud)
     })()
+    setWitnesses(loadWitnessRecords())
+    ;(async () => {
+      const cloud = await loadWitnessesFromCloud(userId)
+      if (cloud) setWitnesses(cloud)
+    })()
     ;(async () => {
       try {
         const mem = (await tileStore.loadData(userId, 'train')) as Record<string, unknown> | null
@@ -156,13 +173,10 @@ export default function ProfilePage() {
 
   const compoundLifts = allLifts(split).filter((l) => l.tier === 1 && !l.hidden)
   const featured = compoundLifts
-    .map((l) => ({ lift: l, best: bestOf(combinedHistory(l, competitions, evidence)) }))
+    .map((l) => ({ lift: l, best: bestOf(combinedHistory(l, competitions, evidence, witnesses)) }))
     .filter((x): x is { lift: Lift; best: HistoryEntry } => !!x.best)
 
-  const achievements = allLifts(split)
-    .flatMap((l) => prMoments({ ...l, history: combinedHistory(l, competitions, evidence) }))
-    .sort((a, b) => b.date.localeCompare(a.date))
-    .slice(0, 8)
+  const timeline = timelineEvents(allLifts(split), competitions, evidence, witnesses).slice(0, 20)
 
   useEffect(() => {
     const paths = featured.map((f) => f.best.evidencePath).filter((p): p is string => !!p)
@@ -233,6 +247,13 @@ export default function ProfilePage() {
     setEvidence(merged)
     await syncEvidenceToCloud(userId, merged)
     setEvidenceBusy(null)
+  }
+
+  const removeWitness = async (id: string) => {
+    const merged = removeWitnessRecord(witnesses, id)
+    saveWitnessRecords(merged)
+    setWitnesses(merged)
+    await syncWitnessesToCloud(userId, merged)
   }
 
   const startImport = () => {
@@ -790,6 +811,35 @@ export default function ProfilePage() {
                         <img src={evidenceUrl} alt="" className={c('evidenceThumb')} />
                       ))}
 
+                    {!!best.witnessCount && (() => {
+                      const key = witnessKey(lift.id, best.date, best.w, best.r)
+                      const matching = witnesses.filter((w) => witnessKey(w.liftId, w.date, w.weightKg, w.reps) === key)
+                      const listOpen = openWitnessList === key
+                      return (
+                        <div className={cx('witnessRow', 'noPrint')}>
+                          <label className={c('evidenceLabel')} onClick={() => setOpenWitnessList(listOpen ? null : key)}>
+                            {best.witnessCount} {best.witnessCount === 1 ? 'witness' : 'witnesses'}
+                          </label>
+                          {listOpen && (
+                            <ul className={c('witnessList')}>
+                              {matching.map((w) => (
+                                <li key={w.id}>
+                                  <span>
+                                    {w.witnessName}
+                                    {w.relation ? ` — ${w.relation}` : ''}
+                                    {w.note ? `: “${w.note}”` : ''}
+                                  </span>
+                                  <button type="button" className="btn btn-ghost" onClick={() => removeWitness(w.id)}>
+                                    Remove
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      )
+                    })()}
+
                     <div className={cx('evidenceRow', 'noPrint')}>
                       <label className={c('evidenceLabel')}>
                         {busyAdd || busyReplace ? 'Uploading…' : best.evidencePath ? 'Replace evidence' : 'Add evidence'}
@@ -819,18 +869,32 @@ export default function ProfilePage() {
         </div>
 
         <div className={c('section')}>
-          <div className={c('sectionHead')}>Recent achievements</div>
-          {trainState !== 'loading' && trainState !== 'error' && !achievements.length && (
+          <div className={c('sectionHead')}>Timeline</div>
+          {trainState !== 'loading' && trainState !== 'error' && !timeline.length && (
             <p className={c('empty')}>Your milestone timeline builds itself from Train — finish a session to start it.</p>
           )}
-          {!!achievements.length && (
+          {!!timeline.length && (
             <div className={c('achList')}>
-              {achievements.map((a, i) => (
+              {timeline.map((ev, i) => (
                 <div key={i} className={c('achRow')}>
                   <span>
-                    New PR — {a.liftName}: {wDisp(a.w, unit)} {unit} × {a.r}
+                    New PR — {ev.liftName}: {wDisp(ev.w, unit)} {unit} × {ev.r}
+                    <span className={c('badge')}>{RECORD_STATUS_LABEL[ev.recordStatus]}</span>
+                    {ev.outlier && (
+                      <span
+                        className={c('outlierFlag')}
+                        title="Unusually large jump from the previous best — self-reported, unverified. Consider attaching evidence or asking someone who saw it to witness it."
+                      >
+                        ⚠ large jump
+                      </span>
+                    )}
+                    {!!ev.witnessCount && (
+                      <span className={c('witnessChip')}>
+                        {ev.witnessCount} witness{ev.witnessCount === 1 ? '' : 'es'}
+                      </span>
+                    )}
                   </span>
-                  <span className={c('achDate')}>{dateLabel(a.date)}</span>
+                  <span className={c('achDate')}>{dateLabel(ev.date)}</span>
                 </div>
               ))}
             </div>

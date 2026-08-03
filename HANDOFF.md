@@ -1,26 +1,23 @@
 # RESUME HERE
-- **Working on:** PR Portfolio implementation — following the 9-phase `PR_Portfolio_Implementation_Prompt.md`. Phase 0 (audit) and Phase 1 (real auth + multi-tenant isolation) are both DONE and confirmed live in production.
-- **Next step:** Start Phase 2 — make `RecordStatus` provenance real (currently hardcoded to `'self-reported'` everywhere) and enforce profile visibility/share tokens server-side (currently decorative). Read Phase 2's spec in `PR_Portfolio_Implementation_Prompt.md` before starting.
-- **Waiting on you:** nothing blocking — user said "Want me to start there now?" and the conversation ended before they answered. Ask again if resuming cold, or just proceed if they've already said yes elsewhere.
+- **Working on:** PR Portfolio implementation — following the 9-phase implementation prompt. Phases 0–4 are DONE, merged to `main`, and confirmed live in production. Phase 5 (timeline/export/witnessing/outlier-checks) is code-complete and locally verified (tsc/build/vitest clean, Playwright-verified both owner and visitor flows against throwaway accounts, all cleaned up).
+- **Next step:** Phase 5 is sitting as uncommitted local changes on `decorate/laurel-seal` (the auto-commit hook hadn't picked it up as of end of session). Ask the user if they want to push/open a PR — same checkpoint rhythm as every prior phase. No DB/infra migration needed this time (rides the existing `tile_data` table). Full detail in memory `project_pr_portfolio.md`'s 2026-08-02 Phase 5 entry.
+- **Waiting on you:** say "push" / "go" to open the PR and deploy Phase 5, same as Phases 2–4.
 
 -----
 
 ## Done so far
-- **Phase 0** (audit): full single-user-assumption map, baseline (tsc/build clean, no prior tests), fixed stale Peak tile comments. Full detail in memory `project_pr_portfolio.md`.
-- **Phase 1** (real auth + multi-tenant isolation): `@supabase/ssr` cookie-backed auth, every `tile_data`/`tiles` read-write path (8 total, not just the 6 obvious `userId="me"` sites) now scopes to a real `user_id`. Composite primary key `(user_id, tile_id)`/`(user_id, slot)` migration run and verified on the LIVE Supabase project (all 3 stages of `supabase/auth_migration.sql` executed). Login/signup/forgot-password/reset-password/sign-out all built and tested. `vitest` added (repo had zero tests before) — 8 passing isolation tests in `test/`. Two-account manual verification done (`supabase/PHASE1_VERIFICATION.md`). PR #4 merged to `main`; confirmed via curl that `https://singh-shiesty.vercel.app/` now 307-redirects to `/login` — Phase 1 is live in production, not just local.
-- User's real account: email `amirsingh7@icloud.com`, `OWNER_USER_ID=ca85240c-8697-485a-a671-fe9dd1762078` (set in `.env.local` and in Vercel Production+Preview env vars, along with `SUPABASE_SERVICE_ROLE_KEY`).
-- Also separately: generated `PR_Portfolio_Strategy_Report.pdf` earlier in an unrelated ask (from an older research report artifact) — not part of this build track.
+- **Phase 0** (audit), **Phase 1** (real auth + multi-tenant isolation), **Phase 2** (truthful `RecordStatus` + enforced profile visibility/share tokens), **Phase 3** (CSV + OpenPowerlifting competition import), **Phase 4** (evidence upload pipeline — real photo/video uploads to Supabase Storage) — all done, merged to `main` via PRs #4–#8, each individually confirmed live at `https://singh-shiesty.vercel.app` using a throwaway Supabase test account (created, verified, deleted — never touched the owner's real account/data).
+- Full detail (architecture decisions, gotchas, exact verification steps) is in memory `project_pr_portfolio.md` — it's kept current after every phase this session, no need to re-derive anything from code.
 
 ## Key files
-- `PR_Portfolio_Implementation_Prompt.md` — the full 9-phase spec being followed; re-read Phase 2's section before starting.
-- `lib/tiles/profile.ts` — `RecordStatus` type + `Profile.visibility` field, both currently decorative (see comments in-file saying so).
-- `app/profile/ProfilePage.tsx` — the one render site for `RecordStatus` (hardcoded to `'self-reported'`, line ~564 pre-Phase-1-edits) and the Share/Visibility UI (`commit()`, `share()` functions) that Phase 2 needs to make real.
-- `lib/auth/*` (supabaseBrowser/Server/Admin, AuthProvider) — Phase 1's auth infra, already done, Phase 2 will reuse `useSession()`/`supabaseServer()` for enforcing visibility server-side.
-- `supabase/auth_migration.sql`, `supabase/PHASE1_VERIFICATION.md` — Phase 1 reference, already executed; don't re-run.
+- `lib/tiles/profileDerive.ts` — shared PR-derivation logic (`combinedHistory`, `bestOf`, `prMoments`) merging Train history + competitions + evidence into one credibility-tagged view. Phase 5 will likely extend this again.
+- `lib/tiles/competitions.ts`, `lib/tiles/evidence.ts` — Phase 3/4's separate stores (deliberately NOT inside Train's own data — Train's save path strips unknown fields).
+- `app/profile/ProfilePage.tsx` — owner's editable profile, all the import/upload UI lives here.
+- `app/p/[userId]/page.tsx` — public read-only profile, service-role reads, visibility/token enforcement, signed evidence URLs.
+- `supabase/evidence_storage.sql` — Phase 4's Storage bucket + RLS, already run by the user in prod.
 
 ## Watch out
-- This repo has an auto-commit-and-push hook ("auto: update from Claude Code") — commits/pushes happen automatically during edits, already confirmed in sync with `origin/decorate/laurel-seal` and now `main`.
-- Production requires sign-in now (Supabase is configured there) — don't be surprised by a 307 to `/login` when checking `singh-shiesty.vercel.app`.
-- Supabase's own dashboard "send recovery email" button does NOT respect a custom redirect — always trigger password resets from the app's own "Forgot password?" link (`/login`), not the Supabase dashboard, or the token lands nowhere useful.
-- User wants a LinkedIn post showcasing the app (explicitly "only a prototype," open to public feedback) — queued for AFTER Phase 2 per their own ordering, don't forget it, don't jump to it early.
-- Follow the implementation prompt's own working method: state affected files/risks before editing, smallest vertical slice, never a one-shot rewrite, stop before destructive DB ops for explicit approval (same pattern used successfully in Phase 1's staged migration).
+- **Two different `tile_data` key conventions** — `lib/sync.ts` (profile, competitions, evidence, spotify_auth) uses bare `tile_id` scoped by the `user_id` column; `lib/tiles/tileStore.ts` (every sealed tile: Train, Fuel, Vitals, etc.) prefixes the key itself as `${userId}:${tileId}`. A Phase 2 bug (public page read bare `'train'` instead of `${userId}:train`) shipped silently until Phase 3 caught it — always double-check which convention applies before reading tile_data directly.
+- Repo has an auto-commit-and-push hook ("auto: update from Claude Code") — most commits happen automatically; a couple were made manually this session when the hook lagged behind an urgent push.
+- New DB/infra changes (migrations, storage buckets) get staged as SQL and the user is asked how they want it run (they've chosen "I'll run it myself" both times so far) — never execute schema/infra changes unilaterally, per the project's own established working method.
+- Verification pattern used every phase: `tsc`/`build`/`vitest` first, then a live check with a throwaway Supabase test account (and Playwright for actual browser UI clicks, installed via `npm install --no-save playwright` + cleaned up after) — never test against or screenshot the owner's real account/desktop. Always delete the throwaway account + its data afterward.
