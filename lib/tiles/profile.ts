@@ -48,6 +48,13 @@ export interface Profile {
   /** Secret used to view a private profile without signing in. Generated
    *  once, on first share, and reused after that — see ProfilePage's share(). */
   shareToken?: string
+  /** Opt-in to the public directory (/discover) — deliberately separate from
+   *  `visibility`. A public profile is reachable if someone already has the
+   *  link; `listed` is the further step of being *browsable* with no link at
+   *  all. Only takes effect when `visibility === 'public'` too (enforced at
+   *  the /discover query, not just hidden in the UI) — a private profile
+   *  can never appear in the directory no matter how this is set. */
+  listed?: boolean
   personalStatement?: string
 
   // ── Founder background (business-context doc, section 2) — the story

@@ -1,0 +1,111 @@
+.wrap {
+  position: relative;
+  z-index: 5;
+  width: min(760px, calc(100vw - 36px));
+  margin: 0 auto;
+  padding: 40px 0 90px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 6px;
+}
+
+.subtitle {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0 0 22px;
+}
+
+.empty {
+  color: var(--muted);
+  font-size: 14px;
+  margin-top: 28px;
+}
+
+.grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  border: 1px solid var(--border-strong);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s, background 0.15s;
+}
+.card:hover {
+  border-color: var(--fg);
+  background: var(--card-elevated);
+}
+
+.avatar {
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  background: var(--card-elevated);
+  border: 1px solid var(--border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 15px;
+  overflow: hidden;
+}
+.avatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.info {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.name {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.meta {
+  color: var(--muted);
+  font-size: 12.5px;
+  margin-top: 2px;
+}
+
+.headline {
+  color: var(--muted);
+  font-size: 12.5px;
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topLift {
+  flex: 0 0 auto;
+  text-align: right;
+}
+
+.topLiftVal {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.topLiftName {
+  color: var(--muted);
+  font-size: 11.5px;
+  margin-top: 2px;
+}
