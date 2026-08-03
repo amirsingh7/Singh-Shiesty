@@ -1,7 +1,7 @@
 # RESUME HERE
-- **Working on:** PR Portfolio implementation — following the 9-phase implementation prompt. Phases 0–4 are DONE, merged to `main`, and confirmed live in production. Phase 5 (timeline/export/witnessing/outlier-checks) is code-complete and locally verified (tsc/build/vitest clean, Playwright-verified both owner and visitor flows against throwaway accounts, all cleaned up).
-- **Next step:** Phase 5 is sitting as uncommitted local changes on `decorate/laurel-seal` (the auto-commit hook hadn't picked it up as of end of session). Ask the user if they want to push/open a PR — same checkpoint rhythm as every prior phase. No DB/infra migration needed this time (rides the existing `tile_data` table). Full detail in memory `project_pr_portfolio.md`'s 2026-08-02 Phase 5 entry.
-- **Waiting on you:** say "push" / "go" to open the PR and deploy Phase 5, same as Phases 2–4.
+- **Working on:** PR Portfolio implementation — following the 9-phase implementation prompt. Phases 0–5 are all DONE, merged to `main`, and confirmed live in production (Phase 5 = timeline/witnessing/outlier-checks, PR #9).
+- **Next step:** Phase 6 (the AI layer) is next per the original 9-phase prompt, not yet started. No spec file on disk — phase list and everything built so far is in memory `project_pr_portfolio.md`.
+- **Waiting on you:** nothing blocking. Ask "start Phase 6?" if resuming cold.
 
 -----
 
