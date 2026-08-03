@@ -4,10 +4,11 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import WelcomeBackdrop from '@/components/WelcomeBackdrop'
 import GobindAvatar, { type GobindAvatarHandle, type GobindExpression } from '@/components/GobindAvatar'
-import { CORE_TILES } from '@/lib/tiles/coreTiles'
+import { CORE_TILES, type CoreTileId } from '@/lib/tiles/coreTiles'
 import { tileStore } from '@/lib/tiles/tileStore'
 import { useSession } from '@/lib/auth/AuthProvider'
 import { syncEnabled } from '@/lib/sync'
+import { profile } from '@/lib/tiles/profile'
 import {
   allGoals,
   activeGoalId,
@@ -20,18 +21,13 @@ import {
 } from '@/lib/tiles/weights'
 
 /**
- * Mentor Chat — Claude-native (see CLAUDE.md: "No AI keys in the app, ever").
- * There is no backend AI route here: Send opens claude.ai in a new tab with
- * the question plus a compact, real summary of the user's own Train/Fuel
- * data baked in, exactly like Train's rest-coach "Ask Claude" pill. This app
- * only remembers WHAT was asked (for history/delete/clear) — it never
- * fabricates or stores an assistant reply, since it never receives one back.
+ * Gobind's chat — a real inline reply from app/api/mentor/chat (see that
+ * route for why: a deliberate, owner-chosen exception to CLAUDE.md's "no AI
+ * keys in the app, ever"). Gobind is a GENERAL mentor: buildFullDashboardContext
+ * below gathers every tile the user has data in — not just Train/Fuel — so it
+ * can answer about any part of the dashboard, always grounded in real numbers.
  */
-// v2: the chat now holds real Gobind replies (role + mood), not just what
-// was asked — a different shape than the old claude.ai-handoff log, so it
-// gets its own key rather than trying to migrate the old entries.
 const MENTOR_CHAT_KEY = 'vitality:mentorChat:v2'
-const MENTOR_PREFS_KEY = 'vitality:mentorChat:prefs'
 
 interface ChatEntry {
   id: string
@@ -40,22 +36,23 @@ interface ChatEntry {
   mood?: GobindExpression
   ts: number
 }
-interface ChatPrefs {
-  workout: boolean
-  nutrition: boolean
-  recovery: boolean
-}
-const DEFAULT_PREFS: ChatPrefs = { workout: true, nutrition: true, recovery: true }
 
 const SUGGESTED_PROMPTS = [
+  'How am I doing across everything this week?',
   'Analyze today’s workout',
-  'Am I progressing on bench press?',
-  'Recommend my next working sets',
   'Review today’s calories and macros',
+  'What’s the one thing I should fix today?',
   'Am I showing signs of a plateau?',
-  'How should I adjust my next workout?',
-  'Generate my weekly progress summary',
   'Compare this week with last week',
+]
+
+// the cozy loader's rotating "thinking" line — general-mentor phrasing, no
+// workout/nutrition-specific wording, one picked at random per send.
+const CZ_TAGS = ['Thinking', 'One sec', 'On it']
+const CZ_LINES = [
+  { text: 'Reading your whole dashboard.', hl: 'whole dashboard' },
+  { text: 'Finding the one move that matters most right now.', hl: 'one move' },
+  { text: 'Keeping it honest and something you can do today.', hl: 'do today' },
 ]
 
 function loadChatHistory(): ChatEntry[] {
@@ -73,23 +70,6 @@ function saveChatHistory(list: ChatEntry[]): void {
     window.localStorage.setItem(MENTOR_CHAT_KEY, JSON.stringify(list))
   } catch {
     /* quota / blocked — chat still works this session, just won't persist */
-  }
-}
-function loadChatPrefs(): ChatPrefs {
-  if (typeof window === 'undefined') return DEFAULT_PREFS
-  try {
-    const raw = window.localStorage.getItem(MENTOR_PREFS_KEY)
-    const p = raw ? JSON.parse(raw) : null
-    return p && typeof p === 'object' ? { ...DEFAULT_PREFS, ...p } : DEFAULT_PREFS
-  } catch {
-    return DEFAULT_PREFS
-  }
-}
-function saveChatPrefs(p: ChatPrefs): void {
-  try {
-    window.localStorage.setItem(MENTOR_PREFS_KEY, JSON.stringify(p))
-  } catch {
-    /* ignore */
   }
 }
 
@@ -173,30 +153,64 @@ function summarizeNutritionData(data: unknown): string {
   return lines.join('\n')
 }
 
-/** Pulls the user's own real Train/Fuel data (only the fields the prefs allow)
- *  into a compact block, same "context in, no key, no server" pattern as
- *  Train's rcAskPrompt. Never includes anything outside training/nutrition/
- *  recovery — no founder bio, no unrelated profile fields. */
-async function buildMentorContext(userId: string, prefs: ChatPrefs, goalTitle: string | undefined): Promise<string> {
+/** Any other tile's saved data — no bespoke parser, just a bounded raw dump.
+ *  Skips empty arrays/objects/null so an untouched tile stays silent. */
+function summarizeGeneric(label: string, data: unknown): string {
+  if (data == null) return ''
+  if (Array.isArray(data) && data.length === 0) return ''
+  if (typeof data === 'object' && !Array.isArray(data) && Object.keys(data as object).length === 0) return ''
+  const json = JSON.stringify(data)
+  if (!json || json === '{}' || json === '[]') return ''
+  return `${label} data: ${json.slice(0, 900)}`
+}
+
+/**
+ * Gobind is a GENERAL mentor — this gathers the WHOLE dashboard, not just
+ * training/nutrition: the active goal, the body profile, then every
+ * pre-installed tile and every tile the user built, whichever have data.
+ * Train/Fuel keep their nicer bespoke summaries (real workout history, real
+ * macros); everything else gets a bounded raw-JSON block so a new tile is
+ * automatically visible to Gobind with zero code changes. Real data only —
+ * never fabricated, and the whole block is capped so a single request can't
+ * balloon token spend.
+ */
+async function buildFullDashboardContext(userId: string, goalTitle: string | undefined): Promise<string> {
   const blocks: string[] = []
   if (goalTitle) blocks.push(`My current goal: ${goalTitle}.`)
-  if (prefs.workout || prefs.recovery) {
-    const train = await tileStore.loadData(userId, 'train')
-    if (prefs.workout) {
-      const w = summarizeWorkoutData(train)
-      if (w) blocks.push(w)
-    }
-    if (prefs.recovery) {
-      const r = summarizeRecoveryData(train)
-      if (r) blocks.push(r)
-    }
+
+  const p = profile()
+  const bits: string[] = []
+  if (p.name) bits.push(`name ${p.name}`)
+  if (p.age) bits.push(`age ${p.age}`)
+  if (p.heightCm) bits.push(`height ${p.heightCm}cm`)
+  if (p.weightKg) bits.push(`weight ${p.weightKg}kg`)
+  if (p.goalShape) bits.push(`goal shape ${p.goalShape}`)
+  if (bits.length) blocks.push(`Profile: ${bits.join(', ')}.`)
+
+  const train = await tileStore.loadData(userId, 'train')
+  const w = summarizeWorkoutData(train)
+  if (w) blocks.push(w)
+  const r = summarizeRecoveryData(train)
+  if (r) blocks.push(r)
+
+  const fuel = await tileStore.loadData(userId, 'fuel')
+  const n = summarizeNutritionData(fuel)
+  if (n) blocks.push(n)
+
+  const otherCoreIds = (Object.keys(CORE_TILES) as CoreTileId[]).filter((id) => id !== 'train' && id !== 'fuel')
+  for (const id of otherCoreIds) {
+    const data = await tileStore.loadData(userId, id)
+    const s = summarizeGeneric(CORE_TILES[id].label, data)
+    if (s) blocks.push(s)
   }
-  if (prefs.nutrition) {
-    const fuel = await tileStore.loadData(userId, 'fuel')
-    const n = summarizeNutritionData(fuel)
-    if (n) blocks.push(n)
+
+  for (const tile of tileStore.listTiles(userId)) {
+    const data = await tileStore.loadData(userId, tile.id)
+    const s = summarizeGeneric(tile.name, data)
+    if (s) blocks.push(s)
   }
-  return blocks.join('\n')
+
+  return blocks.join('\n').slice(0, 9000)
 }
 
 /**
@@ -270,13 +284,14 @@ export default function MentorPage({
   const gemRef = useRef<HTMLDivElement | null>(null)
   const avatarRef = useRef<GobindAvatarHandle | null>(null)
 
-  // Gobind's live chat — see app/api/mentor/chat/route.ts (buildMentorContext
-  // below still does the real-data gathering; only the transport changed).
+  // Gobind's live chat — see app/api/mentor/chat/route.ts. buildFullDashboardContext
+  // above does the real-data gathering (every tile, not just Train/Fuel); this
+  // just holds the conversation.
   const [chatHistory, setChatHistory] = useState<ChatEntry[]>([])
-  const [chatPrefs, setChatPrefs] = useState<ChatPrefs>(DEFAULT_PREFS)
   const [question, setQuestion] = useState('')
   const [asking, setAsking] = useState(false)
   const [chatError, setChatError] = useState('')
+  const [thinkingLine, setThinkingLine] = useState({ tag: CZ_TAGS[0], ...CZ_LINES[0] })
 
   useEffect(() => {
     if (sessionLoading) return
@@ -290,7 +305,6 @@ export default function MentorPage({
     setList(allGoals())
     setActive(activeGoalId())
     setChatHistory(loadChatHistory())
-    setChatPrefs(loadChatPrefs())
   }, [sessionLoading, user, overlay, router])
 
   // Pulse the gem when the goal changes — WAAPI on the wrapper, NO remount.
@@ -330,17 +344,15 @@ export default function MentorPage({
     setDraft('')
   }
 
-  const togglePref = (key: keyof ChatPrefs) => {
-    const next = { ...chatPrefs, [key]: !chatPrefs[key] }
-    setChatPrefs(next)
-    saveChatPrefs(next)
-  }
-
   const askMentor = async (text: string) => {
     const q = text.trim()
     if (!q || asking) return
     setAsking(true)
     setChatError('')
+    setThinkingLine({
+      tag: CZ_TAGS[Math.floor(Math.random() * CZ_TAGS.length)],
+      ...CZ_LINES[Math.floor(Math.random() * CZ_LINES.length)],
+    })
     const userEntry: ChatEntry = { id: 'm-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), role: 'user', text: q, ts: Date.now() }
     const withUser = [...chatHistory, userEntry]
     setChatHistory(withUser)
@@ -348,7 +360,7 @@ export default function MentorPage({
     setQuestion('')
     avatarRef.current?.setExpression('surprised')
     try {
-      const context = await buildMentorContext(userId, chatPrefs, act?.title)
+      const context = await buildFullDashboardContext(userId, act?.title)
       setTimeout(() => avatarRef.current?.setExpression('thinking'), 500)
       const res = await fetch('/api/mentor/chat', {
         method: 'POST',
@@ -773,38 +785,8 @@ export default function MentorPage({
         <div style={{ width: 'min(620px, 100%)', margin: '60px auto 0', textAlign: 'left', animation: 'fadeUp .8s ease .8s both' }}>
           <p style={{ ...mono, fontSize: 10.5, color: accent, margin: '0 0 4px', transition: 'color .8s ease' }}>chat with gobind</p>
           <p style={{ fontSize: 12, color: 'var(--muted, #8a8f98)', margin: '0 0 14px', lineHeight: 1.5 }}>
-            A real reply, inline — Gobind reads only the real data below, never guesses. Informational only, not medical advice.
+            A real reply, inline — Gobind reads your whole dashboard, every tile you have data in, never guesses. Informational only, not medical advice.
           </p>
-
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-            {(
-              [
-                ['workout', 'workout data'],
-                ['nutrition', 'nutrition data'],
-                ['recovery', 'recovery data'],
-              ] as [keyof ChatPrefs, string][]
-            ).map(([k, label2]) => (
-              <button
-                key={k}
-                type="button"
-                onClick={() => togglePref(k)}
-                aria-pressed={chatPrefs[k]}
-                style={{
-                  ...mono,
-                  fontSize: 9.5,
-                  color: chatPrefs[k] ? accent : 'var(--muted, #8a8f98)',
-                  background: chatPrefs[k] ? `${accent}12` : 'transparent',
-                  border: `1px solid ${chatPrefs[k] ? accent + '59' : 'var(--border, #262626)'}`,
-                  borderRadius: 10,
-                  padding: '6px 12px',
-                  cursor: 'pointer',
-                }}
-              >
-                {chatPrefs[k] ? '✓ ' : ''}
-                include {label2}
-              </button>
-            ))}
-          </div>
 
           {chatHistory.length === 0 && (
             <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginBottom: 14 }}>
@@ -886,8 +868,15 @@ export default function MentorPage({
                       <span />
                     </div>
                     <div className="cz-lite-body">
-                      <span className="cz-lite-tag">gobind</span>
-                      <span className="cz-lite-text">thinking</span>
+                      <span className="cz-lite-tag">{thinkingLine.tag}</span>
+                      <span className="cz-lite-text">
+                        {thinkingLine.text.split(thinkingLine.hl).map((part, i, arr) => (
+                          <span key={i}>
+                            {part}
+                            {i < arr.length - 1 && <b style={{ color: accent }}>{thinkingLine.hl}</b>}
+                          </span>
+                        ))}
+                      </span>
                       <span className="cz-lite-dots">
                         <i /><i /><i />
                       </span>
@@ -979,11 +968,11 @@ export default function MentorPage({
       </div>
       <style>{`
         .mentorChatBox:focus-visible { outline: 2px solid ${accent}; outline-offset: 2px; border-radius: 8px; }
-        .cz-lite { --tone-soft: color-mix(in srgb, var(--tone) 28%, transparent); display: flex; gap: 10px; align-items: center;
-          border: 1px solid var(--tone-soft); background: rgba(255,255,255,.02); border-radius: 12px; padding: 10px 14px; max-width: 220px; }
-        .cz-lite-bar { width: 34px; height: 4px; border-radius: 999px; background: rgba(255,255,255,.16); overflow: hidden; flex: none; }
+        .cz-lite { --tone-soft: color-mix(in srgb, var(--tone) 28%, transparent); display: flex; gap: 10px; align-items: flex-start;
+          border: 1px solid var(--tone-soft); background: rgba(255,255,255,.02); border-radius: 12px; padding: 10px 14px; max-width: 320px; }
+        .cz-lite-bar { width: 34px; height: 4px; border-radius: 999px; background: rgba(255,255,255,.16); overflow: hidden; flex: none; margin-top: 4px; }
         .cz-lite-bar span { display: block; height: 100%; width: 60%; border-radius: 999px; background: linear-gradient(90deg, transparent, var(--tone), transparent); animation: czLiteSlide 1.3s cubic-bezier(.16,1,.3,1) infinite; }
-        .cz-lite-body { display: flex; align-items: center; gap: 8px; }
+        .cz-lite-body { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .cz-lite-tag { font-family: ui-monospace, monospace; font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #04140d; background: var(--tone); border-radius: 999px; padding: 2px 8px; animation: czLiteTagPop .5s cubic-bezier(.34,1.56,.64,1); }
         .cz-lite-text { font-size: 12.5px; color: var(--fg, #fff); }
         .cz-lite-dots { display: flex; gap: 4px; }

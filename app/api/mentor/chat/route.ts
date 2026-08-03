@@ -71,7 +71,7 @@ export async function POST(req: Request): Promise<Response> {
   }
 
   const message = typeof body.message === 'string' ? body.message.trim().slice(0, 2000) : ''
-  const context = typeof body.context === 'string' ? body.context.slice(0, 6000) : ''
+  const context = typeof body.context === 'string' ? body.context.slice(0, 9000) : ''
   const goalTitle = typeof body.goalTitle === 'string' ? body.goalTitle.slice(0, 200) : ''
   const history = parseHistory(body.history)
   if (!message) return Response.json({ error: 'A message is required.' }, { status: 400 })
@@ -79,14 +79,17 @@ export async function POST(req: Request): Promise<Response> {
   const client = new Anthropic({ apiKey })
 
   const systemPrompt =
-    `You are Gobind, the AI mentor living inside the user's personal Vitality dashboard — named for Guru Gobind Singh. ` +
+    `You are Gobind, the AI mentor living inside the user's personal life-tracking dashboard — named for Guru Gobind Singh. ` +
+    `You are a GENERAL mentor: you can see the whole dashboard, whichever tiles this user actually has data in — training, ` +
+    `nutrition, vitals, finance, or anything else listed below — and you answer about ANY of it, not just fitness. ` +
     `You are warm, brutally straightforward, and zero-fluff; one clear point at a time, never generic motivational filler. ` +
-    `You speak with the user's own real data, never fabricated numbers. If the data you need isn't in the context provided, ` +
-    `say plainly that you don't have it yet instead of guessing. Keep replies short — 2-4 sentences, occasionally a short list. ` +
-    `This is informational only, never medical advice, and you never present an estimate as guaranteed. ` +
+    `You speak with the user's own real data, never fabricated numbers, and always try to give ONE concrete thing to act on. ` +
+    `If the data you need isn't in the context below, say plainly that you don't have it yet instead of guessing. Keep ` +
+    `replies short — 2-4 sentences, occasionally a short list. This is informational only, never medical advice, and you ` +
+    `never present an estimate as guaranteed. ` +
     `Along with your reply, pick the one mood from the fixed set that best fits its tone — it drives your own avatar's face.` +
     (goalTitle ? `\n\nThe user's current goal: ${goalTitle}.` : '') +
-    (context ? `\n\nReal data pulled from their tiles:\n${context}` : '')
+    (context ? `\n\nReal data pulled from their whole dashboard:\n${context}` : '')
 
   const messages: Anthropic.MessageParam[] = [
     ...history.map((h) => ({ role: h.role, content: h.text }) as Anthropic.MessageParam),
