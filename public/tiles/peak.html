@@ -232,6 +232,122 @@
   .ocItem.amber .bar{background:var(--amber)}
   .ocItem .n{color:var(--fg)}
 
+  /* ── source switch ── */
+  .srcSwitch{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--border);border-radius:11px;background:var(--card)}
+  .srcBtn{padding:7px 14px;border-radius:8px;background:transparent;color:var(--muted);font-size:11px;font-weight:600;
+    letter-spacing:0.08em;text-transform:uppercase;font-family:var(--font-mono);border:none;cursor:pointer;transition:background 180ms,color 180ms}
+  .srcBtn[aria-current="true"]{background:rgba(249,115,22,0.16);color:var(--mint)}
+  .appleStatus{margin-top:10px;padding:12px 15px;border:1px solid var(--border);border-radius:12px;background:var(--card);
+    display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--muted-strong)}
+  .appleStatus b{color:var(--fg);font-weight:600}
+  .appleStatus.stale{border-color:rgba(245,158,11,0.32)}
+  .appleStatus .dot{width:7px;height:7px;border-radius:999px;background:var(--verified,#22c55e);flex:none}
+  .appleStatus.stale .dot{background:var(--amber)}
+
+  /* ── daily score hero ring ── */
+  .scoreHero{display:flex;align-items:center;gap:20px;flex-wrap:wrap;padding:1.6rem;border-radius:var(--r-lg);
+    border:1px solid var(--border);background:var(--card);margin-top:16px}
+  .scoreRingWrap{position:relative;width:112px;height:112px;flex:none}
+  .scoreRingWrap svg{transform:rotate(-90deg);overflow:visible}
+  .scoreRingNum{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .scoreRingNum b{font-family:var(--font-serif);font-style:normal;font-weight:700;font-size:34px;line-height:1;font-variant-numeric:tabular-nums}
+  .scoreRingNum span{font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-top:3px}
+  .scoreMeta{display:flex;flex-direction:column;gap:6px;min-width:0;flex:1}
+  .scoreTier{font-family:var(--font-serif);font-style:normal;font-weight:700;font-size:20px}
+  .scoreSub{font-size:12.5px;color:var(--muted-strong)}
+  .scoreWhyBtn{align-self:flex-start;font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;
+    color:var(--mint);background:rgba(249,115,22,0.10);border:1px solid rgba(249,115,22,0.3);border-radius:9px;padding:6px 12px;cursor:pointer;transition:background .18s}
+  .scoreWhyBtn:hover{background:rgba(249,115,22,0.18)}
+  .scoreBreakdown{width:100%;margin-top:4px;display:flex;flex-direction:column;gap:8px;animation:fadeUp 260ms var(--ease-premium)}
+  .scoreRow{display:flex;align-items:center;gap:10px;font-size:12.5px}
+  .scoreRow .lbl{width:96px;flex:none;color:var(--muted-strong)}
+  .scoreRow .bar{flex:1;height:6px;border-radius:6px;background:rgba(245,237,226,0.07);overflow:hidden}
+  .scoreRow .bar i{display:block;height:100%;background:var(--mint);border-radius:6px}
+  .scoreRow .wv{width:82px;flex:none;text-align:right;color:var(--muted);font-family:var(--font-mono);font-size:0.6rem}
+  .scoreRow .wv b{color:var(--fg);font-family:inherit}
+  .scoreEmpty{font-size:13px;color:var(--muted)}
+  .feelBuilding{font-size:11px;color:var(--muted);font-family:var(--font-mono);letter-spacing:0.04em;margin-top:2px}
+
+  /* ── daily check-in ── */
+  .checkinCard{margin-top:16px;padding:1.4rem 1.4rem 1.6rem;border-radius:var(--r-lg);border:1px solid var(--border);background:var(--card)}
+  .dayRow{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;margin-bottom:16px}
+  .dayCard{flex:none;width:52px;padding:10px 0 9px;border-radius:12px;border:1px solid var(--border);background:rgba(245,237,226,0.02);
+    display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;transition:border-color .18s,background .18s}
+  .dayCard:hover{border-color:var(--border-strong)}
+  .dayCard[aria-current="true"]{border-color:rgba(249,115,22,0.5);background:rgba(249,115,22,0.08)}
+  .dayCard .dwk{font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted)}
+  .dayCard .ddt{font-family:var(--font-serif);font-style:normal;font-weight:700;font-size:15px;color:var(--fg)}
+  .dayDot{width:9px;height:9px;border-radius:999px;background:rgba(245,237,226,0.14)}
+  .checkinForm{display:flex;flex-direction:column;gap:16px}
+  .rateRow{display:flex;flex-direction:column;gap:8px}
+  .rateLabel{font-size:12px;font-weight:600;color:var(--muted-strong);letter-spacing:0.01em}
+  .rateChips{display:flex;gap:7px}
+  .rateChip{flex:1;padding:10px 0;text-align:center;border-radius:9px;border:1px solid var(--border-strong);background:transparent;
+    color:var(--muted-strong);font-family:var(--font-serif);font-style:normal;font-weight:700;font-size:15px;cursor:pointer;transition:all .15s}
+  .rateChip[aria-current="true"]{background:var(--mint);border-color:var(--mint);color:#1f2937}
+  .timeChips{display:flex;gap:7px;flex-wrap:wrap}
+  .timeChip{padding:7px 12px;border-radius:9px;border:1px solid var(--border-strong);background:transparent;color:var(--muted-strong);
+    font-family:var(--font-mono);font-size:0.66rem;letter-spacing:0.04em;cursor:pointer;transition:all .15s}
+  .timeChip[aria-current="true"]{background:rgba(249,115,22,0.16);border-color:var(--mint);color:var(--mint)}
+  .bedtimeNote{font-size:12px;color:var(--muted);font-family:var(--font-mono);letter-spacing:0.02em}
+  .bedtimeNote b{color:var(--mint);font-family:inherit}
+  .checkinSaveBtn{margin-top:2px;padding:12px;border:none;border-radius:11px;background:linear-gradient(180deg,#FDBA74,var(--mint));
+    color:#1f2937;font-weight:700;font-size:14px;cursor:pointer;transition:filter .18s}
+  .checkinSaveBtn:hover{filter:brightness(1.05)}
+  .checkinSaveBtn:disabled{opacity:0.45;cursor:not-allowed;filter:none}
+  .checkinSaved{font-size:12px;color:var(--verified,#22c55e);text-align:center;font-family:var(--font-mono);letter-spacing:0.04em}
+
+  /* ── search bar (caffeine + meds) ── */
+  .searchWrap{position:relative;margin-bottom:12px}
+  .searchInput{width:100%;padding:11px 14px;border-radius:11px;border:1px solid var(--border-strong);background:rgba(245,237,226,0.02);
+    color:var(--fg);font-size:13.5px;font-family:inherit;outline:none;transition:border-color .18s}
+  .searchInput:focus{border-color:var(--mint)}
+  .searchResults{position:absolute;z-index:10;top:calc(100% + 6px);left:0;right:0;max-height:280px;overflow-y:auto;
+    border:1px solid var(--border-strong);border-radius:12px;background:#111827;box-shadow:0 18px 40px -14px rgba(0,0,0,0.6)}
+  .searchRow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 13px;cursor:pointer;transition:background .12s}
+  .searchRow:hover{background:rgba(249,115,22,0.08)}
+  .searchRow .sName{font-size:13.5px;color:var(--fg)}
+  .searchRow .sMg{font-family:var(--font-mono);font-size:0.6rem;color:var(--mint)}
+  .searchEmpty{padding:14px;text-align:center;font-size:12.5px;color:var(--muted)}
+  .searchCustomBtn{display:block;width:100%;text-align:left;padding:10px 13px;border-top:1px solid var(--border);
+    background:transparent;color:var(--mint);font-size:12.5px;cursor:pointer;font-family:inherit}
+
+  /* ── caffeine stats + coaching ── */
+  .caffStats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:14px 0}
+  .caffStat{padding:11px 13px;border:1px solid var(--border);border-radius:11px;background:rgba(245,237,226,0.02)}
+  .caffStat .sl{font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);font-family:var(--font-mono)}
+  .caffStat .sv{font-family:var(--font-serif);font-style:normal;font-weight:700;font-size:17px;margin-top:3px}
+  .coachNote{display:flex;gap:9px;align-items:flex-start;padding:11px 13px;border-radius:11px;border:1px solid rgba(245,158,11,0.32);
+    background:rgba(245,158,11,0.08);font-size:12.5px;color:var(--fg);margin-top:10px;line-height:1.5}
+  .coachNote.ok{border-color:rgba(34,197,94,0.3);background:rgba(34,197,94,0.07)}
+  .intakeList{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+  .intakeRow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;border-radius:9px;background:rgba(245,237,226,0.03);font-size:12.5px}
+  .intakeRow .ix{background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;line-height:1;padding:2px 6px}
+  .intakeRow .ix:hover{color:var(--fg)}
+  .clearAllBtn{align-self:flex-end;font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.1em;text-transform:uppercase;
+    color:var(--muted);background:none;border:none;cursor:pointer;margin-top:4px}
+  .clearAllBtn:hover{color:var(--fg)}
+
+  /* ── meds card ── */
+  .medsDisclaimer{display:flex;gap:8px;align-items:flex-start;padding:10px 13px;border-radius:10px;border:1px solid var(--border);
+    background:rgba(245,237,226,0.02);font-size:11.5px;color:var(--muted-strong);line-height:1.5;margin-bottom:14px}
+  .medsDisclaimer b{color:var(--fg)}
+  .pkTip{font-size:11px;color:var(--muted);margin-top:2px}
+
+  /* ── honesty footer ── */
+  .honestyBar{display:flex;align-items:center;justify-content:center;gap:8px;margin:26px 0 4px;padding:10px 14px;
+    border-radius:999px;border:1px solid var(--border);background:rgba(245,237,226,0.02);font-size:11px;color:var(--muted);
+    font-family:var(--font-mono);letter-spacing:0.03em}
+  .honestyBtn{width:16px;height:16px;border-radius:999px;border:1px solid var(--border-strong);background:transparent;color:var(--muted);
+    font-size:10px;font-style:italic;font-family:Georgia,serif;cursor:pointer;flex:none;line-height:1;display:inline-flex;align-items:center;justify-content:center}
+  .honestyBtn:hover{color:var(--mint);border-color:var(--mint)}
+  .honestyPanel{margin-top:10px;padding:1.2rem 1.4rem;border-radius:var(--r-lg);border:1px solid var(--border);background:var(--card);
+    font-size:13px;line-height:1.65;color:var(--muted-strong);animation:fadeUp 260ms var(--ease-premium)}
+  .honestyPanel h4{font-family:var(--font-serif);font-style:normal;font-weight:700;font-size:16px;color:var(--fg);margin-bottom:8px}
+  .honestyPanel ul{margin:8px 0 0;padding-left:18px}
+  .honestyPanel li{margin-bottom:4px}
+  .honestyPanel b{color:var(--fg)}
+
   @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
   @keyframes cardPop{0%{opacity:0;transform:translateY(12px) scale(0.98)}60%{opacity:1;transform:translateY(-2px) scale(1.006)}100%{opacity:1;transform:none}}
   @media (prefers-reduced-motion:reduce){
@@ -253,6 +369,16 @@
     <div class="heroDate" id="heroDate">TODAY</div>
   </div>
 
+  <!-- source switch -->
+  <div id="srcSwitch" class="srcSwitch" role="group" aria-label="Data source"></div>
+  <div id="appleStatus" class="appleStatus" hidden></div>
+
+  <!-- overall score ring -->
+  <div id="scoreHero" class="scoreHero"></div>
+
+  <!-- daily check-in (manual source only) -->
+  <div id="checkinCard" class="checkinCard" hidden></div>
+
   <!-- ══════════ ·01 YOUR DAY ══════════ -->
   <section class="section" style="animation-delay:120ms">
     <div class="eyebrow">
@@ -273,9 +399,30 @@
           <button type="button" class="miniBtn" id="addBtn">+ Add</button>
         </span>
       </div>
+      <div id="caffSearch" class="searchWrap"></div>
       <div class="addRow" id="addRow" hidden></div>
       <div class="grid" id="stackGrid"></div>
       <div id="readout"></div>
+      <div id="caffStats"></div>
+      <div id="caffIntake"></div>
+    </div>
+
+    <!-- meds & substances -->
+    <div class="stack">
+      <div class="stackHead">
+        <span class="stackEyebrow">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 2a9 9 0 1 0 9 9"/><path d="M11 2v9h9"/></svg>
+          Meds &amp; substances
+        </span>
+        <span class="stackActions">
+          <button type="button" class="miniBtn" id="medAddBtn">+ Add</button>
+        </span>
+      </div>
+      <div class="medsDisclaimer"><b>Informational only.</b> This shapes the curve so you can see the shape of your day — it never suggests starting, stopping, or changing a dose. Talk to your prescriber about that.</div>
+      <div id="medSearch" class="searchWrap"></div>
+      <div class="addRow" id="medAddRow" hidden></div>
+      <div class="grid" id="medGrid"></div>
+      <div id="medReadout"></div>
     </div>
 
     <!-- the curve -->
@@ -371,35 +518,116 @@
       </div>
     </div>
   </section>
+
+  <!-- honesty -->
+  <div class="honestyBar">
+    <span>An estimate from your own data — not a medical measurement.</span>
+    <button type="button" class="honestyBtn" id="honestyBtn" aria-label="More about this estimate">i</button>
+  </div>
+  <div id="honestyPanel" class="honestyPanel" hidden></div>
 </div>
 
 <script>
 /* ═══ curve.ts — ported line for line ═══ */
 const BASELINE=[18,12,10,14,16,22,30,42,55,68,75,70,62,50,44,48,56,64,72,84,92,88,64,38,18];
 const SUBSTANCES={
-  coffee:{key:'coffee',name:'Coffee',glyph:'coffee',tint:'mint',defaultDose:95,unit:'mg',amplitude:16,onsetHours:0.25,peakHours:0.75,halfLifeHours:5.0},
-  espresso:{key:'espresso',name:'Espresso',glyph:'coffee',tint:'mint',defaultDose:75,unit:'mg',amplitude:14,onsetHours:0.2,peakHours:0.5,halfLifeHours:5.0},
-  energy_drink:{key:'energy_drink',name:'Energy drink',glyph:'bolt',tint:'amber',defaultDose:160,unit:'mg',amplitude:20,onsetHours:0.3,peakHours:1.0,halfLifeHours:5.0},
+  coffee:{key:'coffee',name:'Coffee (drip, 8oz)',glyph:'coffee',tint:'mint',defaultDose:95,unit:'mg',amplitude:16,onsetHours:0.25,peakHours:0.75,halfLifeHours:5.0},
+  coffee_large:{key:'coffee_large',name:'Coffee (drip, 16oz)',glyph:'coffee',tint:'mint',defaultDose:165,unit:'mg',amplitude:19,onsetHours:0.25,peakHours:0.75,halfLifeHours:5.0},
+  espresso:{key:'espresso',name:'Espresso (single)',glyph:'coffee',tint:'mint',defaultDose:75,unit:'mg',amplitude:14,onsetHours:0.2,peakHours:0.5,halfLifeHours:5.0},
+  espresso_double:{key:'espresso_double',name:'Espresso (double)',glyph:'coffee',tint:'mint',defaultDose:150,unit:'mg',amplitude:18,onsetHours:0.2,peakHours:0.5,halfLifeHours:5.0},
+  energy_drink:{key:'energy_drink',name:'Energy drink (16oz)',glyph:'bolt',tint:'amber',defaultDose:160,unit:'mg',amplitude:20,onsetHours:0.3,peakHours:1.0,halfLifeHours:5.0},
   matcha:{key:'matcha',name:'Matcha',glyph:'leaf',tint:'mint',defaultDose:70,unit:'mg',amplitude:12,onsetHours:0.4,peakHours:1.5,halfLifeHours:6.0},
   green_tea:{key:'green_tea',name:'Green tea',glyph:'leaf',tint:'mint',defaultDose:40,unit:'mg',amplitude:9,onsetHours:0.4,peakHours:1.3,halfLifeHours:6.0},
   pre_workout:{key:'pre_workout',name:'Pre-workout',glyph:'bolt',tint:'amber',defaultDose:200,unit:'mg',amplitude:22,onsetHours:0.3,peakHours:1.0,halfLifeHours:5.0},
-  cold_brew:{key:'cold_brew',name:'Cold brew',glyph:'coffee',tint:'mint',defaultDose:200,unit:'mg',amplitude:21,onsetHours:0.3,peakHours:1.0,halfLifeHours:5.0},
+  cold_brew:{key:'cold_brew',name:'Cold brew (16oz)',glyph:'coffee',tint:'mint',defaultDose:200,unit:'mg',amplitude:21,onsetHours:0.3,peakHours:1.0,halfLifeHours:5.0},
+  black_tea:{key:'black_tea',name:'Black tea',glyph:'leaf',tint:'mint',defaultDose:47,unit:'mg',amplitude:10,onsetHours:0.35,peakHours:1.2,halfLifeHours:5.5},
+  oolong_tea:{key:'oolong_tea',name:'Oolong tea',glyph:'leaf',tint:'mint',defaultDose:55,unit:'mg',amplitude:11,onsetHours:0.35,peakHours:1.2,halfLifeHours:5.5},
+  white_tea:{key:'white_tea',name:'White tea',glyph:'leaf',tint:'mint',defaultDose:30,unit:'mg',amplitude:7,onsetHours:0.4,peakHours:1.3,halfLifeHours:5.5},
+  chai_latte:{key:'chai_latte',name:'Chai latte',glyph:'leaf',tint:'mint',defaultDose:50,unit:'mg',amplitude:10,onsetHours:0.4,peakHours:1.3,halfLifeHours:5.5},
+  yerba_mate:{key:'yerba_mate',name:'Yerba mate',glyph:'leaf',tint:'mint',defaultDose:85,unit:'mg',amplitude:15,onsetHours:0.35,peakHours:1.2,halfLifeHours:6.0},
+  guayusa:{key:'guayusa',name:'Guayusa tea',glyph:'leaf',tint:'mint',defaultDose:60,unit:'mg',amplitude:12,onsetHours:0.35,peakHours:1.2,halfLifeHours:6.0},
+  starbucks_pike:{key:'starbucks_pike',name:'Starbucks Pike Place (Grande)',glyph:'coffee',tint:'mint',defaultDose:310,unit:'mg',amplitude:24,onsetHours:0.25,peakHours:0.75,halfLifeHours:5.0},
+  starbucks_blonde:{key:'starbucks_blonde',name:'Starbucks Blonde (Grande)',glyph:'coffee',tint:'mint',defaultDose:360,unit:'mg',amplitude:26,onsetHours:0.25,peakHours:0.75,halfLifeHours:5.0},
+  starbucks_americano:{key:'starbucks_americano',name:'Starbucks Americano (Grande)',glyph:'coffee',tint:'mint',defaultDose:225,unit:'mg',amplitude:21,onsetHours:0.25,peakHours:0.6,halfLifeHours:5.0},
+  starbucks_latte:{key:'starbucks_latte',name:'Starbucks Latte (Grande)',glyph:'coffee',tint:'mint',defaultDose:150,unit:'mg',amplitude:17,onsetHours:0.3,peakHours:0.8,halfLifeHours:5.0},
+  starbucks_cold_brew:{key:'starbucks_cold_brew',name:'Starbucks Cold Brew (Grande)',glyph:'coffee',tint:'mint',defaultDose:205,unit:'mg',amplitude:21,onsetHours:0.3,peakHours:1.0,halfLifeHours:5.0},
+  starbucks_frappuccino:{key:'starbucks_frappuccino',name:'Starbucks Frappuccino (Grande)',glyph:'coffee',tint:'mint',defaultDose:95,unit:'mg',amplitude:14,onsetHours:0.35,peakHours:1.0,halfLifeHours:5.0},
+  dunkin_original:{key:'dunkin_original',name:"Dunkin' Original (Medium)",glyph:'coffee',tint:'mint',defaultDose:210,unit:'mg',amplitude:20,onsetHours:0.25,peakHours:0.75,halfLifeHours:5.0},
+  death_wish:{key:'death_wish',name:'Death Wish Coffee (12oz)',glyph:'coffee',tint:'amber',defaultDose:300,unit:'mg',amplitude:25,onsetHours:0.25,peakHours:0.7,halfLifeHours:5.0},
+  bulletproof:{key:'bulletproof',name:'Bulletproof coffee',glyph:'coffee',tint:'mint',defaultDose:150,unit:'mg',amplitude:17,onsetHours:0.3,peakHours:0.9,halfLifeHours:5.2},
+  nespresso:{key:'nespresso',name:'Nespresso capsule',glyph:'coffee',tint:'mint',defaultDose:65,unit:'mg',amplitude:12,onsetHours:0.2,peakHours:0.5,halfLifeHours:5.0},
+  instant_coffee:{key:'instant_coffee',name:'Instant coffee',glyph:'coffee',tint:'mint',defaultDose:62,unit:'mg',amplitude:12,onsetHours:0.25,peakHours:0.75,halfLifeHours:5.0},
+  decaf:{key:'decaf',name:'Decaf coffee',glyph:'coffee',tint:'mint',defaultDose:3,unit:'mg',amplitude:1,onsetHours:0.25,peakHours:0.5,halfLifeHours:4.0},
+  monster:{key:'monster',name:'Monster Energy (16oz)',glyph:'bolt',tint:'amber',defaultDose:160,unit:'mg',amplitude:20,onsetHours:0.3,peakHours:1.0,halfLifeHours:5.0},
+  redbull:{key:'redbull',name:'Red Bull (8.4oz)',glyph:'bolt',tint:'amber',defaultDose:80,unit:'mg',amplitude:14,onsetHours:0.25,peakHours:0.8,halfLifeHours:5.0},
+  celsius:{key:'celsius',name:'Celsius (12oz)',glyph:'bolt',tint:'amber',defaultDose:200,unit:'mg',amplitude:22,onsetHours:0.25,peakHours:0.9,halfLifeHours:5.0},
+  bang:{key:'bang',name:'Bang Energy (16oz)',glyph:'bolt',tint:'amber',defaultDose:300,unit:'mg',amplitude:25,onsetHours:0.25,peakHours:0.9,halfLifeHours:5.0},
+  reign:{key:'reign',name:'Reign Total Body Fuel (16oz)',glyph:'bolt',tint:'amber',defaultDose:300,unit:'mg',amplitude:25,onsetHours:0.25,peakHours:0.9,halfLifeHours:5.0},
+  rockstar:{key:'rockstar',name:'Rockstar (16oz)',glyph:'bolt',tint:'amber',defaultDose:160,unit:'mg',amplitude:20,onsetHours:0.3,peakHours:1.0,halfLifeHours:5.0},
+  c4_energy:{key:'c4_energy',name:'C4 Energy drink',glyph:'bolt',tint:'amber',defaultDose:200,unit:'mg',amplitude:22,onsetHours:0.25,peakHours:0.9,halfLifeHours:5.0},
+  java_monster:{key:'java_monster',name:'Java Monster',glyph:'bolt',tint:'amber',defaultDose:188,unit:'mg',amplitude:21,onsetHours:0.3,peakHours:1.0,halfLifeHours:5.0},
+  five_hour:{key:'five_hour',name:'5-hour Energy (shot)',glyph:'bolt',tint:'amber',defaultDose:200,unit:'mg',amplitude:23,onsetHours:0.15,peakHours:0.5,halfLifeHours:4.5},
+  nodoz:{key:'nodoz',name:'NoDoz (1 tablet)',glyph:'bolt',tint:'amber',defaultDose:200,unit:'mg',amplitude:22,onsetHours:0.3,peakHours:1.0,halfLifeHours:5.0},
+  excedrin:{key:'excedrin',name:'Excedrin (2 tablets)',glyph:'bolt',tint:'amber',defaultDose:130,unit:'mg',amplitude:16,onsetHours:0.3,peakHours:1.0,halfLifeHours:5.0},
+  diet_coke:{key:'diet_coke',name:'Diet Coke (12oz)',glyph:'leaf',tint:'mint',defaultDose:46,unit:'mg',amplitude:8,onsetHours:0.3,peakHours:1.0,halfLifeHours:5.0},
+  coca_cola:{key:'coca_cola',name:'Coca-Cola (12oz)',glyph:'leaf',tint:'mint',defaultDose:34,unit:'mg',amplitude:6,onsetHours:0.3,peakHours:1.0,halfLifeHours:5.0},
+  pepsi:{key:'pepsi',name:'Pepsi (12oz)',glyph:'leaf',tint:'mint',defaultDose:38,unit:'mg',amplitude:7,onsetHours:0.3,peakHours:1.0,halfLifeHours:5.0},
+  mountain_dew:{key:'mountain_dew',name:'Mountain Dew (12oz)',glyph:'leaf',tint:'mint',defaultDose:54,unit:'mg',amplitude:9,onsetHours:0.3,peakHours:1.0,halfLifeHours:5.0},
+  dr_pepper:{key:'dr_pepper',name:'Dr Pepper (12oz)',glyph:'leaf',tint:'mint',defaultDose:41,unit:'mg',amplitude:7,onsetHours:0.3,peakHours:1.0,halfLifeHours:5.0},
+  dark_chocolate:{key:'dark_chocolate',name:'Dark chocolate (1oz)',glyph:'leaf',tint:'mint',defaultDose:24,unit:'mg',amplitude:4,onsetHours:0.4,peakHours:1.2,halfLifeHours:5.0},
+  milk_chocolate:{key:'milk_chocolate',name:'Milk chocolate (1oz)',glyph:'leaf',tint:'mint',defaultDose:6,unit:'mg',amplitude:1,onsetHours:0.4,peakHours:1.2,halfLifeHours:5.0},
+  coffee_ice_cream:{key:'coffee_ice_cream',name:'Coffee ice cream (1/2 cup)',glyph:'leaf',tint:'mint',defaultDose:30,unit:'mg',amplitude:5,onsetHours:0.4,peakHours:1.2,halfLifeHours:5.0},
 };
-const CAFF_CEILING=400;
-function effectiveAmplitude(log,weightKg){
-  const def=SUBSTANCES[log.key]; if(!def)return 0;
+/* FDA guidance is ~400mg/day for a healthy adult; scale down below that for
+   lighter bodyweights rather than pretend everyone clears the same ceiling. */
+function caffCeilingMg(weightKg){ return Math.round(Math.min(400,Math.max(150,(weightKg||75)*5.7))); }
+function idealCaffDoseMg(weightKg){ return Math.round((weightKg||75)*3); }
+function effectiveAmplitude(log,weightKg,registry){
+  const reg=registry||SUBSTANCES; const def=reg[log.key]; if(!def)return 0;
   const doseRatio=log.dose/def.defaultDose;
   const weightFactor=75/Math.max(40,weightKg);
-  const toleranceFactor=(11-log.tolerance)/6;
+  const toleranceFactor=log.tolerance?((11-log.tolerance)/6):1;
   return def.amplitude*doseRatio*weightFactor*toleranceFactor;
 }
-function contributionAt(hourOfDay,log,weightKg){
-  const def=SUBSTANCES[log.key]; if(!def)return 0;
+/* Onset → peak → half-life decay, same as before. When def.crash is true
+   (stimulant meds, not caffeine) the tail dips BELOW baseline once the dose
+   has mostly cleared — a comedown — then eases back to zero. */
+function contributionAt(hourOfDay,log,weightKg,registry){
+  const reg=registry||SUBSTANCES; const def=reg[log.key]; if(!def)return 0;
   const dt=hourOfDay-log.takenHour;
+  if(dt<0)return 0;
+  const amp=effectiveAmplitude(log,weightKg,reg);
   if(dt<def.onsetHours)return 0;
-  const amp=effectiveAmplitude(log,weightKg);
   if(dt<def.peakHours)return amp*(dt-def.onsetHours)/(def.peakHours-def.onsetHours);
-  return amp*Math.pow(0.5,(dt-def.peakHours)/def.halfLifeHours);
+  const decayed=amp*Math.pow(0.5,(dt-def.peakHours)/def.halfLifeHours);
+  if(!def.crash)return decayed;
+  const clearThresh=amp*0.15;
+  if(decayed>clearThresh)return decayed;
+  const crashStart=def.peakHours+def.halfLifeHours*Math.log2(Math.max(1,amp/clearThresh));
+  const crashWindow=def.crashHours||2.5;
+  const tSinceCrash=dt-crashStart;
+  if(tSinceCrash<0||tSinceCrash>crashWindow*2)return 0;
+  const depth=-amp*(def.crashFactor||0.35);
+  const p=Math.max(0,Math.min(1,tSinceCrash/(crashWindow*2)));
+  return depth*Math.sin(p*Math.PI);
+}
+/* Meds & substances — informational only. Real-world onset/peak/duration
+   figures, approximated to a single-peak PK curve. Stimulant meds carry
+   crash:true (a real comedown); modafinil and L-tyrosine don't. */
+const MEDS={
+  concerta:{key:'concerta',name:'Concerta (methylphenidate ER)',glyph:'bolt',tint:'amber',defaultDose:36,unit:'mg',amplitude:24,onsetHours:1.0,peakHours:4.0,halfLifeHours:3.5,crash:true,crashFactor:0.4,crashHours:2.5},
+  ritalin:{key:'ritalin',name:'Ritalin (methylphenidate IR)',glyph:'bolt',tint:'amber',defaultDose:10,unit:'mg',amplitude:20,onsetHours:0.5,peakHours:1.5,halfLifeHours:2.5,crash:true,crashFactor:0.45,crashHours:1.5},
+  adderall_ir:{key:'adderall_ir',name:'Adderall IR (mixed amphetamine salts)',glyph:'bolt',tint:'amber',defaultDose:20,unit:'mg',amplitude:26,onsetHours:0.75,peakHours:3.0,halfLifeHours:5.0,crash:true,crashFactor:0.45,crashHours:2.5},
+  adderall_xr:{key:'adderall_xr',name:'Adderall XR',glyph:'bolt',tint:'amber',defaultDose:20,unit:'mg',amplitude:26,onsetHours:1.0,peakHours:5.5,halfLifeHours:6.0,crash:true,crashFactor:0.4,crashHours:2.5},
+  vyvanse:{key:'vyvanse',name:'Vyvanse (lisdexamfetamine)',glyph:'bolt',tint:'amber',defaultDose:30,unit:'mg',amplitude:25,onsetHours:1.5,peakHours:3.5,halfLifeHours:6.0,crash:true,crashFactor:0.25,crashHours:2.5},
+  modafinil:{key:'modafinil',name:'Modafinil',glyph:'bolt',tint:'mint',defaultDose:200,unit:'mg',amplitude:22,onsetHours:1.0,peakHours:3.0,halfLifeHours:12.0,crash:false},
+  nicotine_pouch:{key:'nicotine_pouch',name:'Nicotine pouch (Zyn/Velo/On!)',glyph:'leaf',tint:'amber',defaultDose:6,unit:'mg',amplitude:10,onsetHours:0.1,peakHours:0.4,halfLifeHours:1.5,crash:true,crashFactor:0.2,crashHours:1.0},
+  l_tyrosine:{key:'l_tyrosine',name:'L-tyrosine',glyph:'leaf',tint:'mint',defaultDose:500,unit:'mg',amplitude:8,onsetHours:0.5,peakHours:1.5,halfLifeHours:3.0,crash:false},
+};
+/* Approximate "peaks ~Xh, fades ~Yh" from now, for the timeline tip. */
+function medTimelineTip(def){
+  const fade=def.peakHours+def.halfLifeHours*2;
+  return `Peaks ~${def.peakHours}h in · mostly clears by ~${fade.toFixed(1)}h${def.crash?' · comedown as it fades':''}`;
 }
 function whoopMultiplier(w){
   const m=new Array(25).fill(1); let touched=false;
@@ -407,14 +635,19 @@ function whoopMultiplier(w){
   if(typeof w.sleepScore==='number'&&w.sleepScore<70){const cap=0.65+(Math.max(0,w.sleepScore)/70)*0.35;for(let h=0;h<25;h++)m[h]=Math.min(m[h],cap);touched=true;}
   return touched?m:null;
 }
-function computeCurveDetailed(logs,whoop,weightKg){
+function computeCurveDetailed(logs,whoop,weightKg,medLogs){
   const wm=whoopMultiplier(whoop);
   return BASELINE.map((b,h)=>{
     const segments=[{source:'baseline',label:'Baseline',value:b}];
     let pre=b;
     for(const log of logs){
-      const c=contributionAt(h,log,weightKg);
+      const c=contributionAt(h,log,weightKg,SUBSTANCES);
       if(Math.abs(c)>0.1){pre+=c;segments.push({source:log.key,label:SUBSTANCES[log.key].name,value:c});}
+    }
+    for(const log of (medLogs||[])){
+      const def=MEDS[log.key]; if(!def)continue;
+      const c=contributionAt(h,log,weightKg,MEDS);
+      if(Math.abs(c)>0.1){pre+=c;segments.push({source:log.key,label:def.name,value:c});}
     }
     const mult=wm?wm[h]:1;
     return {hour:h,score:Math.max(0,Math.min(100,pre*mult)),segments,mult};
@@ -450,10 +683,19 @@ function glyph(name){
    Empty by default: the baseline circadian curve needs no data at all.
    Everything else fills as YOUR data lands — the mentor files logs/events/
    whoop via save_data, feel drags write back through the bridge. */
-const DEMO={ weightKg:75, whoop:{}, logs:[], events:[], taps:[] };
+const DEMO={ weightKg:75, whoop:{}, logs:[], events:[], taps:[], medLogs:[], checkins:{}, calibration:[], source:'manual',
+  customCaffeine:[], customMeds:[] };
 let D=JSON.parse(JSON.stringify(DEMO));
 let quickKeys=['coffee','espresso','energy_drink','matcha'];
+let quickMedKeys=[];
 const BRIDGE=(typeof window!=='undefined'&&window.Vitality&&typeof window.Vitality.load==='function')?window.Vitality:null;
+function todayKey(d){const x=d||new Date();return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');}
+/* Custom caffeine/meds entries the user adds live IN these registries too —
+   merged in at boot so search/render/PK code never has to special-case them. */
+function registerCustom(){
+  for(const c of D.customCaffeine||[])if(c&&c.key)SUBSTANCES[c.key]=c;
+  for(const m of D.customMeds||[])if(m&&m.key)MEDS[m.key]=m;
+}
 
 /* The vitals tile's EXACT recovery formula, copied verbatim so this hardwired
    read and the mentor's /sweep produce an IDENTICAL number — never a flip-flop.
@@ -479,8 +721,16 @@ async function boot(){
       if(typeof s.weightKg==='number')D.weightKg=s.weightKg;
       if(s.whoop&&typeof s.whoop==='object')D.whoop=s.whoop;
       if(Array.isArray(s.quickKeys)&&s.quickKeys.length)quickKeys=s.quickKeys;
+      if(Array.isArray(s.medLogs))D.medLogs=s.medLogs;
+      if(Array.isArray(s.quickMedKeys))quickMedKeys=s.quickMedKeys;
+      if(s.checkins&&typeof s.checkins==='object')D.checkins=s.checkins;
+      if(Array.isArray(s.calibration))D.calibration=s.calibration;
+      if(s.source==='manual'||s.source==='apple')D.source=s.source;
+      if(Array.isArray(s.customCaffeine))D.customCaffeine=s.customCaffeine;
+      if(Array.isArray(s.customMeds))D.customMeds=s.customMeds;
     }
   }catch(e){}}
+  registerCustom();
   // vitals → peak, HARDWIRED: read the vitals tile and derive today's recovery
   // with the shared formula, so poor sleep reshapes the curve on the very next
   // refresh — no /sweep, no connector. (The mentor's sweep writes the same
@@ -489,21 +739,55 @@ async function boot(){
     if(BRIDGE&&typeof BRIDGE.read==='function'){
       const v=await BRIDGE.read('vitals');
       if(v&&typeof v==='object'&&!Array.isArray(v)){
-        const nd=new Date(),tk=nd.getFullYear()+'-'+String(nd.getMonth()+1).padStart(2,'0')+'-'+String(nd.getDate()).padStart(2,'0');
+        const tk=todayKey();
         const days=Object.keys(v).filter(k=>/^\d{4}-\d{2}-\d{2}$/.test(k)).sort();
         const useKey=v[tk]?tk:days[days.length-1];
         const rec=useKey?recoveryFromVitals(v[useKey]):null;
         if(typeof rec==='number')D.whoop=Object.assign({},D.whoop,{recovery:rec});
+        D.todayVitalsRaw=v[tk]||null;
+        D.lastVitalsKey=useKey||null;
+        D.lastVitalsRaw=useKey?v[useKey]:null;
+      }
+    }
+  }catch(e){}
+  // fuel → peak, read-only: today's water + protein, for the optional score slices.
+  try{
+    if(BRIDGE&&typeof BRIDGE.read==='function'){
+      const f=await BRIDGE.read('fuel');
+      if(f&&typeof f==='object'){
+        const tk=todayKey();
+        if(f.water&&typeof f.water[tk]==='number'){
+          D.waterPct=Math.max(0,Math.min(100,(f.water[tk]/10)*100));
+        }
+        if(f.meals&&Array.isArray(f.meals[tk])&&f.targets&&typeof f.targets.protein==='number'&&f.targets.protein>0){
+          const p=f.meals[tk].reduce((a,m)=>a+(m&&typeof m.p==='number'?m.p:0),0);
+          D.proteinPct=Math.max(0,Math.min(100,(p/f.targets.protein)*100));
+        }
+      }
+    }
+  }catch(e){}
+  // train → peak, best-effort: was anything logged today? Optional, silently
+  // skipped if the shape doesn't match — gym never blocks the score.
+  try{
+    if(BRIDGE&&typeof BRIDGE.read==='function'){
+      const t=await BRIDGE.read('train');
+      if(t&&typeof t==='object'){
+        const tk=todayKey();
+        const hit=JSON.stringify(t).includes(tk) &&
+          (Array.isArray(t.sessions)||Array.isArray(t.workouts)||Array.isArray(t.sets)||typeof t.days==='object');
+        if(hit)D.gymPct=100;
       }
     }
   }catch(e){}
   const d=new Date();
   document.getElementById('heroDate').textContent=d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}).toUpperCase();
   render(); renderStrip(); renderGauge(null); renderStack(); renderReadout(); renderOpenBlock();
+  renderSourceSwitch(); renderScoreHero(); renderCheckin(); renderMedGrid(); renderMedReadout(); renderCaffStats(); renderCaffIntake(); renderCaffSearch(); renderMedSearch();
   spawnMotes();
 }
 /* save the WHOLE store — a feel drag must never wipe what the mentor filed */
-function persist(){ if(BRIDGE&&typeof BRIDGE.save==='function'){try{BRIDGE.save({weightKg:D.weightKg,whoop:D.whoop,taps:D.taps,logs:D.logs,events:D.events,quickKeys});}catch(e){}} }
+function persist(){ if(BRIDGE&&typeof BRIDGE.save==='function'){try{BRIDGE.save({weightKg:D.weightKg,whoop:D.whoop,taps:D.taps,logs:D.logs,events:D.events,quickKeys,
+  medLogs:D.medLogs,quickMedKeys,checkins:D.checkins,calibration:D.calibration,source:D.source,customCaffeine:D.customCaffeine,customMeds:D.customMeds});}catch(e){}} }
 
 /* ═══ curve chart render ═══ */
 const PAD={top:18,right:24,bottom:32,left:24},RANGE=24,HEIGHT=320;
@@ -512,7 +796,7 @@ const wrap=document.getElementById('wrap'),stage=document.getElementById('stage'
 const nowDate=new Date();
 const nowHour=Math.min(24,nowDate.getHours()+nowDate.getMinutes()/60);
 
-function curveDetailed(){return computeCurveDetailed(D.logs,D.whoop,D.weightKg);}
+function curveDetailed(){return computeCurveDetailed(D.logs,D.whoop,D.weightKg,D.medLogs);}
 function scores(){return curveDetailed().map(c=>c.score);}
 function baselineCurve(){const wm=whoopMultiplier(D.whoop);return BASELINE.map((b,h)=>Math.max(0,Math.min(100,b*(wm?wm[h]:1))));}
 
@@ -520,7 +804,7 @@ function baselineCurve(){const wm=whoopMultiplier(D.whoop);return BASELINE.map((
    recovery from Vitals, caffeine logs, events, or a feel drag. With nothing
    personal they'd just be a generic baseline, so we honestly show nothing.
    The stack cards + plan console stay live below as the way in. */
-function hasSignal(){ return (D.whoop&&typeof D.whoop.recovery==='number') || (D.logs&&D.logs.length>0) || (D.events&&D.events.length>0) || (D.taps&&D.taps.length>0); }
+function hasSignal(){ return (D.whoop&&typeof D.whoop.recovery==='number') || (D.logs&&D.logs.length>0) || (D.medLogs&&D.medLogs.length>0) || (D.events&&D.events.length>0) || (D.taps&&D.taps.length>0); }
 
 const TIER_COLOR_HEX={Peak:'#F97316',Solid:'#F97316',Tired:'#F59E0B',Low:'#d97706',Drained:'#EF4444'};
 function fmtTick(h){if(h===0||h===24)return'12A';if(h===12)return'12P';return h<12?h+'A':(h-12)+'P';}
@@ -674,8 +958,16 @@ function renderFeel(){
     const up=ev=>{
       window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);
       feelDragging=false;feelPct=pctForY(ev.clientY-rect.top);
-      D.taps.push({id:'t'+D.taps.length,hour:nowHour,value:Math.round((feelPct-50)*2)});persist();
-      feelLogged=true;renderFeel();renderStrip();
+      D.taps.push({id:'t'+D.taps.length,hour:nowHour,value:Math.round((feelPct-50)*2)});
+      // calibration: predicted (curve, before feel-pull) vs felt, one entry per day —
+      // this is what grows the feel-slider's pull weight from 30% toward 50% over 30 days.
+      const predicted=scoreAtHour(scores(),nowHour);
+      const tk=todayKey();
+      const existing=D.calibration.find(c=>c.date===tk);
+      if(existing){existing.predicted=predicted;existing.felt=feelPct;}
+      else D.calibration.push({date:tk,predicted,felt:feelPct});
+      persist();
+      feelLogged=true;renderFeel();renderStrip();renderScoreHero();
       feelTimer=setTimeout(()=>{feelLogged=false;feelPct=100;renderFeel();render();},1200);
     };
     window.addEventListener('pointermove',move);window.addEventListener('pointerup',up);
@@ -764,7 +1056,7 @@ function renderStack(){
     const these=D.logs.filter(l=>l.key===key);
     const count=these.length;
     const mgToday=these.reduce((a,l)=>a+(l.dose||0),0);
-    const pct=Math.min(100,Math.round((mgToday/CAFF_CEILING)*100));
+    const pct=Math.min(100,Math.round((mgToday/caffCeilingMg(D.weightKg))*100));
     const warn=pct>=75;
     return `<div class="qlCard" data-key="${key}" style="animation-delay:${i*60}ms">
       <button class="qlRemove" data-remove="${key}" aria-label="Remove ${s.name} from your stack">&times;</button>
@@ -782,15 +1074,19 @@ function renderStack(){
     </div>`;
   }).join('');
 }
-function onLog(key){
+function onLog(key,doseOverride){
   const s=SUBSTANCES[key]; if(!s)return;
-  D.logs.push({id:'l'+D.logs.length,key,dose:s.defaultDose,tolerance:5,takenHour:nowHour});
+  D.logs.push({id:'l'+D.logs.length+Math.random().toString(36).slice(2,6),key,dose:doseOverride||s.defaultDose,tolerance:5,takenHour:nowHour});
   persist();
-  render(); renderStrip(); renderGauge(hoverHour); renderStack(); renderReadout();
+  render(); renderStrip(); renderGauge(hoverHour); renderStack(); renderReadout(); renderCaffStats(); renderCaffIntake(); renderScoreHero();
+}
+function removeCaffLog(id){
+  D.logs=D.logs.filter(l=>l.id!==id); persist();
+  render(); renderStrip(); renderGauge(hoverHour); renderStack(); renderReadout(); renderCaffStats(); renderCaffIntake(); renderScoreHero();
 }
 document.getElementById('stackGrid').addEventListener('click',e=>{
   const rm=e.target.closest('[data-remove]');
-  if(rm){const k=rm.getAttribute('data-remove');quickKeys=quickKeys.filter(x=>x!==k);D.logs=D.logs.filter(l=>l.key!==k);persist();render();renderStrip();renderStack();renderReadout();renderGauge(null);return;}
+  if(rm){const k=rm.getAttribute('data-remove');quickKeys=quickKeys.filter(x=>x!==k);D.logs=D.logs.filter(l=>l.key!==k);persist();render();renderStrip();renderStack();renderReadout();renderGauge(null);renderCaffStats();renderCaffIntake();return;}
   const lg=e.target.closest('[data-log]');
   if(lg){lg.classList.add('charge');setTimeout(()=>lg.classList.remove('charge'),640);onLog(lg.getAttribute('data-log'));}
 });
@@ -944,6 +1240,360 @@ function spawnMotes(){
     atmo.appendChild(m);
   }
 }
+
+/* ═══════════ overall daily score — recovery+sleep always, water/protein/
+   supplements/gym optional, renormalized around whatever's actually logged ═══ */
+const SCORE_WEIGHTS={recovery:45,sleep:30,water:6.25,protein:6.25,supplements:6.25,gym:6.25};
+let scoreBreakdownOpen=false;
+function computeDailyScore(){
+  const factors=[];
+  if(typeof D.whoop.recovery==='number')factors.push({key:'recovery',label:'Recovery',value:D.whoop.recovery,weight:SCORE_WEIGHTS.recovery});
+  const tk=todayKey();
+  let sleepHrs=null;
+  if(D.todayVitalsRaw&&typeof D.todayVitalsRaw.sleepHours==='number')sleepHrs=D.todayVitalsRaw.sleepHours;
+  else if(D.checkins[tk]&&typeof D.checkins[tk].hoursSlept==='number')sleepHrs=D.checkins[tk].hoursSlept;
+  if(typeof sleepHrs==='number')factors.push({key:'sleep',label:'Sleep',value:Math.max(0,Math.min(100,(sleepHrs/8)*100)),weight:SCORE_WEIGHTS.sleep});
+  if(typeof D.waterPct==='number')factors.push({key:'water',label:'Water',value:D.waterPct,weight:SCORE_WEIGHTS.water});
+  if(typeof D.proteinPct==='number')factors.push({key:'protein',label:'Protein',value:D.proteinPct,weight:SCORE_WEIGHTS.protein});
+  if(typeof D.supplementsPct==='number')factors.push({key:'supplements',label:'Supplements',value:D.supplementsPct,weight:SCORE_WEIGHTS.supplements});
+  if(typeof D.gymPct==='number')factors.push({key:'gym',label:'Gym',value:D.gymPct,weight:SCORE_WEIGHTS.gym});
+  if(!factors.length)return null;
+  const totalW=factors.reduce((a,f)=>a+f.weight,0);
+  let score=factors.reduce((a,f)=>a+f.value*f.weight,0)/totalW;
+  // feel-slider pull: 30% at day 1, grows to 50% by 30 distinct calibration days
+  const calDays=D.calibration.length;
+  const pullW=0.3+Math.min(1,calDays/30)*0.2;
+  const todayCal=D.calibration.find(c=>c.date===tk);
+  let pulled=false;
+  if(todayCal&&typeof todayCal.felt==='number'){ score=score*(1-pullW)+todayCal.felt*pullW; pulled=true; }
+  return {score:Math.max(0,Math.min(100,Math.round(score))),factors,totalW,pulled,pullW,calDays};
+}
+function renderScoreHero(){
+  const el=document.getElementById('scoreHero');
+  const d=computeDailyScore();
+  if(!d){ el.innerHTML=`<div class="scoreEmpty">Not enough data yet to build today&rsquo;s score — log a check-in below, or wait for your Apple Health sync.</div>`; return; }
+  const color=scoreColorFor(d.score),tier=tierFor(d.score);
+  const size=112,stroke=9,r=size/2-stroke/2-10,c=2*Math.PI*r,pct=d.score/100;
+  el.innerHTML=`
+    <div class="scoreRingWrap">
+      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+        <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="rgba(245,237,226,0.07)" stroke-width="${stroke}"/>
+        <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round" stroke-dasharray="${c*pct} ${c}" style="filter:drop-shadow(0 0 6px ${color});transition:stroke-dasharray 300ms var(--ease-premium)"/>
+      </svg>
+      <div class="scoreRingNum"><b style="color:${color}">${d.score}</b><span>today</span></div>
+    </div>
+    <div class="scoreMeta">
+      <div class="scoreTier" style="color:${color}">${tier}</div>
+      <div class="scoreSub">Recovery + sleep${d.factors.length>2?' + what you logged today':''}${d.pulled?' · pulled toward how you feel':''}</div>
+      ${d.calDays<30?`<div class="feelBuilding">building a more detailed analysis &middot; ${d.calDays}/30 days</div>`:''}
+      <button type="button" class="scoreWhyBtn" id="scoreWhyBtn">${scoreBreakdownOpen?'Hide':'Why this score'}</button>
+      ${scoreBreakdownOpen?renderScoreBreakdown(d):''}
+    </div>`;
+  document.getElementById('scoreWhyBtn').addEventListener('click',()=>{scoreBreakdownOpen=!scoreBreakdownOpen;renderScoreHero();});
+}
+function renderScoreBreakdown(d){
+  const rows=d.factors.map(f=>{
+    const w=Math.round((f.weight/d.totalW)*100);
+    return `<div class="scoreRow"><span class="lbl">${f.label}</span><span class="bar"><i style="width:${Math.max(2,Math.round(f.value))}%"></i></span><span class="wv"><b>${Math.round(f.value)}</b> &middot; ${w}%</span></div>`;
+  }).join('');
+  const missLabel={recovery:'Recovery',sleep:'Sleep',water:'Water',protein:'Protein',supplements:'Supplements',gym:'Gym'};
+  const missing=Object.keys(missLabel).filter(k=>!d.factors.some(f=>f.key===k));
+  return `<div class="scoreBreakdown">${rows}
+    ${missing.length?`<div style="font-size:11px;color:var(--muted);margin-top:2px">Not counted today — not logged: ${missing.map(k=>missLabel[k]).join(', ')}. Renormalized across what you did log.</div>`:''}
+    ${d.pulled?`<div style="font-size:11px;color:var(--muted)">Pulled ${Math.round(d.pullW*100)}% toward how you said you feel just now.</div>`:''}
+  </div>`;
+}
+
+/* ═══════════ source switch ═══════════ */
+function renderSourceSwitch(){
+  const el=document.getElementById('srcSwitch');
+  el.innerHTML=`<button type="button" class="srcBtn" data-src="manual" aria-current="${D.source==='manual'}">Manual</button><button type="button" class="srcBtn" data-src="apple" aria-current="${D.source==='apple'}">Apple Watch</button>`;
+  el.querySelectorAll('[data-src]').forEach(b=>b.addEventListener('click',()=>{
+    D.source=b.getAttribute('data-src');persist();renderSourceSwitch();renderCheckin();
+  }));
+  renderAppleStatus();
+}
+function renderAppleStatus(){
+  const el=document.getElementById('appleStatus');
+  const checkinCard=document.getElementById('checkinCard');
+  if(D.source!=='apple'){el.hidden=true;checkinCard.hidden=false;return;}
+  checkinCard.hidden=true; el.hidden=false;
+  if(D.todayVitalsRaw){
+    el.className='appleStatus';
+    el.innerHTML=`<span style="display:flex;align-items:center;gap:8px"><span class="dot"></span>Synced today${typeof D.todayVitalsRaw.sleepHours==='number'?` &middot; <b>${D.todayVitalsRaw.sleepHours}h</b> sleep`:''}</span><span style="font-family:var(--font-mono);font-size:0.6rem;color:var(--muted)">via your Apple Health Shortcut</span>`;
+  }else if(D.lastVitalsKey){
+    el.className='appleStatus stale';
+    el.innerHTML=`<span style="display:flex;align-items:center;gap:8px"><span class="dot"></span>No sync today — showing <b>${D.lastVitalsKey}</b>&rsquo;s cached data</span><span style="font-family:var(--font-mono);font-size:0.6rem;color:var(--muted)">run your morning Shortcut to refresh</span>`;
+  }else{
+    el.className='appleStatus stale';
+    el.innerHTML=`<span>No Apple Health data yet. Run your Shortcut once, or switch to Manual for now.</span>`;
+  }
+}
+
+/* ═══════════ daily check-in (manual source) ═══════════ */
+let checkinSelectedDate=todayKey();
+let checkinDraftOverrides={};
+let checkinJustSaved=null;
+const CHECKIN_FIELDS=[['sleepQuality','Sleep quality'],['energy','Energy'],['mood','Mood'],['soreness','Soreness'],['stress','Stress']];
+const WAKE_CHIPS=['5:00','5:30','6:00','6:30','7:00','7:30','8:00','8:30','9:00'];
+const HOURS_CHIPS=[5,5.5,6,6.5,7,7.5,8,8.5,9,9.5,10];
+function dayScoreFor(date){
+  const c=D.checkins[date];if(!c)return null;
+  const vals=CHECKIN_FIELDS.map(([k])=>c[k]).filter(v=>typeof v==='number');
+  if(!vals.length)return null;
+  return Math.round((vals.reduce((a,b)=>a+b,0)/vals.length/5)*100);
+}
+function deriveFeelFromCheckin(c){
+  const energy=c.energy||3,mood=c.mood||3,soreness=c.soreness||3,stress=c.stress||3;
+  const base=((energy+mood)/2)/5*100, penalty=((soreness+stress)/2)/5*20;
+  return Math.max(0,Math.min(100,Math.round(base-penalty+10)));
+}
+function deriveBedtime(wakeStr,hoursSlept){
+  const m=wakeStr.match(/^(\d{1,2}):(\d{2})$/);if(!m)return null;
+  const wakeMin=parseInt(m[1],10)*60+parseInt(m[2],10);
+  let bedMin=((wakeMin-Math.round(hoursSlept*60))%1440+1440)%1440;
+  let h=Math.floor(bedMin/60),mm=bedMin%60;
+  const ap=h<12?'AM':'PM';let d=h%12;if(d===0)d=12;
+  return `${d}:${String(mm).padStart(2,'0')} ${ap}`;
+}
+function renderCheckin(){
+  if(D.source!=='manual'){document.getElementById('checkinCard').hidden=true;return;}
+  const card=document.getElementById('checkinCard');card.hidden=false;
+  const days=[];for(let i=6;i>=0;i--){const dt=new Date();dt.setDate(dt.getDate()-i);days.push(dt);}
+  const rowHtml=days.map(dt=>{
+    const key=todayKey(dt),isToday=key===todayKey(),s=dayScoreFor(key),color=s!=null?scoreColorFor(s):null;
+    return `<div class="dayCard" data-date="${key}" aria-current="${key===checkinSelectedDate}">
+      <span class="dwk">${isToday?'TODAY':['SUN','MON','TUE','WED','THU','FRI','SAT'][dt.getDay()]}</span>
+      <span class="ddt">${dt.getDate()}</span>
+      <span class="dayDot" style="${color?`background:${color};box-shadow:0 0 6px ${color}`:''}"></span>
+    </div>`;
+  }).join('');
+  card.innerHTML=`<div class="dayRow">${rowHtml}</div><div id="checkinForm"></div>`;
+  card.querySelectorAll('[data-date]').forEach(elx=>elx.addEventListener('click',()=>{checkinSelectedDate=elx.getAttribute('data-date');renderCheckin();}));
+  renderCheckinForm();
+}
+function renderCheckinForm(){
+  const host=document.getElementById('checkinForm');if(!host)return;
+  const date=checkinSelectedDate;
+  const existing=D.checkins[date]||{};
+  let carryWake=existing.wake,carryHours=existing.hoursSlept;
+  if(carryWake==null||carryHours==null){
+    const dates=Object.keys(D.checkins).filter(k=>k<date).sort();
+    const prev=dates.length?D.checkins[dates[dates.length-1]]:null;
+    if(prev){ if(carryWake==null)carryWake=prev.wake; if(carryHours==null)carryHours=prev.hoursSlept; }
+  }
+  const draft=Object.assign({wake:carryWake,hoursSlept:carryHours},existing,checkinDraftOverrides[date]||{});
+  const bedtime=(typeof draft.wake==='string'&&typeof draft.hoursSlept==='number')?deriveBedtime(draft.wake,draft.hoursSlept):null;
+  const ratesHtml=CHECKIN_FIELDS.map(([k,label])=>`
+    <div class="rateRow"><span class="rateLabel">${label}</span><div class="rateChips">${[1,2,3,4,5].map(n=>`<button type="button" class="rateChip" data-field="${k}" data-val="${n}" aria-current="${draft[k]===n}">${n}</button>`).join('')}</div></div>`).join('');
+  const canSave=CHECKIN_FIELDS.some(([k])=>typeof draft[k]==='number')||draft.wake!=null;
+  host.innerHTML=`<div class="checkinForm">
+    ${ratesHtml}
+    <div class="rateRow"><span class="rateLabel">Woke at</span><div class="timeChips">${WAKE_CHIPS.map(t=>`<button type="button" class="timeChip" data-wake="${t}" aria-current="${draft.wake===t}">${t}</button>`).join('')}</div></div>
+    <div class="rateRow"><span class="rateLabel">Hours slept</span><div class="timeChips">${HOURS_CHIPS.map(h=>`<button type="button" class="timeChip" data-hours="${h}" aria-current="${draft.hoursSlept===h}">${h}h</button>`).join('')}</div></div>
+    ${bedtime?`<div class="bedtimeNote">Bedtime, derived: <b>${bedtime}</b></div>`:''}
+    <button type="button" class="checkinSaveBtn" id="checkinSaveBtn" ${canSave?'':'disabled'}>Save check-in</button>
+    ${checkinJustSaved===date?`<div class="checkinSaved">Saved &#10003;</div>`:''}
+  </div>`;
+  host.querySelectorAll('[data-field]').forEach(b=>b.addEventListener('click',()=>{setCheckinDraft(date,b.getAttribute('data-field'),parseInt(b.getAttribute('data-val'),10));renderCheckinForm();}));
+  host.querySelectorAll('[data-wake]').forEach(b=>b.addEventListener('click',()=>{setCheckinDraft(date,'wake',b.getAttribute('data-wake'));renderCheckinForm();}));
+  host.querySelectorAll('[data-hours]').forEach(b=>b.addEventListener('click',()=>{setCheckinDraft(date,'hoursSlept',parseFloat(b.getAttribute('data-hours')));renderCheckinForm();}));
+  const saveBtn=document.getElementById('checkinSaveBtn');
+  if(saveBtn)saveBtn.addEventListener('click',()=>saveCheckin(date));
+}
+function setCheckinDraft(date,field,val){ checkinDraftOverrides[date]=Object.assign({},checkinDraftOverrides[date],{[field]:val}); }
+async function saveCheckin(date){
+  const draft=Object.assign({},D.checkins[date],checkinDraftOverrides[date]);
+  D.checkins[date]=draft; checkinDraftOverrides[date]=null; persist();
+  if(date===todayKey()){
+    try{
+      if(BRIDGE&&typeof BRIDGE.write==='function'){
+        let current=(D.lastVitalsKey===date&&D.todayVitalsRaw)?D.todayVitalsRaw:null;
+        if(!current&&typeof BRIDGE.read==='function'){const v=await BRIDGE.read('vitals');current=(v&&v[date])||{};}
+        const merged=Object.assign({},current||{});
+        if(typeof draft.hoursSlept==='number')merged.sleepHours=draft.hoursSlept;
+        merged.feel=deriveFeelFromCheckin(draft);
+        await BRIDGE.write('vitals',date,merged);
+        D.todayVitalsRaw=merged;
+        const rec=recoveryFromVitals(merged);
+        if(typeof rec==='number')D.whoop=Object.assign({},D.whoop,{recovery:rec});
+      }
+    }catch(e){}
+  }
+  checkinJustSaved=date;
+  renderCheckin(); renderScoreHero(); render(); renderStrip(); renderGauge(null);
+  setTimeout(()=>{checkinJustSaved=null;renderCheckinForm();},1800);
+}
+
+/* ═══════════ meds & substances ═══════════ */
+function renderMedGrid(){
+  const grid=document.getElementById('medGrid');
+  if(!quickMedKeys.length){grid.innerHTML=`<span style="font-size:12.5px;color:var(--muted)">Search above to add a medication, nicotine, or nootropic you want tracked.</span>`;return;}
+  grid.innerHTML=quickMedKeys.map((key,i)=>{
+    const m=MEDS[key];if(!m)return'';
+    const these=D.medLogs.filter(l=>l.key===key);
+    const count=these.length,doseToday=these.reduce((a,l)=>a+(l.dose||0),0);
+    return `<div class="qlCard" data-key="${key}" style="animation-delay:${i*60}ms">
+      <button class="qlRemove" data-medremove="${key}" aria-label="Remove ${m.name} from your stack">&times;</button>
+      <div class="qlTop">
+        <span class="chip ${m.tint==='amber'?'amber':''}" aria-hidden="true">${glyph(m.glyph)}</span>
+        <span class="qlMeta"><span class="qlName">${m.name}</span><span class="qlMg">${count>0?`<b>${doseToday}${m.unit}</b> today`:`${m.defaultDose}${m.unit}`}</span></span>
+      </div>
+      <button class="qlLog ${count>0?'logged':''}" data-medlog="${key}"><span class="spark"></span>${count>0?`&#10003; ${count}&times; today`:'+ Log now'}</button>
+      <div class="pkTip">${medTimelineTip(m)}</div>
+    </div>`;
+  }).join('');
+}
+function onMedLog(key){
+  const m=MEDS[key];if(!m)return;
+  D.medLogs.push({id:'m'+D.medLogs.length+Math.random().toString(36).slice(2,6),key,dose:m.defaultDose,takenHour:nowHour});
+  persist(); render();renderStrip();renderGauge(hoverHour);renderMedGrid();renderMedReadout();renderScoreHero();
+}
+document.getElementById('medGrid').addEventListener('click',e=>{
+  const rm=e.target.closest('[data-medremove]');
+  if(rm){const k=rm.getAttribute('data-medremove');quickMedKeys=quickMedKeys.filter(x=>x!==k);D.medLogs=D.medLogs.filter(l=>l.key!==k);persist();render();renderStrip();renderGauge(null);renderMedGrid();renderMedReadout();return;}
+  const lg=e.target.closest('[data-medlog]');
+  if(lg){lg.classList.add('charge');setTimeout(()=>lg.classList.remove('charge'),640);onMedLog(lg.getAttribute('data-medlog'));}
+});
+document.getElementById('medAddBtn').addEventListener('click',()=>{
+  document.getElementById('medSearch').querySelector('input')?.focus();
+});
+function renderMedReadout(){
+  const el=document.getElementById('medReadout');
+  el.innerHTML=D.medLogs.length?`<div class="readout"><span class="roDelta">${D.medLogs.length} logged today</span></div>`:'';
+}
+
+/* ═══════════ search bars — caffeine (40+) and meds, + custom add ═══════════ */
+function buildSearchUI(containerId,registry,onPick,onCustom,placeholder){
+  const host=document.getElementById(containerId);
+  host.innerHTML=`<input type="text" class="searchInput" placeholder="${placeholder}" autocomplete="off" />`;
+  const input=host.querySelector('input');
+  let resultsEl=null;
+  function closeResults(){ if(resultsEl){resultsEl.remove();resultsEl=null;} }
+  function showResults(q){
+    closeResults();
+    const list=Object.values(registry).filter(s=>s.name.toLowerCase().includes(q.toLowerCase()));
+    resultsEl=document.createElement('div');resultsEl.className='searchResults';
+    if(!q)resultsEl.innerHTML=`<div class="searchEmpty">Type to search ${Object.keys(registry).length}+ options</div>`;
+    else if(!list.length)resultsEl.innerHTML=`<div class="searchEmpty">No match — add it as a custom entry below</div>`;
+    else resultsEl.innerHTML=list.slice(0,30).map(s=>`<div class="searchRow" data-pick="${s.key}"><span class="sName">${s.name}</span><span class="sMg">${s.defaultDose}${s.unit}</span></div>`).join('');
+    resultsEl.innerHTML+=`<button type="button" class="searchCustomBtn" data-custom="1">+ Add a custom entry${q?` for &ldquo;${q}&rdquo;`:''}</button>`;
+    host.appendChild(resultsEl);
+    resultsEl.querySelectorAll('[data-pick]').forEach(r=>r.addEventListener('click',()=>{onPick(r.getAttribute('data-pick'));closeResults();input.value='';}));
+    resultsEl.querySelector('[data-custom]').addEventListener('click',()=>{onCustom(q);closeResults();});
+  }
+  input.addEventListener('focus',()=>showResults(input.value));
+  input.addEventListener('input',()=>showResults(input.value));
+  input.addEventListener('blur',()=>setTimeout(closeResults,150));
+}
+function renderCaffSearch(){
+  buildSearchUI('caffSearch',SUBSTANCES,
+    key=>{ if(!quickKeys.includes(key))quickKeys.push(key); persist(); renderStack(); onLog(key); },
+    q=>openCustomForm('caffeine',q),
+    'Search 40+ drinks — coffee, energy drinks, soda, tea…');
+}
+function renderMedSearch(){
+  buildSearchUI('medSearch',MEDS,
+    key=>{ if(!quickMedKeys.includes(key))quickMedKeys.push(key); persist(); renderMedGrid(); onMedLog(key); },
+    q=>openCustomForm('meds',q),
+    'Search meds, nicotine, nootropics…');
+}
+function openCustomForm(kind,prefillName){
+  const isMed=kind==='meds';
+  const host=document.getElementById(isMed?'medSearch':'caffSearch');
+  const panel=document.createElement('div');
+  panel.className='searchResults';
+  panel.innerHTML=`<div style="padding:12px 13px;display:flex;flex-direction:column;gap:8px">
+    <input type="text" class="searchInput" id="cfName" placeholder="Name" value="${escapeHtml(prefillName||'')}" />
+    <div style="display:flex;gap:8px">
+      <input type="number" class="searchInput" id="cfDose" placeholder="Dose" value="${isMed?10:100}" style="flex:1" />
+      <input type="text" class="searchInput" id="cfUnit" placeholder="unit" value="mg" style="width:70px" />
+    </div>
+    ${isMed?`<label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted-strong)"><input type="checkbox" id="cfCrash" /> causes a comedown as it wears off</label>`:''}
+    <button type="button" class="checkinSaveBtn" id="cfSave">Add &amp; log now</button>
+  </div>`;
+  host.appendChild(panel);
+  document.getElementById('cfSave').addEventListener('click',()=>{
+    const name=document.getElementById('cfName').value.trim()||'Custom';
+    const dose=parseFloat(document.getElementById('cfDose').value)||(isMed?10:100);
+    const unit=document.getElementById('cfUnit').value.trim()||'mg';
+    const crash=isMed&&document.getElementById('cfCrash').checked;
+    const key=(isMed?'custom_med_':'custom_caff_')+name.toLowerCase().replace(/[^a-z0-9]+/g,'_').slice(0,24)+'_'+Math.random().toString(36).slice(2,5);
+    const def={key,name,glyph:isMed?'bolt':'coffee',tint:isMed?'amber':'mint',defaultDose:dose,unit,
+      amplitude:isMed?18:14,onsetHours:isMed?0.5:0.3,peakHours:isMed?2:1,halfLifeHours:isMed?4:5,
+      crash:!!crash,crashFactor:0.35,crashHours:2};
+    if(isMed){MEDS[key]=def;D.customMeds.push(def);quickMedKeys.push(key);}
+    else{SUBSTANCES[key]=def;D.customCaffeine.push(def);quickKeys.push(key);}
+    persist(); panel.remove();
+    if(isMed){renderMedGrid();onMedLog(key);}else{renderStack();onLog(key);}
+  });
+}
+
+/* ═══════════ caffeine ceiling / cut-off / out-of-system / coaching ═══════════ */
+function todayCaffMg(){ return D.logs.reduce((a,l)=>a+(l.dose||0),0); }
+function bedtimeHourGuess(){
+  const ci=D.checkins[todayKey()];
+  if(ci&&typeof ci.wake==='string'&&typeof ci.hoursSlept==='number'){
+    const m=ci.wake.match(/^(\d{1,2}):(\d{2})$/);
+    if(m){const wakeMin=parseInt(m[1],10)*60+parseInt(m[2],10);return (((wakeMin-ci.hoursSlept*60)%1440+1440)%1440)/60;}
+  }
+  return 23;
+}
+function renderCaffStats(){
+  const el=document.getElementById('caffStats');
+  const mg=todayCaffMg(),ceiling=caffCeilingMg(D.weightKg),ideal=idealCaffDoseMg(D.weightKg),bedHour=bedtimeHourGuess();
+  let outHour=null;
+  for(const log of D.logs){
+    const def=SUBSTANCES[log.key];if(!def)continue;
+    const amp=effectiveAmplitude(log,D.weightKg,SUBSTANCES);
+    const clearAt=log.takenHour+def.peakHours+def.halfLifeHours*Math.log2(Math.max(1,amp/(amp*0.03)));
+    if(outHour==null||clearAt>outHour)outHour=clearAt;
+  }
+  const cutoff=Math.max(0,bedHour-5.0);
+  el.innerHTML=`
+    <div class="caffStat"><div class="sl">Today</div><div class="sv">${mg}<span style="font-size:11px;color:var(--muted)"> / ${ceiling}mg</span></div>
+      <div class="qlBar" style="margin-top:6px"><i class="${mg>=ceiling*0.75?'warn':''}" style="width:${Math.min(100,Math.round(mg/ceiling*100))}%"></i></div></div>
+    <div class="caffStat"><div class="sl">Cut-off time</div><div class="sv">${fmtHour12(cutoff)}</div></div>
+    <div class="caffStat"><div class="sl">Clears by</div><div class="sv">${outHour!=null?fmtHour12(Math.min(24,outHour)):'&mdash;'}</div></div>
+    <div class="caffStat"><div class="sl">Ideal dose</div><div class="sv">~${ideal}mg</div></div>`;
+  let note=null,ok=false;
+  if(mg>=ceiling)note=`You&rsquo;re at or past your ${ceiling}mg ceiling for today — anything more raises the risk of jitters, poor sleep, or a harder crash.`;
+  else if(nowHour>cutoff&&mg>0)note=`It&rsquo;s past your ${fmtHour12(cutoff)} cut-off — caffeine now likely won&rsquo;t fully clear before your usual bedtime.`;
+  else if(mg>0){note=`You&rsquo;re under your ceiling and before cut-off — a normal dose now should clear before bed.`;ok=true;}
+  if(note)el.innerHTML+=`<div class="coachNote${ok?' ok':''}" style="grid-column:1/-1">${note}</div>`;
+}
+function renderCaffIntake(){
+  const el=document.getElementById('caffIntake');
+  if(!D.logs.length){el.innerHTML='';return;}
+  el.innerHTML=`<div class="intakeList">${D.logs.map(l=>{const s=SUBSTANCES[l.key];return `<div class="intakeRow"><span>${s?s.name:l.key} &middot; ${l.dose}mg &middot; ${fmtHour12(l.takenHour)}</span><button type="button" class="ix" data-del="${l.id}" aria-label="Remove">&times;</button></div>`;}).join('')}</div>
+    <button type="button" class="clearAllBtn" id="caffClearAll">Clear all</button>`;
+  el.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>removeCaffLog(b.getAttribute('data-del'))));
+  const clr=document.getElementById('caffClearAll');
+  if(clr)clr.addEventListener('click',()=>{D.logs=[];persist();render();renderStrip();renderGauge(null);renderStack();renderReadout();renderCaffStats();renderCaffIntake();renderScoreHero();});
+}
+
+/* ═══════════ honesty panel ═══════════ */
+document.getElementById('honestyBtn').addEventListener('click',()=>{
+  const panel=document.getElementById('honestyPanel');
+  const open=panel.hidden;
+  panel.hidden=!open;
+  if(open){
+    const calDays=D.calibration.length;
+    const have=[];
+    if(typeof D.whoop.recovery==='number')have.push('your recovery signal');
+    if(D.todayVitalsRaw&&typeof D.todayVitalsRaw.sleepHours==='number')have.push('logged sleep hours');
+    if(D.checkins[todayKey()])have.push('today&rsquo;s check-in');
+    if(D.logs.length)have.push('caffeine timing');
+    if(D.medLogs.length)have.push('meds/substance timing');
+    panel.innerHTML=`<h4>What this actually is</h4>
+      <p>A science-based <b>estimate</b> built from your own logged data — not a medical measurement, and not diagnostic. It personalizes as you check in: it&rsquo;s seen <b>${calDays}</b> of the ~30 days it uses to calibrate how your own &ldquo;feel&rdquo; compares to its prediction.</p>
+      <ul>
+        <li><b>Real inputs today:</b> ${have.length?have.join(', '):'none yet — log a check-in or a dose to get started'}</li>
+        <li><b>Modeled, not measured:</b> the circadian baseline curve, and each substance&rsquo;s onset/peak/wear-off pharmacokinetics</li>
+        <li><b>Not measured at all:</b> HRV, cortisol, actual sleep-stage data</li>
+      </ul>`;
+  }
+});
 
 new ResizeObserver(()=>{render();renderStrip();}).observe(document.body);
 renderModes();
