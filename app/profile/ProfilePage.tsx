@@ -437,6 +437,7 @@ export default function ProfilePage() {
               {p.weightClass && <span>{p.weightClass}</span>}
               {p.ageDivision && <span>{p.ageDivision}</span>}
               {p.visibility && <span>{p.visibility === 'public' ? 'Public profile' : 'Private profile'}</span>}
+              {p.listed && p.visibility === 'public' && <span>Listed in directory</span>}
             </div>
             {!!p.disciplines?.length && (
               <div className={c('tags')}>
@@ -573,6 +574,21 @@ export default function ProfilePage() {
                   Public: anyone with your profile link can view it. Private (default): only
                   someone with your share link (Share profile button) can — a plain guess at the
                   URL won&rsquo;t work.
+                </div>
+              </div>
+              <div className="field">
+                <label className="label">
+                  <input
+                    type="checkbox"
+                    checked={!!draft.listed}
+                    onChange={(e) => setDraft((d) => ({ ...d, listed: e.target.checked || undefined }))}
+                  />{' '}
+                  List me in the public directory
+                </label>
+                <div className={c('hint')}>
+                  Shows up at /discover so anyone can find and browse your profile, not just
+                  someone with the link. Only takes effect while Visibility above is Public — a
+                  private profile never appears in the directory regardless of this setting.
                 </div>
               </div>
               <div className="field">
