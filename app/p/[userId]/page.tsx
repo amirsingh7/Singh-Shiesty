@@ -18,6 +18,7 @@ import {
 import type { CompetitionRecord } from '@/lib/tiles/competitions'
 import type { EvidenceRecord } from '@/lib/tiles/evidence'
 import type { WitnessRecord } from '@/lib/tiles/witnesses'
+import { reviewKey, type AIReviewRecord } from '@/lib/tiles/aiReview'
 import WitnessForm from './WitnessForm'
 import styles from '../../profile/profile.module.css'
 
@@ -72,7 +73,7 @@ export default async function PublicProfilePage({
     .from('tile_data')
     .select('tile_id, data')
     .eq('user_id', userId)
-    .in('tile_id', ['profile', `${userId}:train`, 'competitions', 'evidence', 'witnesses'])
+    .in('tile_id', ['profile', `${userId}:train`, 'competitions', 'evidence', 'witnesses', 'ai_reviews'])
 
   const profileData = (rows ?? []).find((r: { tile_id: string }) => r.tile_id === 'profile')?.data as
     | Profile
@@ -110,6 +111,9 @@ export default async function PublicProfilePage({
 
   const witnessesData = (rows ?? []).find((r: { tile_id: string }) => r.tile_id === 'witnesses')?.data
   const witnesses: WitnessRecord[] = Array.isArray(witnessesData) ? (witnessesData as WitnessRecord[]) : []
+
+  const aiReviewsData = (rows ?? []).find((r: { tile_id: string }) => r.tile_id === 'ai_reviews')?.data
+  const aiReviews: AIReviewRecord[] = Array.isArray(aiReviewsData) ? (aiReviewsData as AIReviewRecord[]) : []
 
   const compoundLifts = allLifts(split).filter((l) => l.tier === 1 && !l.hidden)
   const featured = compoundLifts
@@ -253,11 +257,25 @@ export default async function PublicProfilePage({
                   <span>
                     New PR — {ev.liftName}: {wDisp(ev.w, unit)} {unit} × {ev.r}
                     <span className={c('badge')}>{RECORD_STATUS_LABEL[ev.recordStatus]}</span>
-                    {ev.outlier && (
-                      <span className={c('outlierFlag')} title="Unusually large jump from the previous best — self-reported, unverified.">
-                        ⚠ large jump
-                      </span>
-                    )}
+                    {ev.outlier &&
+                      (() => {
+                        const review = aiReviews.find((r) => r.id === reviewKey(ev.liftId, ev.date, ev.w, ev.r))
+                        if (review) {
+                          return (
+                            <span
+                              className={review.verdict === 'plausible' ? `${c('outlierFlag')} ${c('aiVerdictOk')}` : c('outlierFlag')}
+                              title={`AI read: ${review.reasoning}`}
+                            >
+                              {review.verdict === 'plausible' ? '✓ AI: likely plausible' : review.verdict === 'implausible' ? '⚠ AI: worth checking' : '⚠ large jump'}
+                            </span>
+                          )
+                        }
+                        return (
+                          <span className={c('outlierFlag')} title="Unusually large jump from the previous best — self-reported, unverified.">
+                            ⚠ large jump
+                          </span>
+                        )
+                      })()}
                     {!!ev.witnessCount && <span className={c('witnessChip')}>{ev.witnessCount} witness{ev.witnessCount === 1 ? '' : 'es'}</span>}
                   </span>
                   <span className={c('achDate')}>{dateLabel(ev.date)}</span>

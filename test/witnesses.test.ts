@@ -143,6 +143,21 @@ describe('timelineEvents', () => {
     expect(jump?.outlier).toBe(true)
   })
 
+  it('does not flag an accessory (non-tier-1) lift even on a big jump', () => {
+    const lift: Lift = {
+      id: 'curl-db',
+      name: 'DB Curl',
+      tier: 2,
+      history: [
+        { w: 10, r: 10, date: '2024-01-01' },
+        { w: 16, r: 10, date: '2024-02-01' },
+      ],
+    }
+    const events = timelineEvents([lift], [], [], [])
+    const jump = events.find((e) => e.w === 16)
+    expect(jump?.outlier).toBe(false)
+  })
+
   it('does not flag a competition-result entry even if it is a big jump', () => {
     const lift: Lift = { id: 'squat-bb', name: 'Squat', tier: 1, history: [{ w: 100, r: 5, date: '2024-01-01' }] }
     const comps: CompetitionRecord[] = [

@@ -49,6 +49,15 @@ import {
   witnessKey,
   type WitnessRecord,
 } from '@/lib/tiles/witnesses'
+import {
+  loadAiReviews,
+  saveAiReviews,
+  mergeAiReview,
+  syncAiReviewsToCloud,
+  loadAiReviewsFromCloud,
+  reviewKey,
+  type AIReviewRecord,
+} from '@/lib/tiles/aiReview'
 import styles from './profile.module.css'
 
 // Class names read as plain words below instead of styles.someKey
@@ -115,6 +124,10 @@ export default function ProfilePage() {
   const [witnesses, setWitnesses] = useState<WitnessRecord[]>([])
   const [openWitnessList, setOpenWitnessList] = useState<string | null>(null)
 
+  const [aiReviews, setAiReviews] = useState<AIReviewRecord[]>([])
+  const [aiReviewBusy, setAiReviewBusy] = useState<string | null>(null)
+  const [aiReviewError, setAiReviewError] = useState<string | null>(null)
+
   const [copied, setCopied] = useState(false)
   const [photoBroken, setPhotoBroken] = useState(false)
   const [coverBroken, setCoverBroken] = useState(false)
@@ -147,6 +160,11 @@ export default function ProfilePage() {
     ;(async () => {
       const cloud = await loadWitnessesFromCloud(userId)
       if (cloud) setWitnesses(cloud)
+    })()
+    setAiReviews(loadAiReviews())
+    ;(async () => {
+      const cloud = await loadAiReviewsFromCloud(userId)
+      if (cloud) setAiReviews(cloud)
     })()
     ;(async () => {
       try {
@@ -254,6 +272,49 @@ export default function ProfilePage() {
     saveWitnessRecords(merged)
     setWitnesses(merged)
     await syncWitnessesToCloud(userId, merged)
+  }
+
+  const askAiAbout = async (ev: { liftId: string; liftName: string; date: string; w: number; r: number }) => {
+    const key = reviewKey(ev.liftId, ev.date, ev.w, ev.r)
+    setAiReviewBusy(key)
+    setAiReviewError(null)
+    const lift = allLifts(split).find((l) => l.id === ev.liftId)
+    const history = lift
+      ? combinedHistory(lift, competitions, evidence, witnesses)
+          .filter((h) => !h.off)
+          .sort((a, b) => a.date.localeCompare(b.date))
+          .map((h) => ({ date: h.date, w: h.w, r: h.r }))
+      : []
+    try {
+      const res = await fetch('/api/ai/review-pr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ liftId: ev.liftId, liftName: ev.liftName, entry: { date: ev.date, w: ev.w, r: ev.r }, history }),
+      })
+      const json = await res.json()
+      if (!res.ok || !json.verdict) {
+        setAiReviewError(json.error || 'AI review failed.')
+        return
+      }
+      const record: AIReviewRecord = {
+        id: key,
+        liftId: ev.liftId,
+        date: ev.date,
+        weightKg: ev.w,
+        reps: ev.r,
+        verdict: json.verdict,
+        reasoning: json.reasoning,
+        reviewedAt: new Date().toISOString(),
+      }
+      const merged = mergeAiReview(aiReviews, record)
+      saveAiReviews(merged)
+      setAiReviews(merged)
+      await syncAiReviewsToCloud(userId, merged)
+    } catch {
+      setAiReviewError('AI review failed — check your connection and try again.')
+    } finally {
+      setAiReviewBusy(null)
+    }
   }
 
   const startImport = () => {
@@ -880,14 +941,39 @@ export default function ProfilePage() {
                   <span>
                     New PR — {ev.liftName}: {wDisp(ev.w, unit)} {unit} × {ev.r}
                     <span className={c('badge')}>{RECORD_STATUS_LABEL[ev.recordStatus]}</span>
-                    {ev.outlier && (
-                      <span
-                        className={c('outlierFlag')}
-                        title="Unusually large jump from the previous best — self-reported, unverified. Consider attaching evidence or asking someone who saw it to witness it."
-                      >
-                        ⚠ large jump
-                      </span>
-                    )}
+                    {ev.outlier &&
+                      (() => {
+                        const key = reviewKey(ev.liftId, ev.date, ev.w, ev.r)
+                        const review = aiReviews.find((r) => r.id === key)
+                        if (review) {
+                          return (
+                            <span
+                              className={review.verdict === 'plausible' ? cx('outlierFlag', 'aiVerdictOk') : c('outlierFlag')}
+                              title={`AI read: ${review.reasoning}`}
+                            >
+                              {review.verdict === 'plausible' ? '✓ AI: likely plausible' : review.verdict === 'implausible' ? '⚠ AI: worth checking' : '⚠ large jump'}
+                            </span>
+                          )
+                        }
+                        return (
+                          <>
+                            <span
+                              className={c('outlierFlag')}
+                              title="Unusually large jump from the previous best — self-reported, unverified. Consider attaching evidence or asking someone who saw it to witness it."
+                            >
+                              ⚠ large jump
+                            </span>
+                            <button
+                              type="button"
+                              className={cx('evidenceLabel', 'noPrint')}
+                              disabled={aiReviewBusy === key}
+                              onClick={() => askAiAbout({ liftId: ev.liftId, liftName: ev.liftName, date: ev.date, w: ev.w, r: ev.r })}
+                            >
+                              {aiReviewBusy === key ? ' Asking AI…' : ' Ask AI'}
+                            </button>
+                          </>
+                        )
+                      })()}
                     {!!ev.witnessCount && (
                       <span className={c('witnessChip')}>
                         {ev.witnessCount} witness{ev.witnessCount === 1 ? '' : 'es'}
@@ -899,6 +985,7 @@ export default function ProfilePage() {
               ))}
             </div>
           )}
+          {aiReviewError && <p className={c('evidenceError')}>{aiReviewError}</p>}
         </div>
 
         <div className={cx('actions', 'noPrint')}>

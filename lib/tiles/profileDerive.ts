@@ -238,7 +238,12 @@ export function timelineEvents(
           r: h.r,
           recordStatus: status,
           witnessCount: h.witnessCount,
-          outlier: status === 'self-reported' && isOutlier(priorBestW, h.w),
+          // Outlier-flagging (and the "Ask AI" review it enables) is scoped to
+          // tier-1 compound lifts only — accessory lifts swing wildly between
+          // sessions for reasons that have nothing to do with credibility
+          // (form cues, machine vs. free-weight, unilateral vs. bilateral),
+          // so flagging them there would just be noise.
+          outlier: lift.tier === 1 && status === 'self-reported' && isOutlier(priorBestW, h.w),
         })
         priorBestW = h.w
         bestW = h.w
