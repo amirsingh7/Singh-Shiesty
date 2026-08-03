@@ -941,28 +941,41 @@ export default function ProfilePage() {
                   <span>
                     New PR — {ev.liftName}: {wDisp(ev.w, unit)} {unit} × {ev.r}
                     <span className={c('badge')}>{RECORD_STATUS_LABEL[ev.recordStatus]}</span>
-                    {ev.outlier &&
-                      (() => {
-                        const key = reviewKey(ev.liftId, ev.date, ev.w, ev.r)
-                        const review = aiReviews.find((r) => r.id === key)
-                        if (review) {
-                          return (
-                            <span
-                              className={review.verdict === 'plausible' ? cx('outlierFlag', 'aiVerdictOk') : c('outlierFlag')}
-                              title={`AI read: ${review.reasoning}`}
-                            >
-                              {review.verdict === 'plausible' ? '✓ AI: likely plausible' : review.verdict === 'implausible' ? '⚠ AI: worth checking' : '⚠ large jump'}
-                            </span>
-                          )
-                        }
-                        return (
-                          <>
+                    {(() => {
+                      const key = reviewKey(ev.liftId, ev.date, ev.w, ev.r)
+                      const review = aiReviews.find((r) => r.id === key)
+                      const isCompound = compoundLifts.some((l) => l.id === ev.liftId)
+                      // "Ask AI" is available on any self-reported compound-lift entry, not just
+                      // ones the static 25%-jump heuristic already flagged — the AI read is a
+                      // second opinion you can request on demand, not a reaction limited to what
+                      // the heuristic happened to catch. Evidence/competition/witness entries
+                      // already carry stronger provenance, so the button doesn't apply there.
+                      const canAsk = isCompound && ev.recordStatus === 'self-reported'
+                      return (
+                        <>
+                          {ev.outlier && !review && (
                             <span
                               className={c('outlierFlag')}
                               title="Unusually large jump from the previous best — self-reported, unverified. Consider attaching evidence or asking someone who saw it to witness it."
                             >
                               ⚠ large jump
                             </span>
+                          )}
+                          {review && (
+                            <span
+                              className={review.verdict === 'plausible' ? cx('outlierFlag', 'aiVerdictOk') : c('outlierFlag')}
+                              title={`AI read: ${review.reasoning}`}
+                            >
+                              {review.verdict === 'plausible'
+                                ? '✓ AI: likely plausible'
+                                : review.verdict === 'implausible'
+                                  ? '⚠ AI: worth checking'
+                                  : ev.outlier
+                                    ? '⚠ large jump'
+                                    : '• AI: uncertain'}
+                            </span>
+                          )}
+                          {canAsk && !review && (
                             <button
                               type="button"
                               className={cx('evidenceLabel', 'noPrint')}
@@ -971,9 +984,10 @@ export default function ProfilePage() {
                             >
                               {aiReviewBusy === key ? ' Asking AI…' : ' Ask AI'}
                             </button>
-                          </>
-                        )
-                      })()}
+                          )}
+                        </>
+                      )
+                    })()}
                     {!!ev.witnessCount && (
                       <span className={c('witnessChip')}>
                         {ev.witnessCount} witness{ev.witnessCount === 1 ? '' : 'es'}

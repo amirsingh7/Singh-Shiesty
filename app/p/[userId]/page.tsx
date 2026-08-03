@@ -257,25 +257,37 @@ export default async function PublicProfilePage({
                   <span>
                     New PR — {ev.liftName}: {wDisp(ev.w, unit)} {unit} × {ev.r}
                     <span className={c('badge')}>{RECORD_STATUS_LABEL[ev.recordStatus]}</span>
-                    {ev.outlier &&
-                      (() => {
-                        const review = aiReviews.find((r) => r.id === reviewKey(ev.liftId, ev.date, ev.w, ev.r))
-                        if (review) {
-                          return (
-                            <span
-                              className={review.verdict === 'plausible' ? `${c('outlierFlag')} ${c('aiVerdictOk')}` : c('outlierFlag')}
-                              title={`AI read: ${review.reasoning}`}
-                            >
-                              {review.verdict === 'plausible' ? '✓ AI: likely plausible' : review.verdict === 'implausible' ? '⚠ AI: worth checking' : '⚠ large jump'}
-                            </span>
-                          )
-                        }
+                    {(() => {
+                      // The owner can now Ask AI about any self-reported compound-lift entry,
+                      // not just ones the outlier heuristic flagged — so a cached review can
+                      // exist here even when ev.outlier is false. Mirror ProfilePage.tsx's
+                      // rendering exactly (read-only: no button, this page never triggers a call).
+                      const review = aiReviews.find((r) => r.id === reviewKey(ev.liftId, ev.date, ev.w, ev.r))
+                      if (ev.outlier && !review) {
                         return (
                           <span className={c('outlierFlag')} title="Unusually large jump from the previous best — self-reported, unverified.">
                             ⚠ large jump
                           </span>
                         )
-                      })()}
+                      }
+                      if (review) {
+                        return (
+                          <span
+                            className={review.verdict === 'plausible' ? `${c('outlierFlag')} ${c('aiVerdictOk')}` : c('outlierFlag')}
+                            title={`AI read: ${review.reasoning}`}
+                          >
+                            {review.verdict === 'plausible'
+                              ? '✓ AI: likely plausible'
+                              : review.verdict === 'implausible'
+                                ? '⚠ AI: worth checking'
+                                : ev.outlier
+                                  ? '⚠ large jump'
+                                  : '• AI: uncertain'}
+                          </span>
+                        )
+                      }
+                      return null
+                    })()}
                     {!!ev.witnessCount && <span className={c('witnessChip')}>{ev.witnessCount} witness{ev.witnessCount === 1 ? '' : 'es'}</span>}
                   </span>
                   <span className={c('achDate')}>{dateLabel(ev.date)}</span>
