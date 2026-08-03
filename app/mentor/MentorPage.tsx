@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import WelcomeBackdrop from '@/components/WelcomeBackdrop'
-import DashboardHeaderGem from '@/app/app/DashboardHeaderGem'
+import GobindAvatar, { type GobindAvatarHandle, type GobindExpression } from '@/components/GobindAvatar'
 import { CORE_TILES } from '@/lib/tiles/coreTiles'
 import { tileStore } from '@/lib/tiles/tileStore'
 import { useSession } from '@/lib/auth/AuthProvider'
@@ -27,12 +27,17 @@ import {
  * only remembers WHAT was asked (for history/delete/clear) — it never
  * fabricates or stores an assistant reply, since it never receives one back.
  */
-const MENTOR_CHAT_KEY = 'vitality:mentorChat'
+// v2: the chat now holds real Gobind replies (role + mood), not just what
+// was asked — a different shape than the old claude.ai-handoff log, so it
+// gets its own key rather than trying to migrate the old entries.
+const MENTOR_CHAT_KEY = 'vitality:mentorChat:v2'
 const MENTOR_PREFS_KEY = 'vitality:mentorChat:prefs'
 
 interface ChatEntry {
   id: string
+  role: 'user' | 'gobind'
   text: string
+  mood?: GobindExpression
   ts: number
 }
 interface ChatPrefs {
@@ -263,12 +268,15 @@ export default function MentorPage({
   const [draft, setDraft] = useState('')
   const [ideasOpen, setIdeasOpen] = useState(false) // the +: blueprints for tiles you're missing
   const gemRef = useRef<HTMLDivElement | null>(null)
+  const avatarRef = useRef<GobindAvatarHandle | null>(null)
 
-  // Mentor Chat: Claude-native comment box (see buildMentorContext above).
+  // Gobind's live chat — see app/api/mentor/chat/route.ts (buildMentorContext
+  // below still does the real-data gathering; only the transport changed).
   const [chatHistory, setChatHistory] = useState<ChatEntry[]>([])
   const [chatPrefs, setChatPrefs] = useState<ChatPrefs>(DEFAULT_PREFS)
   const [question, setQuestion] = useState('')
   const [asking, setAsking] = useState(false)
+  const [chatError, setChatError] = useState('')
 
   useEffect(() => {
     if (sessionLoading) return
@@ -332,19 +340,47 @@ export default function MentorPage({
     const q = text.trim()
     if (!q || asking) return
     setAsking(true)
+    setChatError('')
+    const userEntry: ChatEntry = { id: 'm-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), role: 'user', text: q, ts: Date.now() }
+    const withUser = [...chatHistory, userEntry]
+    setChatHistory(withUser)
+    saveChatHistory(withUser)
+    setQuestion('')
+    avatarRef.current?.setExpression('surprised')
     try {
       const context = await buildMentorContext(userId, chatPrefs, act?.title)
-      const prompt =
-        (context ? context + '\n\n' : '') +
-        'My question: ' +
-        q +
-        ' Use only the data above if it helps; ask me if something you need is missing. Keep it concise, explain your reasoning, and never present an estimate as guaranteed. This is not medical advice.'
-      window.open('https://claude.ai/new?q=' + encodeURIComponent(prompt), '_blank', 'noopener')
-      const entry: ChatEntry = { id: 'm-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), text: q, ts: Date.now() }
-      const next = [...chatHistory, entry]
-      setChatHistory(next)
-      saveChatHistory(next)
-      setQuestion('')
+      setTimeout(() => avatarRef.current?.setExpression('thinking'), 500)
+      const res = await fetch('/api/mentor/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: q,
+          context,
+          goalTitle: act?.title,
+          history: withUser.slice(-9, -1).map((m) => ({ role: m.role === 'user' ? 'user' : 'assistant', text: m.text })),
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setChatError(typeof data?.error === 'string' ? data.error : 'Gobind is unreachable right now — try again in a moment.')
+        avatarRef.current?.setExpression('sad', 3)
+        return
+      }
+      const mood: GobindExpression = data.mood ?? 'happy'
+      const replyEntry: ChatEntry = {
+        id: 'g-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        role: 'gobind',
+        text: data.reply,
+        mood,
+        ts: Date.now(),
+      }
+      const withReply = [...withUser, replyEntry]
+      setChatHistory(withReply)
+      saveChatHistory(withReply)
+      avatarRef.current?.setExpression(mood, 4)
+    } catch {
+      setChatError('Gobind is unreachable right now — check your connection and try again.')
+      avatarRef.current?.setExpression('sad', 3)
     } finally {
       setAsking(false)
     }
@@ -429,10 +465,11 @@ export default function MentorPage({
 
         {/* ───────── ai mentor ───────── */}
         <div style={{ clear: 'both', paddingTop: 44, animation: 'mentorIn .9s cubic-bezier(.22,1,.36,1) both' }}>
-          {/* the avatar IS the gem — one persistent WebGL instance (never remounted).
-              It travels in on load, pulses on every switch (WAAPI), scales up for
-              the main goal, and glows the goal's color. */}
-          <div aria-hidden style={{ height: 150, display: 'grid', placeItems: 'center', marginBottom: 4 }}>
+          {/* Gobind — one persistent WebGL instance (never remounted; remounting
+              would re-init Three.js and glitch). Travels in on load, pulses on
+              every goal switch (WAAPI), scales up for the main goal, glows the
+              goal's color, and reacts live to the chat below via avatarRef. */}
+          <div aria-hidden style={{ height: 160, display: 'grid', placeItems: 'center', marginBottom: 4 }}>
             <div
               ref={gemRef}
               style={{
@@ -443,10 +480,11 @@ export default function MentorPage({
                 filter: `drop-shadow(0 0 ${act?.id === 'overall' ? 44 : 30}px ${accent}66)`,
               }}
             >
-              <DashboardHeaderGem size={132} />
+              <GobindAvatar ref={avatarRef} size={132} />
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, justifyContent: 'center' }}>
+          <p style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontStyle: 'italic', fontSize: 20, color: 'var(--fg, #fff)', margin: '2px 0 0' }}>Gobind</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, justifyContent: 'center', marginTop: 8 }}>
             <span aria-hidden style={{ flex: 1, maxWidth: 180, height: 1, background: `linear-gradient(to right, transparent, ${accent}55)`, transition: 'background .8s ease' }} />
             <h1 style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontStyle: 'normal', fontWeight: 700, fontSize: 'clamp(30px, 4.6vw, 44px)', color: 'var(--fg, #fff)', margin: 0 }}>
               ai mentor
@@ -728,15 +766,14 @@ export default function MentorPage({
           </button>
         </div>
 
-        {/* ask your mentor — the comment box. Claude-native: Send opens claude.ai
-            in a new tab with a real summary of your own data baked into the
-            question (same pattern as Train's rest-coach "Ask Claude" pill), so
-            there's no AI key, no server, and no fabricated reply stored here —
-            this app only remembers what you asked. */}
+        {/* chat with gobind — a real inline reply, server-side (see
+            app/api/mentor/chat/route.ts). A deliberate exception to the base's
+            "no AI keys" rule, made by choice — this bills the deployment's own
+            ANTHROPIC_API_KEY per message, a fraction of a cent on Sonnet. */}
         <div style={{ width: 'min(620px, 100%)', margin: '60px auto 0', textAlign: 'left', animation: 'fadeUp .8s ease .8s both' }}>
-          <p style={{ ...mono, fontSize: 10.5, color: accent, margin: '0 0 4px', transition: 'color .8s ease' }}>ask your mentor</p>
+          <p style={{ ...mono, fontSize: 10.5, color: accent, margin: '0 0 4px', transition: 'color .8s ease' }}>chat with gobind</p>
           <p style={{ fontSize: 12, color: 'var(--muted, #8a8f98)', margin: '0 0 14px', lineHeight: 1.5 }}>
-            Opens Claude in a new tab with your real numbers already in the question — no AI key, nothing billed, informational only, not medical advice.
+            A real reply, inline — Gobind reads only the real data below, never guesses. Informational only, not medical advice.
           </p>
 
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
@@ -769,28 +806,101 @@ export default function MentorPage({
             ))}
           </div>
 
-          <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginBottom: 14 }}>
-            {SUGGESTED_PROMPTS.map((p) => (
-              <button
-                key={p}
-                type="button"
-                disabled={asking}
-                onClick={() => askMentor(p)}
-                style={{
-                  fontSize: 11.5,
-                  color: 'var(--muted-strong, #b9c4be)',
-                  background: 'transparent',
-                  border: '1px solid var(--border, #262626)',
-                  borderRadius: 10,
-                  padding: '7px 13px',
-                  cursor: asking ? 'default' : 'pointer',
-                  opacity: asking ? 0.5 : 1,
-                }}
-              >
-                {p}
-              </button>
-            ))}
-          </div>
+          {chatHistory.length === 0 && (
+            <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginBottom: 14 }}>
+              {SUGGESTED_PROMPTS.map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  disabled={asking}
+                  onClick={() => askMentor(p)}
+                  style={{
+                    fontSize: 11.5,
+                    color: 'var(--muted-strong, #b9c4be)',
+                    background: 'transparent',
+                    border: '1px solid var(--border, #262626)',
+                    borderRadius: 10,
+                    padding: '7px 13px',
+                    cursor: asking ? 'default' : 'pointer',
+                    opacity: asking ? 0.5 : 1,
+                  }}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {(chatHistory.length > 0 || asking) && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14, maxHeight: 440, overflowY: 'auto', paddingRight: 4 }}>
+              {chatHistory.map((m) => (
+                <div key={m.id} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start', gap: 6, alignItems: 'flex-start' }}>
+                  <div
+                    style={{
+                      maxWidth: '86%',
+                      padding: '10px 14px',
+                      borderRadius: 14,
+                      fontSize: 13.5,
+                      lineHeight: 1.5,
+                      color: 'var(--fg, #fff)',
+                      background: m.role === 'user' ? 'rgba(255,255,255,.05)' : `${accent}0f`,
+                      border: `1px solid ${m.role === 'user' ? 'var(--border, #262626)' : accent + '3d'}`,
+                      borderLeft: m.role === 'gobind' ? `3px solid ${accent}` : undefined,
+                      textAlign: 'left',
+                    }}
+                  >
+                    {m.role === 'gobind' && (
+                      <span
+                        style={{
+                          ...mono,
+                          display: 'inline-block',
+                          fontSize: 9,
+                          fontWeight: 700,
+                          color: '#04140d',
+                          background: accent,
+                          padding: '2px 8px',
+                          borderRadius: 999,
+                          marginBottom: 6,
+                        }}
+                      >
+                        gobind
+                      </span>
+                    )}
+                    <p style={{ margin: 0 }}>{m.text}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => deleteMessage(m.id)}
+                    aria-label="Delete this message"
+                    title="Delete"
+                    style={{ flex: 'none', background: 'none', border: 'none', color: 'var(--muted, #8a8f98)', fontSize: 14, cursor: 'pointer', padding: 4, lineHeight: 1 }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              {asking && (
+                <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                  <div className="cz-lite" style={{ ['--tone' as string]: accent }}>
+                    <div className="cz-lite-bar">
+                      <span />
+                    </div>
+                    <div className="cz-lite-body">
+                      <span className="cz-lite-tag">gobind</span>
+                      <span className="cz-lite-text">thinking</span>
+                      <span className="cz-lite-dots">
+                        <i /><i /><i />
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {chatError && (
+            <p style={{ fontSize: 12, color: '#f87171', margin: '0 0 12px', lineHeight: 1.5 }}>⚠ {chatError}</p>
+          )}
 
           <div
             style={{
@@ -809,8 +919,8 @@ export default function MentorPage({
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) askMentor(question)
               }}
-              placeholder="Ask your AI mentor about your workout, nutrition, recovery, or progress…"
-              aria-label="Ask your AI mentor"
+              placeholder="Ask Gobind about your workout, nutrition, recovery, or progress…"
+              aria-label="Ask Gobind"
               rows={3}
               style={{
                 resize: 'vertical',
@@ -828,7 +938,7 @@ export default function MentorPage({
                 type="button"
                 onClick={() => askMentor(question)}
                 disabled={asking || !question.trim()}
-                aria-label="Send to your mentor"
+                aria-label="Send to Gobind"
                 style={{
                   background: asking || !question.trim() ? 'var(--border, #262626)' : accent,
                   color: asking || !question.trim() ? 'var(--muted, #8a8f98)' : '#f4f6ff',
@@ -841,83 +951,49 @@ export default function MentorPage({
                   transition: 'background .3s ease',
                 }}
               >
-                {asking ? 'opening…' : 'Send'}
+                {asking ? 'thinking…' : 'Send'}
               </button>
             </div>
           </div>
 
           {chatHistory.length > 0 && (
-            <div style={{ marginTop: 22 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <span style={{ ...mono, fontSize: 9.5, color: 'var(--muted, #8a8f98)' }}>
-                  asked before ({chatHistory.length})
-                </span>
-                <button
-                  type="button"
-                  onClick={clearChat}
-                  style={{
-                    ...mono,
-                    fontSize: 9.5,
-                    color: 'var(--muted, #8a8f98)',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    textDecoration: 'underline',
-                  }}
-                >
-                  clear conversation
-                </button>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {chatHistory
-                  .slice()
-                  .reverse()
-                  .map((m) => (
-                    <div
-                      key={m.id}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: 10,
-                        padding: '10px 12px',
-                        border: '1px solid var(--border, #202636)',
-                        borderRadius: 12,
-                        background: 'rgba(255,255,255,.015)',
-                      }}
-                    >
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontSize: 13, color: 'var(--fg, #fff)', margin: 0, lineHeight: 1.5 }}>{m.text}</p>
-                        <p style={{ ...mono, fontSize: 9, color: 'var(--muted, #8a8f98)', margin: '4px 0 0' }}>
-                          {new Date(m.ts).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => askMentor(m.text)}
-                        disabled={asking}
-                        aria-label="Ask again"
-                        title="Ask again"
-                        style={{ flex: 'none', background: 'none', border: 'none', color: accent, fontSize: 11, cursor: 'pointer', padding: 4 }}
-                      >
-                        ↻
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => deleteMessage(m.id)}
-                        aria-label="Delete this message"
-                        title="Delete"
-                        style={{ flex: 'none', background: 'none', border: 'none', color: 'var(--muted, #8a8f98)', fontSize: 16, cursor: 'pointer', padding: '0 4px', lineHeight: 1 }}
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-              </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
+              <button
+                type="button"
+                onClick={clearChat}
+                style={{
+                  ...mono,
+                  fontSize: 9.5,
+                  color: 'var(--muted, #8a8f98)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                }}
+              >
+                clear conversation
+              </button>
             </div>
           )}
         </div>
       </div>
-      <style>{`.mentorChatBox:focus-visible { outline: 2px solid ${accent}; outline-offset: 2px; border-radius: 8px; }`}</style>
+      <style>{`
+        .mentorChatBox:focus-visible { outline: 2px solid ${accent}; outline-offset: 2px; border-radius: 8px; }
+        .cz-lite { --tone-soft: color-mix(in srgb, var(--tone) 28%, transparent); display: flex; gap: 10px; align-items: center;
+          border: 1px solid var(--tone-soft); background: rgba(255,255,255,.02); border-radius: 12px; padding: 10px 14px; max-width: 220px; }
+        .cz-lite-bar { width: 34px; height: 4px; border-radius: 999px; background: rgba(255,255,255,.16); overflow: hidden; flex: none; }
+        .cz-lite-bar span { display: block; height: 100%; width: 60%; border-radius: 999px; background: linear-gradient(90deg, transparent, var(--tone), transparent); animation: czLiteSlide 1.3s cubic-bezier(.16,1,.3,1) infinite; }
+        .cz-lite-body { display: flex; align-items: center; gap: 8px; }
+        .cz-lite-tag { font-family: ui-monospace, monospace; font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #04140d; background: var(--tone); border-radius: 999px; padding: 2px 8px; animation: czLiteTagPop .5s cubic-bezier(.34,1.56,.64,1); }
+        .cz-lite-text { font-size: 12.5px; color: var(--fg, #fff); }
+        .cz-lite-dots { display: flex; gap: 4px; }
+        .cz-lite-dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--tone); opacity: .4; animation: czLiteDot 1.1s ease-in-out infinite; display: block; }
+        .cz-lite-dots i:nth-child(2) { animation-delay: .18s } .cz-lite-dots i:nth-child(3) { animation-delay: .36s }
+        @keyframes czLiteTagPop { 0% { opacity: 0; transform: scale(.6) rotate(-6deg) } 100% { opacity: 1; transform: scale(1) rotate(0) } }
+        @keyframes czLiteDot { 0%, 100% { opacity: .35; transform: scale(1) } 50% { opacity: 1; transform: scale(1.5) } }
+        @keyframes czLiteSlide { from { transform: translateX(-120%) } to { transform: translateX(320%) } }
+        @media (prefers-reduced-motion: reduce) { .cz-lite-bar span, .cz-lite-dots i, .cz-lite-tag { animation: none !important } }
+      `}</style>
     </main>
   )
 }
