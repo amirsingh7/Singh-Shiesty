@@ -37,6 +37,7 @@
   width: 88%;
   height: 88%;
   display: block;
+  object-fit: contain;
 }
 
 .accentTicks {

@@ -169,12 +169,12 @@
   .coach-box{--coach-accent:#A78BFA;margin-top:16px;border:1px solid var(--rule);border-radius:16px;
     overflow:hidden;background:rgba(245,237,226,.015)}
   .coach-face-row{display:flex;align-items:center;gap:11px;padding:14px 16px;border-bottom:1px solid var(--rule)}
-  .coach-face{position:relative;width:38px;height:38px;border-radius:50%;flex:none;
+  .coach-face{position:relative;width:38px;height:38px;border-radius:50%;flex:none;overflow:hidden;
     background:radial-gradient(circle at 32% 28%,#F0ABFC,#A78BFA 45%,#67E8F9 100%);
     box-shadow:0 0 0 1px rgba(245,237,226,.1),0 0 20px -4px var(--coach-accent);
     animation:coachBreathe 3.6s var(--ease) infinite}
   @keyframes coachBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
-  .coach-face svg{position:absolute;inset:0;width:100%;height:100%}
+  .coach-face svg,.coach-face img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%}
   .coach-face-id{min-width:0}
   .coach-face-name{font-size:13px;font-weight:600}
   .coach-face-sub{font-size:11px;color:var(--muted);margin-top:1px}
@@ -294,14 +294,7 @@
     <div class="coach-box" id="coachBox">
       <div class="coach-face-row">
         <div class="coach-face" id="coachFace">
-          <svg viewBox="0 0 100 100" aria-hidden="true">
-            <g id="cfFace">
-              <ellipse id="cfEyeL" cx="37" cy="46" rx="5" ry="6" fill="#140d08"></ellipse>
-              <ellipse id="cfEyeR" cx="63" cy="46" rx="5" ry="6" fill="#140d08"></ellipse>
-              <path id="cfMouth" d="M39 64 Q50 64 61 64" stroke="#140d08" stroke-width="4.5" stroke-linecap="round" fill="none"></path>
-            </g>
-            <g id="cfSymbol" style="display:none"></g>
-          </svg>
+          <img src="/gobind-face.png" alt="" aria-hidden="true" />
         </div>
         <div class="coach-face-id">
           <div class="coach-face-name">Gobind</div>
@@ -965,10 +958,10 @@
     return ctx.slice(0, 3500);
   }
 
-  // eye/mouth/symbol table mirrors GobindAvatar's expression set (see
-  // components/GobindAvatar.tsx) so the tile-embedded face and the full 3D
-  // avatar read as the same character, just rendered differently — this one
-  // in plain SVG since a sealed tile can't load Three.js from a CDN.
+  // The coach face is now a static portrait (public/gobind-face.png), not
+  // the old per-glyph SVG face — setFace() below is kept for the chat flow
+  // that still calls it (thinking/mood/neutral) but no-ops safely since
+  // cfEyeL/cfEyeR/cfMouth/cfFace/cfSymbol no longer exist in the DOM.
   const HEART_D = 'M50 70 C20 48 25 20 46 24 C48 25 50 28 50 32 C50 28 52 25 54 24 C75 20 80 48 50 70 Z';
   const STAR_D = 'M50 20 L58 42 L82 42 L62 56 L70 78 L50 64 L30 78 L38 56 L18 42 L42 42 Z';
   function setFace(mood){
