@@ -1,39 +1,29 @@
 # RESUME HERE
-- **Working on:** Debugging the user's iOS Shortcut "Sleep VS/Vercel" (Health app → sleep hours → POST to `/api/vitals/ingest`, live on `https://singh-shiesty.vercel.app`). Not a code task — live, screenshot-by-screenshot troubleshooting of their actual Shortcuts app.
-- **Next step:** User just added a "Round Number" action (converts the Measurement-typed "Time Between Dates" result to a plain Number, suspected fix for a "network connection was lost" error). They still need to: open "Get contents of URL" → Request Body → tap the `sleepHours` field → clear the old "Time Between Dates" chip → insert the new **Rounded Number** result instead → run the shortcut. Then verify with the Supabase check below.
-- **Waiting on you:** nothing, keep going — ask the user to confirm they've rewired `sleepHours` to the Rounded Number and run it, then verify.
+- **Working on:** Replacing the dashboard header logo (PR Portfolio) — iterating on a flat "Digital Weight Plate" coin badge mark (PR monogram + rim lettering), recolored from a blue-purple mockup into the site's orange/amber theme.
+- **Next step:** Wait for the user to check the live badge at https://singh-shiesty.vercel.app (header, next to greeting) after the latest deploy and report back any further tweaks (alignment, sizing, color, wording).
+- **Waiting on you:** nothing pending — the last requested fixes (rim-text alignment + Barlow Condensed font) are merged and deployed. Just need your visual confirmation / next round of feedback once you look at the live site.
 
 -----
 
 ## Done so far
-- **Merged and live**: PR #17, "Velocity: restyleable Ask Gobind coach chat box" — an in-tile chat with Gobind (reuses `/api/mentor/chat`), live restyle panel, mood-reactive face, Copy CSS. On `main` (`d24829a`), deployed to Vercel. User confirmed the chat itself works ("needs some small tweaks" — tweaks not yet specified, ask if it comes up).
-- **Shortcut debugging, iterative fixes applied so far** (all in the user's iOS Shortcuts app, not this repo):
-  - Fixed "Get Contents of URL" having a variable accidentally sitting in the URL field instead of the URL text.
-  - Fixed the sleep-stage picker ambiguity by using `Find Health Samples` with **Limit ON, set to 1**, sorted by Start Date (Oldest First for sleep start, a second Find Health Samples sorted Newest First for sleep end) + `Get Detail from Health Sample` (Start Date / End Date) — avoids the "Get First/Last Item from an aggregate list" approach that kept breaking.
-  - Fixed action **ordering**: "Get Hours between..." was positioned *after* "Get Contents of URL" (POST fired before the hours were even computed) — moved it before. This was likely the main root cause of repeated "network connection was lost" errors.
-  - Current suspected remaining issue: `Get Hours between` outputs a **Measurement** ("Time Between Dates", e.g. "7.4 hr"), and sending that Measurement directly into the JSON body may be what's still causing "network connection was lost" (a plain hardcoded number worked fine in an isolated test; the real chain with a Measurement did not). Hence the Round Number fix in progress.
+- Replaced the old 3D animated "gem" header mark (Three.js, `components/HeroCrystal.tsx`) with a flat SVG logo. Went through two design iterations per user feedback:
+  1. First built a "Performance Shield" mark (concept 1) — user rejected it ("don't like the first one").
+  2. Rebuilt as a "Digital Weight Plate" coin/medallion mark (concept 2) — PR monogram center, "PERSONAL RECORDS" / "VERIFIED PROGRESS" engraved around the rim, orange/amber accent ring + glow ticks (recolored from the mockup's blue-purple).
+  3. Fixed a real bug: rim text was floating outside the ring (top) / bleeding past it (bottom) — root cause was using one shared arc radius for both, when a glyph's ink sits on opposite sides of its baseline for the normal top arc vs. the inverted (upside-down-corrected) bottom arc. Fixed with separate `TOP_RADIUS`/`BOTTOM_RADIUS` constants.
+  4. Swapped generic Arial for `var(--font-serif)` (Barlow Condensed — the site's actual poster/heading font, loaded in `app/layout.tsx`) on both monogram and rim text, plus an embossed dark-shadow duplicate pass for depth, per "make it unique and grand, this feels basic."
+- All 3 rounds merged to `main` and auto-deployed via Vercel: PR #18 (shield, later superseded), PR #19 (swap to coin badge), PR #20 (alignment + font fix). Repo workflow observed and followed: commit on `decorate/laurel-seal` → `gh pr create --base main` → `gh pr merge --merge --delete-branch=false`.
+- `components/HeroCrystal.tsx` (the old 3D engine, ~2000 lines) is now fully unused but was deliberately left in place, not deleted — user said "leave it parked."
+- Separately (earlier in session, unrelated): fixed the user's iOS Shortcut "Sleep VS/Vercel" (renamed) that posts sleep hours to `/api/vitals/ingest` — root cause was a too-narrow "last 1 day" Health-sample date filter causing nil dates, which surfaced as a misleading "network connection was lost." Fixed and automated to run daily at 11:00 AM via a Shortcuts Personal Automation. This thread is closed unless the user reports it stopped firing.
 
-## Verification method (use this, don't ask user to screenshot the dashboard)
-Query Supabase directly to check whether a shortcut run actually landed, independent of what the user's phone shows:
-```bash
-cd "/Users/asunderrex92679/VS Code Singh-Shiesty"
-SR_KEY=$(grep "^SUPABASE_SERVICE_ROLE_KEY=" .env.local | cut -d= -f2-)
-OWNER=$(grep "^OWNER_USER_ID=" .env.local | cut -d= -f2-)
-curl -s "https://aonawacziwjsuodvcdbx.supabase.co/rest/v1/tile_data?user_id=eq.${OWNER}&tile_id=eq.vitals&select=data,updated_at" \
-  -H "apikey: ${SR_KEY}" -H "Authorization: Bearer ${SR_KEY}" | node -e "
-let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
-  const row=JSON.parse(d)[0];
-  console.log('updated_at:', row.updated_at);
-  console.log('today:', JSON.stringify(row.data['2026-08-03'], null, 2));
-});"
-```
-Last known state (before the Round Number fix): `updated_at: 2026-08-03T21:02:58Z`, `sleepHours: 5` — this was from an earlier isolated hardcoded test (proved connectivity/auth/endpoint all work). The real "Sleep VS/Vercel" chain has NOT yet successfully posted — watch for this timestamp to change and a plausible real sleep-hours value (not `5`) to confirm success.
-
-## Key files (not touched this session for the Shortcut work, only referenced)
-- `app/api/vitals/ingest/route.ts` — the endpoint the shortcut POSTs to. `{ sleepHours, date? }`, Bearer `VITALS_INGEST_TOKEN`.
-- `.env.local` — has `VITALS_INGEST_TOKEN=G188DOj0GMvFwT2mWTJU_o9BQygeNQ7k` (already confirmed present on Vercel too, per user).
+## Key files
+- `app/app/DashboardHeaderBadge.tsx` — the current logo component (coin/plate badge, hand-laid-out per-glyph rim text via `arcLayout()`).
+- `app/app/dashboardHeaderBadge.module.css` — ambient breathing-glow + hover-lift CSS (orange, matches `--mint-glow`).
+- `app/app/Dashboard.tsx` (~line 503) — where `<DashboardHeaderBadge className={styles.headerGem} />` is mounted, gated by `showGem`.
+- `app/globals.css` — site theme source of truth: orange/amber accents (`--mint #f97316`, `--amber-warm #d97706`, `--mint-glow`), dark slate background, `--font-serif`/`--font-inter` var names.
+- `app/layout.tsx` — font loading; `--font-serif` = Barlow Condensed, `--font-inter` = Barlow.
 
 ## Watch out
-- The user is a Shortcuts-app beginner — give exact tap targets, one step at a time, and ask for a screenshot rather than guessing when state is unclear. This has been the effective pattern all session.
-- Don't re-diagnose network/auth/endpoint — already proven fine via direct curl and the isolated hardcoded-value test. Any further "network connection was lost" is almost certainly a client-side Shortcuts data/type issue, not the server.
-- `/api/mentor/chat` and the Velocity coach box need no more work — that thread is closed unless the user reports specific tweaks.
+- If more logo tweaks come: verify with `npx tsc --noEmit -p .` then a quick `npm run dev` + curl compile check (no visual browser access from this session) before pushing — that's the pattern used all session since there's no way to screenshot the live app from here.
+- Don't reintroduce `<textPath>` for circular rim text — it's fragile for bottom-of-circle arcs (easy to render upside down). The hand-rolled per-glyph `arcLayout()` approach in `DashboardHeaderBadge.tsx` is the deliberate, verified-working fix.
+- This repo auto-commits some sessions ("auto: update from Claude Code" in git log) — always run `git status`/`git log` before assuming a clean working tree.
+- Git identity isn't configured (commits warn "Your name and email address were configured automatically") — harmless but shows on every commit; not something to fix unprompted.

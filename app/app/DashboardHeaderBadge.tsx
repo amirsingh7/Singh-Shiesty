@@ -24,6 +24,17 @@ import styles from './dashboardHeaderBadge.module.css'
  * but the *inward* side for the inverted bottom arc — using one shared
  * radius for both left the rim text floating outside the ring on top and
  * bleeding past it on the bottom instead of sitting centered in the band.
+ *
+ * Round 4: the plain full-ring coin read as a generic "achievement badge"
+ * template (every fitness app has one). Pushed it further from that
+ * cliché without abandoning the coin format: the outer ring is now a
+ * broken arc (a deliberate gap at the bottom, not a full circle), an
+ * upper-left highlight + lower-right shadow arc sit on top of it to fake
+ * real directional bevel light instead of a flat gradient, the face uses
+ * a radial (not linear) gradient so it reads as lit from one side, and
+ * the "PR" monogram is two-tone — P in the steel/silver gradient, R in
+ * the same orange gradient as the ring — so the mark visually fuses with
+ * its own rim instead of sitting on top of it as a flat sticker.
  */
 
 interface DashboardHeaderBadgeProps {
@@ -105,26 +116,39 @@ export default function DashboardHeaderBadge({
           xmlns="http://www.w3.org/2000/svg"
         >
           <defs>
-            <linearGradient id={plateId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#1a2233" />
-              <stop offset="100%" stopColor="#0b1220" />
-            </linearGradient>
+            <radialGradient id={plateId} cx="35%" cy="30%" r="80%">
+              <stop offset="0%" stopColor="#22304a" />
+              <stop offset="100%" stopColor="#0a111d" />
+            </radialGradient>
             <linearGradient id={rimId} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#fb923c" />
               <stop offset="100%" stopColor="#d97706" />
             </linearGradient>
-            <linearGradient id={faceId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#242e42" />
-              <stop offset="100%" stopColor="#141b29" />
-            </linearGradient>
+            <radialGradient id={faceId} cx="38%" cy="30%" r="80%">
+              <stop offset="0%" stopColor="#2b3650" />
+              <stop offset="100%" stopColor="#111826" />
+            </radialGradient>
             <linearGradient id={letterId} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#f8fafc" />
               <stop offset="100%" stopColor="#cbd5e1" />
             </linearGradient>
           </defs>
 
-          {/* outer plate */}
-          <circle cx="50" cy="50" r={RING_OUTER} fill={`url(#${plateId})`} stroke={`url(#${rimId})`} strokeWidth="2.6" />
+          {/* outer plate disc */}
+          <circle cx="50" cy="50" r={RING_OUTER} fill={`url(#${plateId})`} />
+
+          {/* rim ring — broken at the bottom, not a plain full circle */}
+          <path
+            d="M 35.79 93.75 A 46 46 0 1 1 64.21 93.75"
+            fill="none"
+            stroke={`url(#${rimId})`}
+            strokeWidth="2.6"
+            strokeLinecap="round"
+          />
+
+          {/* directional bevel: upper-left highlight, lower-right shadow, standing in for real light instead of a flat glow */}
+          <path d="M 4 50 A 46 46 0 0 1 50 4" fill="none" stroke="rgba(248,250,252,0.4)" strokeWidth="1.1" strokeLinecap="round" />
+          <path d="M 96 50 A 46 46 0 0 1 50 96" fill="none" stroke="rgba(0,0,0,0.4)" strokeWidth="1.1" strokeLinecap="round" />
 
           {/* glowing accent ticks, east + west, like the mockup's flanking light marks */}
           <g stroke={`url(#${rimId})`} strokeWidth="2.4" strokeLinecap="round" className={styles.accentTicks}>
@@ -143,14 +167,14 @@ export default function DashboardHeaderBadge({
           <RimText glyphs={topGlyphs} fill="rgba(226,232,240,0.8)" />
           <RimText glyphs={bottomGlyphs} fill="rgba(226,232,240,0.8)" />
 
-          {/* PR monogram — dark emboss pass, then the gradient pass on top */}
+          {/* PR monogram — dark emboss pass, then a two-tone lit pass: P in steel, R in the ring's own orange */}
           <text
             x="50.6"
             y="65.7"
             textAnchor="middle"
             fontFamily="var(--font-serif), Arial, sans-serif"
             fontWeight={700}
-            fontSize="44"
+            fontSize="46"
             fill="rgba(0,0,0,0.6)"
           >
             PR
@@ -161,10 +185,10 @@ export default function DashboardHeaderBadge({
             textAnchor="middle"
             fontFamily="var(--font-serif), Arial, sans-serif"
             fontWeight={700}
-            fontSize="44"
-            fill={`url(#${letterId})`}
+            fontSize="46"
           >
-            PR
+            <tspan fill={`url(#${letterId})`}>P</tspan>
+            <tspan fill={`url(#${rimId})`}>R</tspan>
           </text>
         </svg>
       </div>
