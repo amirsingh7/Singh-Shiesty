@@ -1,28 +1,39 @@
 # RESUME HERE
-- **Working on:** Built "Gobind" — a named AI mentor avatar + real inline chat + cozy loader — for the Mentor page. Done and merged.
-- **Next step:** Nothing queued. If the user reports the live chat on `/mentor` didn't reply correctly (they hadn't confirmed a real end-to-end send/reply yet as of handoff), debug `app/api/mentor/chat/route.ts` first.
-- **Waiting on you:** nothing, keep going. (User hasn't yet confirmed they personally clicked Send on `/mentor` and got a real reply back — I verified the route/page respond and typecheck/tests pass, but couldn't drive an authenticated browser session myself.)
+- **Working on:** Debugging the user's iOS Shortcut "Sleep VS/Vercel" (Health app → sleep hours → POST to `/api/vitals/ingest`, live on `https://singh-shiesty.vercel.app`). Not a code task — live, screenshot-by-screenshot troubleshooting of their actual Shortcuts app.
+- **Next step:** User just added a "Round Number" action (converts the Measurement-typed "Time Between Dates" result to a plain Number, suspected fix for a "network connection was lost" error). They still need to: open "Get contents of URL" → Request Body → tap the `sleepHours` field → clear the old "Time Between Dates" chip → insert the new **Rounded Number** result instead → run the shortcut. Then verify with the Supabase check below.
+- **Waiting on you:** nothing, keep going — ask the user to confirm they've rewired `sleepHours` to the Rounded Number and run it, then verify.
 
 -----
 
 ## Done so far
-- **Renamed Nova → Gobind** throughout `tiles-library/ai-avatar-2.html` (and its synced copy `public/ai-avatar-2.html`, served live at `localhost:3000/ai-avatar-2.html` for the user to tinker with directly in the file).
-- **`components/GobindAvatar.tsx`** (new): Three.js port of the lab's `buildNova` factory — breathing octahedron, cursor-follow, blink, 9 expressions, palette swap, sleep/wake — exposed via `forwardRef` imperative handle (`setExpression/setPalette/sleep/wake`).
-- **`app/api/mentor/chat/route.ts`** (new): server route, `ANTHROPIC_API_KEY` (server-side only), `claude-sonnet-5` at `effort:'low'`, zod-structured output `{reply, mood}`. Owner-gated via `supabaseServer()` only when Supabase is actually configured; open on a zero-config local fork.
-- **`app/mentor/MentorPage.tsx`**: swapped the old `DashboardHeaderGem` for `GobindAvatar`; replaced the old "opens claude.ai in a new tab" flow with a real chat feed (user/gobind bubbles, mood tag, cozy-loader "thinking" bubble with rotating general-mentor lines). `buildFullDashboardContext()` now gathers real data from **every** tile (all `CORE_TILES` + every user-built tile via `tileStore.listTiles`), not just Train/Fuel — Gobind is a general mentor per the user's explicit follow-up ask. Removed the old workout/nutrition/recovery include-toggles (now always-everything).
-- **`.env.example`**: documented that `ANTHROPIC_API_KEY` now powers two deliberate exceptions to "no AI keys ever" — the existing PR-review route and Gobind's chat.
-- Verified: `tsc --noEmit` clean, `vitest run` 44/44 passing, `/mentor` and `/` return 200 locally.
-- **Merged**: PR #16 (`decorate/laurel-seal` → `main`), commit `19f8057`. Branch `decorate/laurel-seal` kept (repo convention: reused for the next round of changes too).
+- **Merged and live**: PR #17, "Velocity: restyleable Ask Gobind coach chat box" — an in-tile chat with Gobind (reuses `/api/mentor/chat`), live restyle panel, mood-reactive face, Copy CSS. On `main` (`d24829a`), deployed to Vercel. User confirmed the chat itself works ("needs some small tweaks" — tweaks not yet specified, ask if it comes up).
+- **Shortcut debugging, iterative fixes applied so far** (all in the user's iOS Shortcuts app, not this repo):
+  - Fixed "Get Contents of URL" having a variable accidentally sitting in the URL field instead of the URL text.
+  - Fixed the sleep-stage picker ambiguity by using `Find Health Samples` with **Limit ON, set to 1**, sorted by Start Date (Oldest First for sleep start, a second Find Health Samples sorted Newest First for sleep end) + `Get Detail from Health Sample` (Start Date / End Date) — avoids the "Get First/Last Item from an aggregate list" approach that kept breaking.
+  - Fixed action **ordering**: "Get Hours between..." was positioned *after* "Get Contents of URL" (POST fired before the hours were even computed) — moved it before. This was likely the main root cause of repeated "network connection was lost" errors.
+  - Current suspected remaining issue: `Get Hours between` outputs a **Measurement** ("Time Between Dates", e.g. "7.4 hr"), and sending that Measurement directly into the JSON body may be what's still causing "network connection was lost" (a plain hardcoded number worked fine in an isolated test; the real chain with a Measurement did not). Hence the Round Number fix in progress.
 
-## Key files
-- `components/GobindAvatar.tsx` — the avatar; only touch if visuals/expressions need changing.
-- `app/api/mentor/chat/route.ts` — the chat backend; touch for prompt/model/context-size changes.
-- `app/mentor/MentorPage.tsx` — the page; chat UI, cozy loader, `buildFullDashboardContext`.
-- `public/ai-avatar-2.html` / `tiles-library/ai-avatar-2.html` — keep these two in sync (copy one to the other) if the user hand-edits the lab file.
+## Verification method (use this, don't ask user to screenshot the dashboard)
+Query Supabase directly to check whether a shortcut run actually landed, independent of what the user's phone shows:
+```bash
+cd "/Users/asunderrex92679/VS Code Singh-Shiesty"
+SR_KEY=$(grep "^SUPABASE_SERVICE_ROLE_KEY=" .env.local | cut -d= -f2-)
+OWNER=$(grep "^OWNER_USER_ID=" .env.local | cut -d= -f2-)
+curl -s "https://aonawacziwjsuodvcdbx.supabase.co/rest/v1/tile_data?user_id=eq.${OWNER}&tile_id=eq.vitals&select=data,updated_at" \
+  -H "apikey: ${SR_KEY}" -H "Authorization: Bearer ${SR_KEY}" | node -e "
+let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
+  const row=JSON.parse(d)[0];
+  console.log('updated_at:', row.updated_at);
+  console.log('today:', JSON.stringify(row.data['2026-08-03'], null, 2));
+});"
+```
+Last known state (before the Round Number fix): `updated_at: 2026-08-03T21:02:58Z`, `sleepHours: 5` — this was from an earlier isolated hardcoded test (proved connectivity/auth/endpoint all work). The real "Sleep VS/Vercel" chain has NOT yet successfully posted — watch for this timestamp to change and a plausible real sleep-hours value (not `5`) to confirm success.
+
+## Key files (not touched this session for the Shortcut work, only referenced)
+- `app/api/vitals/ingest/route.ts` — the endpoint the shortcut POSTs to. `{ sleepHours, date? }`, Bearer `VITALS_INGEST_TOKEN`.
+- `.env.local` — has `VITALS_INGEST_TOKEN=G188DOj0GMvFwT2mWTJU_o9BQygeNQ7k` (already confirmed present on Vercel too, per user).
 
 ## Watch out
-- User's own real Anthropic key is in `.env.local` (Sonnet 5, ~$0.002–0.004/message) — they have ~$5 credits, plenty of headroom.
-- `buildFullDashboardContext` caps total context at 9000 chars and each generic tile dump at ~900 chars — if a tile's data is huge/nested, its summary may look truncated JSON; that's intentional, not a bug.
-- Supabase IS configured on this deployment (`.env.local` has real `NEXT_PUBLIC_SUPABASE_URL`/`ANON_KEY`), so the chat route's owner-gate is actually active — an unauthenticated curl to `/api/mentor/chat` correctly 401s; only testable end-to-end from a signed-in browser tab.
-- This repo reuses one long-lived branch (`decorate/laurel-seal`) for many sequential PRs into `main` (12 prior + this one, #16) — that's the established convention here, not a one-off.
-- A mid-conversation pasted spec earlier in this session (`mentor.html`, `db.js`, `api/mentor.js` CommonJS) was for a **different, unrelated project** — confirmed not to exist in this repo and intentionally not built here. If it resurfaces, it's still not this codebase.
+- The user is a Shortcuts-app beginner — give exact tap targets, one step at a time, and ask for a screenshot rather than guessing when state is unclear. This has been the effective pattern all session.
+- Don't re-diagnose network/auth/endpoint — already proven fine via direct curl and the isolated hardcoded-value test. Any further "network connection was lost" is almost certainly a client-side Shortcuts data/type issue, not the server.
+- `/api/mentor/chat` and the Velocity coach box need no more work — that thread is closed unless the user reports specific tweaks.

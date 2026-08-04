@@ -7,7 +7,7 @@ import { syncEnabled } from '@/lib/sync'
 import styles from './dashboard.module.css'
 import DashboardHeader from './DashboardHeader'
 import WelcomeBackdrop from '@/components/WelcomeBackdrop'
-import DashboardHeaderGem from './DashboardHeaderGem'
+import DashboardHeaderShield from './DashboardHeaderShield'
 import DashboardGrid from './DashboardGrid'
 import '@/components/veeTiles.css'
 import { dashboardChrome, backgroundAccent, DEFAULT_CHROME, type DashboardChrome } from '@/lib/tiles/dashboardChrome'
@@ -500,7 +500,7 @@ export default function Dashboard({ firstName, userId }: DashboardProps) {
 
       <div className={styles.shell}>
         <div className={styles.headerRow}>
-          {showGem && <DashboardHeaderGem className={styles.headerGem} />}
+          {showGem && <DashboardHeaderShield className={styles.headerGem} />}
           {showGreeting && (
             <DashboardHeader firstName={firstName} greeting={chrome?.greeting} date={chrome?.date} />
           )}

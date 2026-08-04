@@ -1,0 +1,49 @@
+/*
+ * Dashboard header shield — flat mark, pure CSS motion (ambient breathing
+ * glow + hover lift). Colors are driven by the SVG's own gradients; this
+ * file only handles the stage's glow/scale so it stays in step with the
+ * rest of the UI's easing (--ease-premium, --ease-out-soft).
+ */
+
+.shieldStage {
+  position: relative;
+  flex-shrink: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: center;
+  cursor: default;
+  animation: shield-breathe 4.5s var(--ease-out-soft, ease-in-out) infinite;
+  filter: drop-shadow(0 0 24px var(--mint-glow, rgba(249, 115, 22, 0.35)))
+          drop-shadow(0 0 54px rgba(249, 115, 22, 0.14));
+  transition: transform var(--duration-lift, 480ms) var(--ease-premium, cubic-bezier(0.16, 1, 0.3, 1)),
+              filter var(--duration-lift, 480ms) var(--ease-premium, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+.shieldStage:hover {
+  transform: scale(1.06) translateY(-2px);
+  filter: drop-shadow(0 0 34px rgba(249, 115, 22, 0.55))
+          drop-shadow(0 0 80px rgba(249, 115, 22, 0.22));
+}
+
+@keyframes shield-breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.035); }
+}
+
+.shieldSvg {
+  width: 82%;
+  height: 82%;
+  display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shieldStage {
+    animation: none;
+  }
+  .shieldStage:hover {
+    transform: none;
+  }
+}
