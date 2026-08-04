@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import WelcomeBackdrop from '@/components/WelcomeBackdrop'
-import GobindAvatar, { type GobindAvatarHandle, type GobindExpression } from '@/components/GobindAvatar'
+import type { GobindExpression } from '@/components/GobindAvatar'
 import { CORE_TILES, type CoreTileId } from '@/lib/tiles/coreTiles'
 import { tileStore } from '@/lib/tiles/tileStore'
 import { useSession } from '@/lib/auth/AuthProvider'
@@ -282,7 +282,6 @@ export default function MentorPage({
   const [draft, setDraft] = useState('')
   const [ideasOpen, setIdeasOpen] = useState(false) // the +: blueprints for tiles you're missing
   const gemRef = useRef<HTMLDivElement | null>(null)
-  const avatarRef = useRef<GobindAvatarHandle | null>(null)
 
   // Gobind's live chat — see app/api/mentor/chat/route.ts. buildFullDashboardContext
   // above does the real-data gathering (every tile, not just Train/Fuel); this
@@ -358,10 +357,8 @@ export default function MentorPage({
     setChatHistory(withUser)
     saveChatHistory(withUser)
     setQuestion('')
-    avatarRef.current?.setExpression('surprised')
     try {
       const context = await buildFullDashboardContext(userId, act?.title)
-      setTimeout(() => avatarRef.current?.setExpression('thinking'), 500)
       const res = await fetch('/api/mentor/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -375,7 +372,6 @@ export default function MentorPage({
       const data = await res.json()
       if (!res.ok) {
         setChatError(typeof data?.error === 'string' ? data.error : 'Gobind is unreachable right now — try again in a moment.')
-        avatarRef.current?.setExpression('sad', 3)
         return
       }
       const mood: GobindExpression = data.mood ?? 'happy'
@@ -389,10 +385,8 @@ export default function MentorPage({
       const withReply = [...withUser, replyEntry]
       setChatHistory(withReply)
       saveChatHistory(withReply)
-      avatarRef.current?.setExpression(mood, 4)
     } catch {
       setChatError('Gobind is unreachable right now — check your connection and try again.')
-      avatarRef.current?.setExpression('sad', 3)
     } finally {
       setAsking(false)
     }
@@ -424,6 +418,7 @@ export default function MentorPage({
         @keyframes mentorIn { from { opacity: 0; transform: translateY(26px) scale(.86) } to { opacity: 1; transform: none } }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(14px) } to { opacity: 1; transform: none } }
         @keyframes mentorPulse { 0% { transform: scale(1) } 40% { transform: scale(1.16) rotate(-2deg) } 100% { transform: scale(1) } }
+        @keyframes gobindBreathe { 0%, 100% { transform: scale(1) } 50% { transform: scale(1.035) } }
         @keyframes bpVeil { from { opacity: 0 } to { opacity: 1 } }
         @keyframes bpIn { from { opacity: 0; transform: translateY(22px) scale(.94) } to { opacity: 1; transform: none } }
         @keyframes bpRow { from { opacity: 0; transform: translateY(16px) } to { opacity: 1; transform: none } }
@@ -477,10 +472,10 @@ export default function MentorPage({
 
         {/* ───────── ai mentor ───────── */}
         <div style={{ clear: 'both', paddingTop: 44, animation: 'mentorIn .9s cubic-bezier(.22,1,.36,1) both' }}>
-          {/* Gobind — one persistent WebGL instance (never remounted; remounting
-              would re-init Three.js and glitch). Travels in on load, pulses on
-              every goal switch (WAAPI), scales up for the main goal, glows the
-              goal's color, and reacts live to the chat below via avatarRef. */}
+          {/* Gobind's portrait — travels in on load, pulses on every goal switch
+              (WAAPI on the wrapper), scales up for the main goal, glows the
+              goal's color. A slow breathing loop on the image keeps it feeling
+              alive without the wrapper's own transform (WAAPI pulse lives there). */}
           <div aria-hidden style={{ height: 160, display: 'grid', placeItems: 'center', marginBottom: 4 }}>
             <div
               ref={gemRef}
@@ -492,7 +487,19 @@ export default function MentorPage({
                 filter: `drop-shadow(0 0 ${act?.id === 'overall' ? 44 : 30}px ${accent}66)`,
               }}
             >
-              <GobindAvatar ref={avatarRef} size={132} />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/gobind-face.png"
+                alt=""
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  borderRadius: '50%',
+                  objectFit: 'cover',
+                  display: 'block',
+                  animation: 'gobindBreathe 4.5s ease-in-out infinite',
+                }}
+              />
             </div>
           </div>
           <p style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontStyle: 'italic', fontSize: 20, color: 'var(--fg, #fff)', margin: '2px 0 0' }}>Gobind</p>
