@@ -56,8 +56,8 @@ function VeeArt() {
           <rect className="ring-line" x="170" y="66" width="92" height="92" rx="24" />
         </g>
         <g className="vgrp">
-          <path className="v-base" d="M201 96 L216 129 L231 96" />
-          <path className="vm" d="M201 96 L216 129 L231 96" />
+          <path className="v-base" d="M221 97 A16 16 0 1 0 232 112 L216 112" />
+          <path className="vm" d="M221 97 A16 16 0 1 0 232 112 L216 112" />
         </g>
       </svg>
       <div className="scrim" />
