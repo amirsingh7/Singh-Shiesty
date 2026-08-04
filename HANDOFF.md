@@ -1,7 +1,7 @@
 # RESUME HERE
-- **Working on:** Attaching a compressed squat-PR video as evidence to the user's real "295 lb back squat" record in PR Portfolio (Phase 4 evidence pipeline).
-- **Next step:** Query production Supabase (service-role client, `.env.local` has `OWNER_USER_ID`/`SUPABASE_SERVICE_ROLE_KEY`) for the `${OWNER_USER_ID}:train` tile_data row, find the Train history entry matching a 295 lb (~133.8 kg) squat, confirm the exact date/reps with the user if more than one matches, then upload `/Users/asunderrex92679/Desktop/Claude Dashboard Deliverable /RenderedVideo-compressed.mp4` (already compressed, 17.7MB H.264 1080x1920, down from 90MB 4K HEVC — quality preserved) to the `evidence` Storage bucket + write the matching `evidence` tile_data row (see `lib/tiles/evidence.ts` for the exact shape/`evidenceKey()`).
-- **Waiting on you:** nothing blocking — last message was me asking "want me to go find that Train entry now?" and you ran /handoff instead of answering, so just say go (or give the exact date if you remember it, to skip the lookup).
+- **Working on:** Nothing in-flight. Last task (squat evidence video) is done — see below.
+- **Next step:** None queued. Ask the user what's next.
+- **Waiting on you:** Check your profile page's "Featured personal records" card for the Barbell back squat (2026-04-01, 295 lb / 1 rep) — it should now show the attached video. If it looks right, nothing else to do here.
 
 -----
 
@@ -11,7 +11,8 @@
 3. Gobind's avatar in Velocity's "Ask Gobind" chat (`public/tiles/velocity.html`) — placeholder gradient blob → real portrait (`public/gobind-face.png`, cropped from the user's character art). `setFace()`'s mood JS now safely no-ops (ids it looked for no longer exist).
 4. Mentor dashboard tile's animated centerpiece (`app/app/DashboardGrid.tsx`, `VeeArt()`) — was a literal "V" chevron (leftover from the tile's internal "vee" codename), redrawn as a "G" for Gobind. **Not yet visually confirmed by the user** — I hit a hard image-processing limit this session and couldn't render/check it myself. Ask them to look next chat.
 5. `content/site.ts` name field — "Singh Shiesty" → "Amir" (drives "Good morning, Amir" / "Amir's PR Portfolio" on login), for a LinkedIn-facing rebrand.
-6. Squat video compressed: source `Desktop/Claude Dashboard Deliverable /RenderedVideo.MOV` (90MB, 4K 3840x2160 120fps HEVC, 15.5s) → `RenderedVideo-compressed.mp4` (17.7MB, 1080x1920 H.264 CRF20, same folder) via ffmpeg. Not yet uploaded anywhere.
+6. Squat video compressed: source `Desktop/Claude Dashboard Deliverable /RenderedVideo.MOV` (90MB, 4K 3840x2160 120fps HEVC, 15.5s) → `RenderedVideo-compressed.mp4` (17.7MB, 1080x1920 H.264 CRF20, same folder) via ffmpeg.
+7. Evidence attached (this session): found the exact Train entry via service-role Supabase query on `tile_data` row `${OWNER_USER_ID}:train` — "Barbell back squat" (liftId `l3lcbkdp`), 2026-04-01, 133.81kg × 1 rep (= 295.00 lb, only match). Uploaded the compressed video to Storage bucket `evidence` at `${OWNER_USER_ID}/9b86e51d-4daa-4434-8a5b-bf62c85ca215.mp4`, then merged a new record (id `l3lcbkdp|2026-04-01|133.81|1`) into the `evidence` tile_data row (bare `tile_id: 'evidence'`, per `lib/sync.ts`'s convention — NOT the `${userId}:id` convention `lib/tiles/tileStore.ts` uses for train/fuel/etc). Preserved the one pre-existing evidence record for a different lift (`lgn7sim0`, 2026-04-13) rather than overwriting. No code changed — pure data write, done via a throwaway Node script (deleted after) using the service-role key. Not yet visually confirmed by the user.
 
 ## Key files
 - `lib/tiles/evidence.ts` — evidence upload/metadata store, the pattern to follow for the video attach (see project memory `project_pr_portfolio.md`'s Phase 4 section for full architecture: Storage bucket `evidence`, RLS scoped to `${user_id}/...`, `evidenceKey(liftId,date,weightKg,reps)`).
