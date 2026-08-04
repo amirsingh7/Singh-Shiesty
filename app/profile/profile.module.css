@@ -212,8 +212,8 @@
 }
 .founderPhoto {
   flex: 0 0 auto;
-  width: 84px;
-  height: 84px;
+  width: 96px;
+  height: 96px;
   border-radius: var(--radius-lg);
   background: radial-gradient(120% 120% at 35% 25%, var(--mint-glow), transparent);
   display: flex;
