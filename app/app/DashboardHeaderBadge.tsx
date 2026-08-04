@@ -5,17 +5,25 @@ import styles from './dashboardHeaderBadge.module.css'
  * DashboardHeaderBadge — the PR Portfolio mark mounted next to the
  * dashboard greeting. The "Digital Weight Plate" logo concept: a coin/plate
  * medallion with "PERSONAL RECORDS" / "VERIFIED PROGRESS" engraved along
- * the rim and a bold "PR" monogram at center, recolored from its
- * blue-purple mockup into the site's actual orange/amber accent on dark
- * steel (app/globals.css: --mint, --amber-warm, --mint-glow). Motion is
- * pure CSS — an ambient breathing glow plus a hover lift.
+ * the rim and a "PR" monogram at center, recolored from its blue-purple
+ * mockup into the site's actual orange/amber accent on dark steel
+ * (app/globals.css: --mint, --amber-warm, --mint-glow). Set in
+ * var(--font-serif) — the same Barlow Condensed poster face used for every
+ * other heading on the site — rather than a generic sans, so the mark
+ * reads as part of the brand instead of a placeholder. Motion is pure CSS:
+ * an ambient breathing glow plus a hover lift.
  *
  * Rim text is laid out by hand (per-glyph x/y/rotate) rather than
  * <textPath> — SVG's textPath orientation for a bottom-of-circle arc is
  * easy to get upside-down, so each glyph's position and rotation is
  * computed directly: top-arc glyphs face outward (rotation = angle from
  * top), bottom-arc glyphs face inward toward center (rotation = angle +
- * 180) so they read upright like the lettering on a real coin rim.
+ * 180) so they read upright like the lettering on a real coin rim. Top and
+ * bottom use different baseline radii (not the same radius) because a
+ * glyph's ink sits on the *outward* side of its baseline for the top arc
+ * but the *inward* side for the inverted bottom arc — using one shared
+ * radius for both left the rim text floating outside the ring on top and
+ * bleeding past it on the bottom instead of sitting centered in the band.
  */
 
 interface DashboardHeaderBadgeProps {
@@ -26,6 +34,13 @@ interface DashboardHeaderBadgeProps {
 
 const CX = 50
 const CY = 50
+const RING_OUTER = 46
+const FACE_R = 36.5
+const BAND_CENTER = (RING_OUTER + FACE_R) / 2
+const RIM_FONT_SIZE = 7.2
+const RIM_CAP_HEIGHT = RIM_FONT_SIZE * 0.72
+const TOP_RADIUS = BAND_CENTER - RIM_CAP_HEIGHT / 2
+const BOTTOM_RADIUS = BAND_CENTER + RIM_CAP_HEIGHT / 2
 
 /** Per-glyph x/y/rotation for text following a circular arc. `spreadDeg` is
  *  the half-angle the string spans either side of top-dead-center (0deg).
@@ -44,6 +59,28 @@ function arcLayout(text: string, radius: number, spreadDeg: number, invert: bool
   })
 }
 
+function RimText({
+  glyphs,
+  fill,
+}: {
+  glyphs: { ch: string; x: number; y: number; rotate: number }[]
+  fill: string
+}) {
+  return (
+    <text
+      fontFamily="var(--font-serif), Arial, sans-serif"
+      fontWeight={700}
+      fontSize={RIM_FONT_SIZE}
+      fill={fill}
+      textAnchor="middle"
+    >
+      {glyphs.map((g, i) => (
+        <tspan key={i} x={g.x} y={g.y} rotate={g.rotate}>{g.ch}</tspan>
+      ))}
+    </text>
+  )
+}
+
 export default function DashboardHeaderBadge({
   size = 200,
   className,
@@ -56,8 +93,8 @@ export default function DashboardHeaderBadge({
   const faceId = `badge-face-${uid}`
   const letterId = `badge-letters-${uid}`
 
-  const topGlyphs = arcLayout('PERSONAL RECORDS', 41.5, 62, false)
-  const bottomGlyphs = arcLayout('VERIFIED PROGRESS', 41.5, 62, true)
+  const topGlyphs = arcLayout('PERSONAL RECORDS', TOP_RADIUS, 60, false)
+  const bottomGlyphs = arcLayout('VERIFIED PROGRESS', BOTTOM_RADIUS, 60, true)
 
   return (
     <div className={className} style={sizeStyle} aria-hidden>
@@ -87,7 +124,7 @@ export default function DashboardHeaderBadge({
           </defs>
 
           {/* outer plate */}
-          <circle cx="50" cy="50" r="46" fill={`url(#${plateId})`} stroke={`url(#${rimId})`} strokeWidth="2.6" />
+          <circle cx="50" cy="50" r={RING_OUTER} fill={`url(#${plateId})`} stroke={`url(#${rimId})`} strokeWidth="2.6" />
 
           {/* glowing accent ticks, east + west, like the mockup's flanking light marks */}
           <g stroke={`url(#${rimId})`} strokeWidth="2.4" strokeLinecap="round" className={styles.accentTicks}>
@@ -96,43 +133,35 @@ export default function DashboardHeaderBadge({
           </g>
 
           {/* inner face */}
-          <circle cx="50" cy="50" r="36.5" fill={`url(#${faceId})`} stroke="rgba(248,250,252,0.14)" strokeWidth="1" />
+          <circle cx="50" cy="50" r={FACE_R} fill={`url(#${faceId})`} stroke="rgba(248,250,252,0.14)" strokeWidth="1" />
 
-          {/* rim lettering */}
-          <text
-            fontFamily="Arial, sans-serif"
-            fontWeight="700"
-            fontSize="6.4"
-            letterSpacing="0.5"
-            fill="rgba(226,232,240,0.72)"
-            textAnchor="middle"
-          >
-            {topGlyphs.map((g, i) => (
-              <tspan key={i} x={g.x} y={g.y} rotate={g.rotate}>{g.ch}</tspan>
-            ))}
-          </text>
-          <text
-            fontFamily="Arial, sans-serif"
-            fontWeight="700"
-            fontSize="6.4"
-            letterSpacing="0.5"
-            fill="rgba(226,232,240,0.72)"
-            textAnchor="middle"
-          >
-            {bottomGlyphs.map((g, i) => (
-              <tspan key={i} x={g.x} y={g.y} rotate={g.rotate}>{g.ch}</tspan>
-            ))}
-          </text>
+          {/* rim lettering — dark emboss pass, then the lit pass on top */}
+          <g transform="translate(0.45, 0.6)">
+            <RimText glyphs={topGlyphs} fill="rgba(0,0,0,0.55)" />
+            <RimText glyphs={bottomGlyphs} fill="rgba(0,0,0,0.55)" />
+          </g>
+          <RimText glyphs={topGlyphs} fill="rgba(226,232,240,0.8)" />
+          <RimText glyphs={bottomGlyphs} fill="rgba(226,232,240,0.8)" />
 
-          {/* PR monogram */}
+          {/* PR monogram — dark emboss pass, then the gradient pass on top */}
+          <text
+            x="50.6"
+            y="65.7"
+            textAnchor="middle"
+            fontFamily="var(--font-serif), Arial, sans-serif"
+            fontWeight={700}
+            fontSize="44"
+            fill="rgba(0,0,0,0.6)"
+          >
+            PR
+          </text>
           <text
             x="50"
-            y="64"
+            y="65"
             textAnchor="middle"
-            fontFamily="Arial, sans-serif"
-            fontWeight="800"
-            fontSize="38"
-            letterSpacing="-2"
+            fontFamily="var(--font-serif), Arial, sans-serif"
+            fontWeight={700}
+            fontSize="44"
             fill={`url(#${letterId})`}
           >
             PR
