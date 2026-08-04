@@ -55,12 +55,23 @@ const BOTTOM_RADIUS = BAND_CENTER + RIM_CAP_HEIGHT / 2
 
 /** Per-glyph x/y/rotation for text following a circular arc. `spreadDeg` is
  *  the half-angle the string spans either side of top-dead-center (0deg).
- *  `invert` flips the glyphs to read upright along the bottom of the circle. */
+ *  `invert` flips the glyphs to read upright along the bottom of the circle.
+ *  Spacing is by cumulative glyph *weight*, not raw character count — a
+ *  space counted as a full letter-width (the old behavior) shoved the two
+ *  words apart and read as each word being off-center/misaligned on its
+ *  own half of the arc. */
 function arcLayout(text: string, radius: number, spreadDeg: number, invert: boolean) {
   const chars = text.split('')
-  const n = chars.length
+  const weights = chars.map((ch) => (ch === ' ' ? 0.45 : 1))
+  const total = weights.reduce((a, b) => a + b, 0)
+  let cum = 0
+  const centers = weights.map((w) => {
+    const c = cum + w / 2
+    cum += w
+    return c
+  })
   return chars.map((ch, i) => {
-    const frac = n === 1 ? 0 : (i / (n - 1)) * 2 - 1 // -1..1 left-to-right
+    const frac = total === 0 ? 0 : (centers[i] / total) * 2 - 1 // -1..1 left-to-right
     const theta = invert ? 180 - spreadDeg * frac : spreadDeg * frac
     const rad = (theta * Math.PI) / 180
     const x = CX + radius * Math.sin(rad)
@@ -148,7 +159,7 @@ export default function DashboardHeaderBadge({
 
           {/* directional bevel: upper-left highlight, lower-right shadow, standing in for real light instead of a flat glow */}
           <path d="M 4 50 A 46 46 0 0 1 50 4" fill="none" stroke="rgba(248,250,252,0.4)" strokeWidth="1.1" strokeLinecap="round" />
-          <path d="M 96 50 A 46 46 0 0 1 50 96" fill="none" stroke="rgba(0,0,0,0.4)" strokeWidth="1.1" strokeLinecap="round" />
+          <path d="M 96 50 A 46 46 0 0 1 64.21 93.75" fill="none" stroke="rgba(0,0,0,0.4)" strokeWidth="1.1" strokeLinecap="round" />
 
           {/* glowing accent ticks, east + west, like the mockup's flanking light marks */}
           <g stroke={`url(#${rimId})`} strokeWidth="2.4" strokeLinecap="round" className={styles.accentTicks}>
