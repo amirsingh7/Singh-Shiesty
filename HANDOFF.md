@@ -1,26 +1,28 @@
 # RESUME HERE
-- **Working on:** Nothing in-flight. Last task (squat evidence video) is done — see below.
+- **Working on:** Nothing in-flight. All requested visual/cleanup changes this session are done, merged to `main`, and live.
 - **Next step:** None queued. Ask the user what's next.
-- **Waiting on you:** Check your profile page's "Featured personal records" card for the Barbell back squat (2026-04-01, 295 lb / 1 rep) — it should now show the attached video. If it looks right, nothing else to do here.
+- **Waiting on you:** nothing, keep going.
 
 -----
 
-## Done so far (all this session, all merged to `main` on `decorate/laurel-seal`, auto-deployed via Vercel)
-1. Header coin badge (`app/app/DashboardHeaderBadge.tsx`) — several SVG alignment/bevel fixes, then finally replaced with the user's own finished coin render (`public/pr-coin-badge.png`, cropped from their poster mockup) instead of a hand-drawn recreation.
-2. Mentor page tagline (`app/mentor/MentorPage.tsx:506`) — "notices everything · runs the math" → "guided by discipline, build for growth".
-3. Gobind's avatar in Velocity's "Ask Gobind" chat (`public/tiles/velocity.html`) — placeholder gradient blob → real portrait (`public/gobind-face.png`, cropped from the user's character art). `setFace()`'s mood JS now safely no-ops (ids it looked for no longer exist).
-4. Mentor dashboard tile's animated centerpiece (`app/app/DashboardGrid.tsx`, `VeeArt()`) — was a literal "V" chevron (leftover from the tile's internal "vee" codename), redrawn as a "G" for Gobind. **Not yet visually confirmed by the user** — I hit a hard image-processing limit this session and couldn't render/check it myself. Ask them to look next chat.
-5. `content/site.ts` name field — "Singh Shiesty" → "Amir" (drives "Good morning, Amir" / "Amir's PR Portfolio" on login), for a LinkedIn-facing rebrand.
-6. Squat video compressed: source `Desktop/Claude Dashboard Deliverable /RenderedVideo.MOV` (90MB, 4K 3840x2160 120fps HEVC, 15.5s) → `RenderedVideo-compressed.mp4` (17.7MB, 1080x1920 H.264 CRF20, same folder) via ffmpeg.
-7. Evidence attached (this session): found the exact Train entry via service-role Supabase query on `tile_data` row `${OWNER_USER_ID}:train` — "Barbell back squat" (liftId `l3lcbkdp`), 2026-04-01, 133.81kg × 1 rep (= 295.00 lb, only match). Uploaded the compressed video to Storage bucket `evidence` at `${OWNER_USER_ID}/9b86e51d-4daa-4434-8a5b-bf62c85ca215.mp4`, then merged a new record (id `l3lcbkdp|2026-04-01|133.81|1`) into the `evidence` tile_data row (bare `tile_id: 'evidence'`, per `lib/sync.ts`'s convention — NOT the `${userId}:id` convention `lib/tiles/tileStore.ts` uses for train/fuel/etc). Preserved the one pre-existing evidence record for a different lift (`lgn7sim0`, 2026-04-13) rather than overwriting. No code changed — pure data write, done via a throwaway Node script (deleted after) using the service-role key. Not yet visually confirmed by the user.
+## Done so far (all this session, all merged to `main` on `decorate/laurel-seal` via PR, auto-deployed via Vercel — PRs #27–#35)
+1. Header coin badge (`public/pr-coin-badge.png`): made background fully transparent (radial alpha mask, tight radius — first pass left a faint dark square, fixed by reprocessing from a fresh source), reprocessed twice more from user-supplied source art to (a) fix an off-center/clipped-bottom crop and (b) update "EST. 2024" → "EST. 2026" on the coin itself (user supplied corrected art each time, saved to `Desktop/Claude Dashboard Deliverable /` then referenced by filename). Header size bumped 220px → 240px (`app/app/dashboard.module.css` `.headerGem`).
+2. Profile page founder photo (`public/IMG_9505.jpeg`): replaced placeholder with user's real headshot, cropped square + sharpened. Frame 84px → 96px (`app/profile/profile.module.css` `.founderPhoto`). Confirmed live DB `founderPhotoUrl` already pointed at this filename, so no DB write was needed.
+3. Velocity's "Ask Gobind" box (`public/tiles/velocity.html`): recentered `public/gobind-face.png` (was off ~5px left/3px down), frame 38px → 44px, tagline "your mentor, reading this page" → "Guided by discipline, built for growth." (3 places: initial render + 2 JS reset points).
+4. Mentor page (`app/mentor/MentorPage.tsx`): replaced the animated WebGL diamond avatar (`components/GobindAvatar.tsx`, Three.js) with the static Gobind photo — user chose this knowingly, losing the live mood-expression reactions during chat. Removed the ~240-line static weights/progress-bar/"Mentor Notices"/raw-goal-input card entirely per user request ("we already have Gobind wired") — goal-switcher pills now flow straight into the existing "chat with gobind" section (which already had suggested-prompt chips for empty state). Cleaned up all now-dead code each time (avatarRef, entries, advice, ideasOpen, draft, addGoal, Roll ticker component, unused imports).
+5. Main dashboard (`app/app/DashboardGrid.tsx`): removed the big weight-% number from every tile card (`RollPct` component + `weight`/`noWeight`/`accent` props on `TileFace`) — cards now show icon + label only. Removed the "y =" goal-picker label and the "x = 0% · 8% · ..." hover-peek percentage line — cleaned up `xPeek`/`xPercents`/`xSignature`/`weights` memo/`tileWeights` import as dead code.
 
-## Key files
-- `lib/tiles/evidence.ts` — evidence upload/metadata store, the pattern to follow for the video attach (see project memory `project_pr_portfolio.md`'s Phase 4 section for full architecture: Storage bucket `evidence`, RLS scoped to `${user_id}/...`, `evidenceKey(liftId,date,weightKg,reps)`).
-- `.env.local` — has `OWNER_USER_ID`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SUPABASE_URL/_ANON_KEY` already set from prior phases.
-- `app/app/DashboardGrid.tsx` (~line 58-61, `VeeArt()`) — the new G mark, needs visual confirmation.
+## Key files touched this session
+- `public/pr-coin-badge.png`, `app/app/dashboard.module.css` — header coin badge
+- `public/IMG_9505.jpeg`, `app/profile/profile.module.css` — founder photo
+- `public/gobind-face.png`, `public/tiles/velocity.html` — Ask Gobind box
+- `app/mentor/MentorPage.tsx` — avatar swap + weights card removal
+- `app/app/DashboardGrid.tsx` — tile card % removal + y=/x= removal
+- `components/GobindAvatar.tsx` — NOT deleted, just no longer used anywhere (left in place, not imported by anything now)
 
 ## Watch out
-- Image-reading hit a hard per-turn limit this session (kept failing on both user-pasted images and my own generated test renders, regardless of file size) — if it recurs, don't retry Read repeatedly; ask the user to describe things in words instead, like was done for the V→G icon location.
-- This repo's `Desktop/Claude Dashboard Deliverable /` folder (note trailing space in the name) is where the user drops source assets (photos/videos/mockups) for me to find — check there first for anything referenced by filename.
+- Established workflow all session: edit → auto-commit hook fires ("auto: update from Claude Code") → `gh pr create --base main --head decorate/laurel-seal` → `gh pr merge --merge --delete-branch=false`. Always run `npx tsc --noEmit -p .` (and usually a quick `npm run dev` + curl compile check) before/after pushing.
+- Image edits: when asked to make a background transparent, verify with actual pixel/alpha checks (not just the Read-tool preview, which can render transparency as black and look identical to "not fixed" — this caused one back-and-forth this session). Composite a test render onto a non-black/non-white bg to sanity check before shipping.
+- User drops source images in `Desktop/Claude Dashboard Deliverable /` (note trailing space in folder name) and tells me the filename — I can't pull raw bytes from a pasted chat image directly, only from a real file path.
+- `components/GobindAvatar.tsx` (Three.js diamond avatar) is now dead/unused code repo-wide — left in place intentionally, not deleted, in case the user wants it back. Flag this if asked to clean up unused files later.
 - Git identity isn't configured (auto-fills "Amir Eduardo Singh" from the machine) — harmless, don't fix unprompted.
-- Established workflow all session: commit on `decorate/laurel-seal` → `gh pr create --base main` → `gh pr merge --merge --delete-branch=false`. Always run `npx tsc --noEmit -p .` (and usually a quick `npm run dev` + curl compile check) before pushing.
