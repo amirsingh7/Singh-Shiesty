@@ -65,55 +65,6 @@ function VeeArt() {
   )
 }
 
-/* ── a percentage that ROLLS to its value like a stock ticker ── */
-function RollPct({ value, color }: { value: number; color: string }) {
-  const [shown, setShown] = useState(value)
-  const prev = useRef(value)
-  useEffect(() => {
-    const from = prev.current
-    prev.current = value
-    if (from === value) return
-    const t0 = performance.now()
-    const dur = 900
-    let raf = 0
-    const tick = (t: number) => {
-      const p = Math.min(1, (t - t0) / dur)
-      const e = 1 - Math.pow(1 - p, 3)
-      setShown(Math.round(from + (value - from) * e))
-      if (p < 1) raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
-  }, [value])
-  return (
-    <span
-      style={{
-        // top-centre with generous margin — clear of the index row above and
-        // the art + caption below, so the number is never blocked.
-        position: 'absolute',
-        top: 52,
-        left: 0,
-        right: 0,
-        zIndex: 5,
-        display: 'flex',
-        justifyContent: 'center',
-        pointerEvents: 'none',
-        fontFamily: 'ui-monospace, Menlo, monospace',
-        fontSize: 46,
-        fontWeight: 300,
-        letterSpacing: '.02em',
-        fontVariantNumeric: 'tabular-nums',
-        color,
-        opacity: 0.9,
-        textShadow: `0 0 26px ${color}59`,
-        transition: 'color .8s ease, text-shadow .8s ease',
-      }}
-    >
-      {shown}%
-    </span>
-  )
-}
-
 /* ── one tile face (core poster or Vee), inert: the hit layer opens a slot ── */
 function TileFace({
   id,
@@ -122,9 +73,6 @@ function TileFace({
   fixed,
   editable,
   onRemove,
-  weight,
-  noWeight,
-  accent,
   kicker,
   onOpen,
 }: {
@@ -137,14 +85,6 @@ function TileFace({
   editable?: boolean
   /** Present only in edit mode: shows the ✕ remove badge. */
   onRemove?: () => void
-  /** This input's share of the active goal — big, centered, no border. */
-  weight?: number
-  /** True for a tile that isn't part of any goal's equation (a utility tile
-   *  like Velocity or Symphony, not a weighted x) — shows its own glyph in
-   *  the stat spot instead of a misleading "0%". */
-  noWeight?: boolean
-  /** The active goal's color: mint by default, gold for the main goal. */
-  accent?: string
   /** Mentor only: the active goal title, shown as the kicker. */
   kicker?: string
   onOpen: () => void
@@ -180,7 +120,7 @@ function TileFace({
       )}
       <span className="arrow">→</span>
 
-      {!isVee && core && noWeight ? (
+      {!isVee && core && (
         <span
           aria-hidden
           style={{
@@ -197,8 +137,6 @@ function TileFace({
         >
           {isValidElement(core.glyph) ? cloneElement(core.glyph as React.ReactElement<{ width?: number; height?: number }>, { width: 44, height: 44 }) : null}
         </span>
-      ) : (
-        weight != null && <RollPct value={weight} color={accent ?? '#2554E8'} />
       )}
 
       {/* Inert: clicking opens the slot (filled tile or connector), never navigates. */}
@@ -949,9 +887,6 @@ export default function DashboardGrid({ userId }: DashboardGridProps) {
                   fixed={{ width: 300, height: 340 }}
                   editable
                   onRemove={editing ? () => saveRemoved([...removed, id]) : undefined}
-                  weight={weights[id] ?? 0}
-                  noWeight={!(id in weights)}
-                  accent={goal?.accent}
                   onOpen={() => openSlot(id)}
                 />
               </div>
