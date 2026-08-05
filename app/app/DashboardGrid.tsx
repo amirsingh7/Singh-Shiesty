@@ -3,7 +3,7 @@
 import { Fragment, cloneElement, isValidElement, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { CORE_TILES, VEE_TILE, DEFAULT_HOME_ORDER, coreDefaultSize, type CoreTile } from '@/lib/tiles/coreTiles'
 import dynamic from 'next/dynamic'
-import { activeGoal as readActiveGoal, allGoals, setActiveGoalId, tileWeights, type Goal } from '@/lib/tiles/weights'
+import { activeGoal as readActiveGoal, allGoals, setActiveGoalId, type Goal } from '@/lib/tiles/weights'
 
 // Lazy: the board never pays for the mentor (Three.js gem included) until it
 // comes alive. Keeps first load fast.
@@ -516,7 +516,6 @@ export default function DashboardGrid({ userId }: DashboardGridProps) {
   const [removed, setRemoved] = useState<string[]>([]) // slots removed from the row in edit mode
   const [goal, setGoal] = useState<Goal | undefined>(undefined) // active goal: drives %s, colors, the mentor kicker
   const [mentorAlive, setMentorAlive] = useState(false) // the mentor comes to life OVER the board — no page load
-  const [xPeek, setXPeek] = useState(true) // the `x = %s` breakdown: flashes on change, fades after 5s (the `x` stays)
   const dragId = useRef<string | null>(null)
 
   const { register, unregister } = useTileHost(userId, undefined, () => {})
@@ -598,10 +597,6 @@ export default function DashboardGrid({ userId }: DashboardGridProps) {
   // (/tile), shipped by an episode command (/logger), or installed (/vitality).
   const filledOrder = useMemo(() => SLOT_ORDER.filter((id) => filled[id]), [filled])
 
-  // Each input's estimated share of the goal (plain numbers — Claude retunes them
-  // at build time for YOUR goal; localStorage override wins. See lib/tiles/weights).
-  const weights = useMemo(() => (mounted ? tileWeights() : {}), [mounted, goal])
-
   // The equation row (the x's): every filled slot except the mentor, in the user's
   // saved order, minus anything they removed in edit mode. New tiles append.
   const rowIds = useMemo(() => {
@@ -610,18 +605,6 @@ export default function DashboardGrid({ userId }: DashboardGridProps) {
     const all = [...base, ...SLOT_ORDER.filter((id) => !seen.has(id))]
     return all.filter((id) => id !== 'vee' && filled[id] && !removed.includes(id))
   }, [order, filled, removed])
-
-  // The live `x =` breakdown: each tile's real-time weight toward the goal.
-  const xPercents = rowIds.map((id) => `${weights[id] ?? 0}%`).join(' · ')
-  // Flash it whenever anything changes (weights retuned, goal switched, tiles
-  // reordered/added), hold 5s, then fade. Keyed on the actual values so it only
-  // re-shows on a real change.
-  const xSignature = rowIds.map((id) => `${id}:${weights[id] ?? 0}`).join(',') + '|' + (goal?.id ?? '')
-  useEffect(() => {
-    setXPeek(true)
-    const t = setTimeout(() => setXPeek(false), 5000)
-    return () => clearTimeout(t)
-  }, [xSignature])
 
   const saveOrder = (next: string[]) => {
     setOrder(next)
@@ -717,11 +700,8 @@ export default function DashboardGrid({ userId }: DashboardGridProps) {
             </span>
           </div>
 
-          {/* y = the goal picker — every goal visible, one tap to switch */}
+          {/* the goal picker — every goal visible, one tap to switch */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontStyle: 'normal', fontSize: 22, color: goal?.accent ?? 'var(--mint, #2554E8)', transition: 'color .8s ease' }}>y</span>
-            <span style={{ fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 11, letterSpacing: '.16em', textTransform: 'uppercase', color: 'var(--muted, #8a8f98)' }}>=</span>
-
             {/* main (★) goal stands alone; the standalone goals share ONE border */}
             {(() => {
               const gs = mounted ? allGoals() : []
@@ -791,29 +771,7 @@ export default function DashboardGrid({ userId }: DashboardGridProps) {
             }}
           />
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <a href="/mentor" style={{ display: 'flex', alignItems: 'baseline', gap: 10, textDecoration: 'none' }}>
-              <span style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontStyle: 'normal', fontSize: 22, color: goal?.accent ?? 'var(--mint, #2554E8)', transition: 'color .8s ease' }}>x</span>
-              <span
-                aria-hidden
-                style={{
-                  fontFamily: 'ui-monospace, Menlo, monospace',
-                  fontSize: 11,
-                  letterSpacing: '.16em',
-                  textTransform: 'uppercase',
-                  whiteSpace: 'nowrap',
-                  pointerEvents: 'none',
-                  color: goal?.accent ?? 'var(--mint, #2554E8)',
-                  opacity: xPeek ? 0.8 : 0,
-                  transform: xPeek ? 'translateX(0)' : 'translateX(-6px)',
-                  filter: xPeek ? 'blur(0)' : 'blur(3px)',
-                  transition:
-                    'opacity .9s cubic-bezier(.16,1,.3,1), transform .9s cubic-bezier(.16,1,.3,1), filter .9s ease',
-                }}
-              >
-                = {xPercents}
-              </span>
-            </a>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
             <button
               type="button"
               onClick={() => setEditing((v) => !v)}
