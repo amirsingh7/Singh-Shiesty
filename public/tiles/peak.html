@@ -208,30 +208,6 @@
   .cAddBtn:hover{color:var(--mint);background:rgba(249, 115, 22,0.08)}
   .cFmt{padding:0 14px 11px;font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.06em;color:var(--muted)}
 
-  /* ── ·02 the open-block card (YourDaySchedule / NowPanel, lifted) ── */
-  .openCard{position:relative;overflow:hidden;border:1px solid var(--border);border-radius:var(--r-lg);background:var(--card);
-    padding:26px 28px;display:grid;grid-template-columns:1.3fr 1fr;gap:26px;transition:border-color .2s,box-shadow .2s}
-  .openCard:hover{border-color:rgba(249, 115, 22,0.18);box-shadow:0 0 32px -20px var(--mint-glow)}
-  @media (max-width:640px){.openCard{grid-template-columns:1fr;gap:20px;padding:22px}}
-  .ocRail{position:absolute;left:0;top:22px;bottom:22px;width:3px;border-radius:10px;background:linear-gradient(180deg,var(--mint),rgba(249, 115, 22,0.15))}
-  .ocMark{display:inline-flex;align-items:center;gap:9px;font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.2em;
-    text-transform:uppercase;color:var(--mint)}
-  .ocDot{width:8px;height:8px;border-radius:999px;background:var(--mint);box-shadow:0 0 0 0 rgba(249, 115, 22,0.5);animation:ocPulse 2.6s ease-in-out infinite}
-  @keyframes ocPulse{0%{box-shadow:0 0 0 0 rgba(249, 115, 22,0.5)}70%{box-shadow:0 0 0 8px rgba(249, 115, 22,0)}100%{box-shadow:0 0 0 0 rgba(249, 115, 22,0)}}
-  .ocNow{font-family:var(--font-serif);font-size:clamp(30px,4.4vw,44px);line-height:1.05;font-weight:400;margin:12px 0 16px;letter-spacing:-0.01em}
-  .ocDivide{height:1px;background:var(--border);margin:0 0 14px}
-  .ocNextLbl{font-family:var(--font-mono);font-size:0.56rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
-  .ocNext{font-size:14px;color:var(--muted-strong)}
-  .ocNext b{color:var(--fg);font-weight:500}
-  .ocRightTitle{font-family:var(--font-serif);font-style:normal;font-weight:700;font-size:1.55rem;line-height:1;margin-bottom:12px}
-  .ocRightBody{font-size:14px;line-height:1.6;color:var(--muted-strong)}
-  .ocList{display:flex;flex-direction:column;gap:9px;margin-top:4px}
-  .ocItem{display:flex;align-items:center;gap:11px;font-size:13.5px}
-  .ocItem .t{font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.06em;color:var(--muted);min-width:96px}
-  .ocItem .bar{width:3px;align-self:stretch;border-radius:10px;background:var(--mint);opacity:0.7}
-  .ocItem.amber .bar{background:var(--amber)}
-  .ocItem .n{color:var(--fg)}
-
   /* ── source switch ── */
   .srcSwitch{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--border);border-radius:11px;background:var(--card)}
   .srcBtn{padding:7px 14px;border-radius:8px;background:transparent;color:var(--muted);font-size:11px;font-weight:600;
@@ -493,29 +469,6 @@
         <button type="button" class="cAddBtn" id="cAddBtn"><span aria-hidden="true">&#9166;</span> ADD</button>
       </div>
       <div class="cFmt">task &middot; time &middot; difficulty &middot; &ldquo;big gap &hellip;&rdquo; fills free time</div>
-    </div>
-  </section>
-
-  <!-- ══════════ ·02 YOUR SCHEDULE ══════════ -->
-  <section class="section" style="animation-delay:200ms">
-    <div class="eyebrow">
-      <span class="ebNum">·02</span>
-      <span class="ebLbl">Your schedule</span>
-      <span class="ebRule"></span>
-    </div>
-    <div class="openCard">
-      <span class="ocRail"></span>
-      <div>
-        <span class="ocMark" id="ocMark"><span class="ocDot"></span> NOW &middot; OPEN</span>
-        <div class="ocNow" id="ocNow">Open block</div>
-        <div class="ocDivide"></div>
-        <div class="ocNextLbl">Up next</div>
-        <div class="ocNext" id="ocNext">nothing scheduled</div>
-      </div>
-      <div>
-        <div class="ocRightTitle">Today</div>
-        <div class="ocRightBody" id="ocBody">Nothing scheduled yet &mdash; add something above.</div>
-      </div>
     </div>
   </section>
 
@@ -781,7 +734,7 @@ async function boot(){
   }catch(e){}
   const d=new Date();
   document.getElementById('heroDate').textContent=d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}).toUpperCase();
-  render(); renderStrip(); renderGauge(null); renderStack(); renderReadout(); renderOpenBlock();
+  render(); renderStrip(); renderGauge(null); renderStack(); renderReadout();
   renderSourceSwitch(); renderScoreHero(); renderCheckin(); renderMedGrid(); renderMedReadout(); renderCaffStats(); renderCaffIntake(); renderCaffSearch(); renderMedSearch();
   spawnMotes();
 }
@@ -1186,34 +1139,10 @@ function submitConsole(){
   if(!ev)return;
   D.events.push(ev);D.events.sort((a,b)=>a.startHour-b.startHour);persist();
   input.value='';
-  render();renderStrip();renderOpenBlock();
+  render();renderStrip();
 }
 document.getElementById('cAddBtn').addEventListener('click',submitConsole);
 document.getElementById('cInput').addEventListener('keydown',e=>{if(e.key==='Enter')submitConsole();});
-
-/* ── YourDaySchedule — the ·02 open-block card ── */
-function renderOpenBlock(){
-  const now=D.events.find(e=>e.startHour<=nowHour&&e.endHour>nowHour);
-  const next=D.events.filter(e=>e.startHour>nowHour).sort((a,b)=>a.startHour-b.startHour)[0];
-  const mark=document.getElementById('ocMark');
-  const ocNow=document.getElementById('ocNow');
-  const ocNext=document.getElementById('ocNext');
-  const ocBody=document.getElementById('ocBody');
-  if(now){
-    mark.innerHTML=`<span class="ocDot"></span> NOW &middot; ${now.tone==='amber'?'FOCUS':'ON'}`;
-    ocNow.textContent=now.title;
-  }else{
-    mark.innerHTML=`<span class="ocDot"></span> NOW &middot; OPEN`;
-    ocNow.textContent='Open block';
-  }
-  ocNext.innerHTML=next?`<b>${escapeHtml(next.title)}</b> &middot; ${fmtHour12(next.startHour)}`:'nothing scheduled';
-  if(D.events.length===0){
-    ocBody.innerHTML='Nothing scheduled yet &mdash; add something above.';
-  }else{
-    const sorted=[...D.events].sort((a,b)=>a.startHour-b.startHour);
-    ocBody.innerHTML=`<div class="ocList">${sorted.map(e=>`<div class="ocItem ${e.tone==='amber'?'amber':''}"><span class="t">${fmtHour12(e.startHour)}–${fmtHour12(e.endHour)}</span><span class="bar"></span><span class="n">${escapeHtml(e.title)}</span></div>`).join('')}</div>`;
-  }
-}
 
 /* ── mode picker + gear + info ── */
 const MODES=[['line','Line'],['bars','Bars'],['stack','Stack']];
