@@ -127,6 +127,50 @@
   color: var(--muted-strong);
 }
 
+.viewTabs {
+  display: inline-flex;
+  gap: 2px;
+  margin-top: 26px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+}
+.viewTab {
+  padding: 7px 16px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.16s, color 0.16s;
+}
+.viewTab:hover {
+  color: var(--fg);
+}
+.viewTabActive {
+  background: var(--mint);
+  color: var(--mint-ink);
+}
+.viewTabActive:hover {
+  color: var(--mint-ink);
+}
+
+.dashGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+.dashChart {
+  display: block;
+  width: 100%;
+  height: 64px;
+  margin-top: 12px;
+}
+
 .section {
   margin-top: 30px;
 }
