@@ -173,9 +173,8 @@
   @keyframes piBarRise{from{transform:scaleY(0)}to{transform:scaleY(1)}}
 
   .piChartSchedule{margin-top:-4px;padding-top:14px;border-top:1px solid var(--border)}
-  .planEmpty{margin:8px 2px 0;border:1px dashed var(--border-strong);border-radius:12px;padding:15px;text-align:center;cursor:pointer;
-    font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);transition:border-color .2s,color .2s,background .2s}
-  .planEmpty:hover{border-color:rgba(249, 115, 22,0.4);color:var(--muted-strong);background:rgba(249, 115, 22,0.04)}
+  .planEmpty{margin:8px 2px 0;border:1px dashed var(--border-strong);border-radius:12px;padding:15px;text-align:center;
+    font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted)}
 
   .modeBtn{padding:6px 14px;border-radius:10px;background:transparent;color:var(--muted);font-size:10px;font-weight:500;
     letter-spacing:0.16em;text-transform:uppercase;font-family:var(--font-mono);border:none;cursor:pointer;
@@ -193,44 +192,6 @@
   .wt{font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;fill:var(--muted-strong)}
   .wk{fill:var(--mint)}
 
-  /* the quick-add console (QuickAddConsole, lifted) */
-  .console{margin-top:16px;border:1px solid var(--border);border-radius:14px;background:var(--card);padding:4px 6px 4px 4px;
-    transition:border-color .2s,box-shadow .2s}
-  .console:focus-within{border-color:rgba(249, 115, 22,0.4);box-shadow:0 0 26px -16px var(--mint-glow)}
-  .consoleRow{display:flex;align-items:center;gap:10px;padding:11px 12px}
-  .chev{font-family:var(--font-mono);color:var(--mint);font-size:16px;line-height:1;flex:none}
-  .cInput{flex:1;min-width:0;background:transparent;border:none;outline:none;color:var(--fg);font-family:var(--font-mono);
-    font-size:14px;letter-spacing:-0.005em}
-  .cInput::placeholder{color:var(--muted)}
-  .cAddBtn{display:inline-flex;align-items:center;gap:7px;flex:none;border:none;border-radius:10px;cursor:pointer;
-    padding:9px 15px;font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.14em;color:var(--muted-strong);
-    background:transparent;transition:color .18s,background .18s}
-  .cAddBtn:hover{color:var(--mint);background:rgba(249, 115, 22,0.08)}
-  .cFmt{padding:0 14px 11px;font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.06em;color:var(--muted)}
-
-  /* ── ·02 the open-block card (YourDaySchedule / NowPanel, lifted) ── */
-  .openCard{position:relative;overflow:hidden;border:1px solid var(--border);border-radius:var(--r-lg);background:var(--card);
-    padding:26px 28px;display:grid;grid-template-columns:1.3fr 1fr;gap:26px;transition:border-color .2s,box-shadow .2s}
-  .openCard:hover{border-color:rgba(249, 115, 22,0.18);box-shadow:0 0 32px -20px var(--mint-glow)}
-  @media (max-width:640px){.openCard{grid-template-columns:1fr;gap:20px;padding:22px}}
-  .ocRail{position:absolute;left:0;top:22px;bottom:22px;width:3px;border-radius:10px;background:linear-gradient(180deg,var(--mint),rgba(249, 115, 22,0.15))}
-  .ocMark{display:inline-flex;align-items:center;gap:9px;font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.2em;
-    text-transform:uppercase;color:var(--mint)}
-  .ocDot{width:8px;height:8px;border-radius:999px;background:var(--mint);box-shadow:0 0 0 0 rgba(249, 115, 22,0.5);animation:ocPulse 2.6s ease-in-out infinite}
-  @keyframes ocPulse{0%{box-shadow:0 0 0 0 rgba(249, 115, 22,0.5)}70%{box-shadow:0 0 0 8px rgba(249, 115, 22,0)}100%{box-shadow:0 0 0 0 rgba(249, 115, 22,0)}}
-  .ocNow{font-family:var(--font-serif);font-size:clamp(30px,4.4vw,44px);line-height:1.05;font-weight:400;margin:12px 0 16px;letter-spacing:-0.01em}
-  .ocDivide{height:1px;background:var(--border);margin:0 0 14px}
-  .ocNextLbl{font-family:var(--font-mono);font-size:0.56rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
-  .ocNext{font-size:14px;color:var(--muted-strong)}
-  .ocNext b{color:var(--fg);font-weight:500}
-  .ocRightTitle{font-family:var(--font-serif);font-style:normal;font-weight:700;font-size:1.55rem;line-height:1;margin-bottom:12px}
-  .ocRightBody{font-size:14px;line-height:1.6;color:var(--muted-strong)}
-  .ocList{display:flex;flex-direction:column;gap:9px;margin-top:4px}
-  .ocItem{display:flex;align-items:center;gap:11px;font-size:13.5px}
-  .ocItem .t{font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.06em;color:var(--muted);min-width:96px}
-  .ocItem .bar{width:3px;align-self:stretch;border-radius:10px;background:var(--mint);opacity:0.7}
-  .ocItem.amber .bar{background:var(--amber)}
-  .ocItem .n{color:var(--fg)}
 
   /* ── source switch ── */
   .srcSwitch{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--border);border-radius:11px;background:var(--card)}
@@ -482,39 +443,6 @@
         <div style="margin-top:14px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;color:var(--muted)">
           TELL THE MENTOR &#8212; <i style="color:var(--fg);font-family:var(--font-serif);font-size:14px;letter-spacing:0">&ldquo;log my coffee&rdquo; &middot; &ldquo;add my class schedule&rdquo; &middot; &ldquo;file my recovery&rdquo;</i>
         </div>
-      </div>
-    </div>
-
-    <!-- the plan console -->
-    <div class="console">
-      <div class="consoleRow">
-        <span class="chev" aria-hidden="true">&rsaquo;</span>
-        <input class="cInput" id="cInput" spellcheck="false" placeholder="e.g. deep work 9-11 hard, gym 1930, read 30m, big gap email" aria-label="Add to today" />
-        <button type="button" class="cAddBtn" id="cAddBtn"><span aria-hidden="true">&#9166;</span> ADD</button>
-      </div>
-      <div class="cFmt">task &middot; time &middot; difficulty &middot; &ldquo;big gap &hellip;&rdquo; fills free time</div>
-    </div>
-  </section>
-
-  <!-- ══════════ ·02 YOUR SCHEDULE ══════════ -->
-  <section class="section" style="animation-delay:200ms">
-    <div class="eyebrow">
-      <span class="ebNum">·02</span>
-      <span class="ebLbl">Your schedule</span>
-      <span class="ebRule"></span>
-    </div>
-    <div class="openCard">
-      <span class="ocRail"></span>
-      <div>
-        <span class="ocMark" id="ocMark"><span class="ocDot"></span> NOW &middot; OPEN</span>
-        <div class="ocNow" id="ocNow">Open block</div>
-        <div class="ocDivide"></div>
-        <div class="ocNextLbl">Up next</div>
-        <div class="ocNext" id="ocNext">nothing scheduled</div>
-      </div>
-      <div>
-        <div class="ocRightTitle">Today</div>
-        <div class="ocRightBody" id="ocBody">Nothing scheduled yet &mdash; add something above.</div>
       </div>
     </div>
   </section>
@@ -781,7 +709,7 @@ async function boot(){
   }catch(e){}
   const d=new Date();
   document.getElementById('heroDate').textContent=d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}).toUpperCase();
-  render(); renderStrip(); renderGauge(null); renderStack(); renderReadout(); renderOpenBlock();
+  render(); renderStrip(); renderGauge(null); renderStack(); renderReadout();
   renderSourceSwitch(); renderScoreHero(); renderCheckin(); renderMedGrid(); renderMedReadout(); renderCaffStats(); renderCaffIntake(); renderCaffSearch(); renderMedSearch();
   spawnMotes();
 }
@@ -1009,9 +937,7 @@ function renderStrip(){
   const host=document.getElementById('strip');
   const padX=PAD.left;
   if(D.events.length===0&&D.taps.length===0){
-    host.innerHTML=`<div style="padding:0 ${padX}px"><div style="font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);font-weight:500;margin-bottom:6px">Today's plan</div><div class="planEmpty" id="planEmpty">Nothing scheduled &middot; tap to plan your day</div></div>`;
-    const pe=document.getElementById('planEmpty');
-    if(pe)pe.addEventListener('click',()=>{const i=document.getElementById('cInput');i.focus();i.scrollIntoView({behavior:'smooth',block:'center'});});
+    host.innerHTML=`<div style="padding:0 ${padX}px"><div style="font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);font-weight:500;margin-bottom:6px">Today's plan</div><div class="planEmpty" id="planEmpty">Nothing scheduled &middot; tell the Mentor your plan</div></div>`;
     return;
   }
   const iw=width-padX*2,hourW=iw/24;
@@ -1129,91 +1055,6 @@ function renderReadout(){
 }
 
 /* ── QuickAddConsole — natural-language plan line ── */
-function parseInput(raw){
-  let t=raw.trim();if(!t)return null;
-  let tone='mint';
-  if(/\bhard\b/i.test(t)){tone='amber';}
-  const low=t.toLowerCase();
-  const bigGap=low.startsWith('big gap');
-  // time range "9-11" or "9-11am"
-  let startHour=null,endHour=null;
-  const range=t.match(/(\d{1,2})(?::(\d{2}))?\s*[-–]\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
-  if(range){
-    startHour=parseInt(range[1],10)+(range[2]?parseInt(range[2],10)/60:0);
-    endHour=parseInt(range[3],10)+(range[4]?parseInt(range[4],10)/60:0);
-    const ap=(range[5]||'').toLowerCase();
-    if(ap==='pm'){if(startHour<12)startHour+=12;if(endHour<12)endHour+=12;}
-    t=t.replace(range[0],'');
-  }else{
-    // military "1930" or clock "7pm" / "9:30am"
-    const mil=t.match(/\b(\d{3,4})\b/);
-    const clock=t.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i);
-    if(clock){
-      let h=parseInt(clock[1],10)+(clock[2]?parseInt(clock[2],10)/60:0);
-      const ap=clock[3].toLowerCase();if(ap==='pm'&&h<12)h+=12;if(ap==='am'&&h===12)h=0;
-      startHour=h;t=t.replace(clock[0],'');
-    }else if(mil){
-      const v=mil[1];startHour=parseInt(v.slice(0,v.length-2),10)+parseInt(v.slice(-2),10)/60;t=t.replace(mil[0],'');
-    }
-    // duration "30m" / "2h"
-    let dur=1;const dm=t.match(/\b(\d+)\s*(m|min|h|hr)\b/i);
-    if(dm){const n=parseInt(dm[1],10);dur=/h/i.test(dm[2])?n:n/60;t=t.replace(dm[0],'');}
-    if(startHour!=null)endHour=Math.min(24,startHour+dur);
-  }
-  let title=t.replace(/\b(hard|easy|medium|med)\b/ig,'').replace(/[,]+/g,' ').replace(/\s+/g,' ').trim();
-  if(bigGap)title=title.replace(/^big gap/i,'').trim()||'Focus';
-  if(!title)title='Block';
-  title=title.charAt(0).toUpperCase()+title.slice(1);
-  if(bigGap||startHour==null){
-    // place into the largest free block from now onward
-    const g=largestGap();startHour=g.start;endHour=g.end;
-  }
-  if(endHour==null)endHour=Math.min(24,startHour+1);
-  if(endHour<=startHour)endHour=Math.min(24,startHour+1);
-  return {id:'e'+D.events.length,title:title.slice(0,40),startHour,endHour,tone};
-}
-function largestGap(){
-  const from=Math.max(6,Math.floor(nowHour));
-  const busy=D.events.map(e=>[e.startHour,e.endHour]).sort((a,b)=>a[0]-b[0]);
-  let best=[from,Math.min(from+2,22)],bestLen=best[1]-best[0],cur=from;
-  for(const[s,e]of busy){if(s>cur){const len=s-cur;if(len>bestLen){bestLen=len;best=[cur,s];}}cur=Math.max(cur,e);}
-  if(22-cur>bestLen)best=[cur,22];
-  return {start:best[0],end:Math.min(best[1],best[0]+3)};
-}
-function submitConsole(){
-  const input=document.getElementById('cInput');
-  const ev=parseInput(input.value);
-  if(!ev)return;
-  D.events.push(ev);D.events.sort((a,b)=>a.startHour-b.startHour);persist();
-  input.value='';
-  render();renderStrip();renderOpenBlock();
-}
-document.getElementById('cAddBtn').addEventListener('click',submitConsole);
-document.getElementById('cInput').addEventListener('keydown',e=>{if(e.key==='Enter')submitConsole();});
-
-/* ── YourDaySchedule — the ·02 open-block card ── */
-function renderOpenBlock(){
-  const now=D.events.find(e=>e.startHour<=nowHour&&e.endHour>nowHour);
-  const next=D.events.filter(e=>e.startHour>nowHour).sort((a,b)=>a.startHour-b.startHour)[0];
-  const mark=document.getElementById('ocMark');
-  const ocNow=document.getElementById('ocNow');
-  const ocNext=document.getElementById('ocNext');
-  const ocBody=document.getElementById('ocBody');
-  if(now){
-    mark.innerHTML=`<span class="ocDot"></span> NOW &middot; ${now.tone==='amber'?'FOCUS':'ON'}`;
-    ocNow.textContent=now.title;
-  }else{
-    mark.innerHTML=`<span class="ocDot"></span> NOW &middot; OPEN`;
-    ocNow.textContent='Open block';
-  }
-  ocNext.innerHTML=next?`<b>${escapeHtml(next.title)}</b> &middot; ${fmtHour12(next.startHour)}`:'nothing scheduled';
-  if(D.events.length===0){
-    ocBody.innerHTML='Nothing scheduled yet &mdash; add something above.';
-  }else{
-    const sorted=[...D.events].sort((a,b)=>a.startHour-b.startHour);
-    ocBody.innerHTML=`<div class="ocList">${sorted.map(e=>`<div class="ocItem ${e.tone==='amber'?'amber':''}"><span class="t">${fmtHour12(e.startHour)}–${fmtHour12(e.endHour)}</span><span class="bar"></span><span class="n">${escapeHtml(e.title)}</span></div>`).join('')}</div>`;
-  }
-}
 
 /* ── mode picker + gear + info ── */
 const MODES=[['line','Line'],['bars','Bars'],['stack','Stack']];

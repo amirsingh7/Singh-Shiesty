@@ -1,26 +1,22 @@
 # RESUME HERE
-- **Working on:** Nothing in-flight. Last task (squat evidence video) is done — see below.
-- **Next step:** None queued. Ask the user what's next.
-- **Waiting on you:** Check your profile page's "Featured personal records" card for the Barbell back squat (2026-04-01, 295 lb / 1 rep) — it should now show the attached video. If it looks right, nothing else to do here.
+- **Working on:** Debugging the user's iOS Shortcut ("Sleep VS/Vercel") that POSTs `sleepHours` to `/api/vitals/ingest` — it was reporting 31h instead of a real ~7-8h. This is a phone-side Shortcuts app fix, not a repo code change.
+- **Next step:** User is comparing their live shortcut against the full 12-step spec I gave them (see below) and about to run it. Ask if it matched and what the result was.
+- **Waiting on you:** nothing, keep going — just pick up the shortcut result when they report back.
 
 -----
 
-## Done so far (all this session, all merged to `main` on `decorate/laurel-seal`, auto-deployed via Vercel)
-1. Header coin badge (`app/app/DashboardHeaderBadge.tsx`) — several SVG alignment/bevel fixes, then finally replaced with the user's own finished coin render (`public/pr-coin-badge.png`, cropped from their poster mockup) instead of a hand-drawn recreation.
-2. Mentor page tagline (`app/mentor/MentorPage.tsx:506`) — "notices everything · runs the math" → "guided by discipline, build for growth".
-3. Gobind's avatar in Velocity's "Ask Gobind" chat (`public/tiles/velocity.html`) — placeholder gradient blob → real portrait (`public/gobind-face.png`, cropped from the user's character art). `setFace()`'s mood JS now safely no-ops (ids it looked for no longer exist).
-4. Mentor dashboard tile's animated centerpiece (`app/app/DashboardGrid.tsx`, `VeeArt()`) — was a literal "V" chevron (leftover from the tile's internal "vee" codename), redrawn as a "G" for Gobind. **Not yet visually confirmed by the user** — I hit a hard image-processing limit this session and couldn't render/check it myself. Ask them to look next chat.
-5. `content/site.ts` name field — "Singh Shiesty" → "Amir" (drives "Good morning, Amir" / "Amir's PR Portfolio" on login), for a LinkedIn-facing rebrand.
-6. Squat video compressed: source `Desktop/Claude Dashboard Deliverable /RenderedVideo.MOV` (90MB, 4K 3840x2160 120fps HEVC, 15.5s) → `RenderedVideo-compressed.mp4` (17.7MB, 1080x1920 H.264 CRF20, same folder) via ffmpeg.
-7. Evidence attached (this session): found the exact Train entry via service-role Supabase query on `tile_data` row `${OWNER_USER_ID}:train` — "Barbell back squat" (liftId `l3lcbkdp`), 2026-04-01, 133.81kg × 1 rep (= 295.00 lb, only match). Uploaded the compressed video to Storage bucket `evidence` at `${OWNER_USER_ID}/9b86e51d-4daa-4434-8a5b-bf62c85ca215.mp4`, then merged a new record (id `l3lcbkdp|2026-04-01|133.81|1`) into the `evidence` tile_data row (bare `tile_id: 'evidence'`, per `lib/sync.ts`'s convention — NOT the `${userId}:id` convention `lib/tiles/tileStore.ts` uses for train/fuel/etc). Preserved the one pre-existing evidence record for a different lift (`lgn7sim0`, 2026-04-13) rather than overwriting. No code changed — pure data write, done via a throwaway Node script (deleted after) using the service-role key. Not yet visually confirmed by the user.
+## Done so far
+1. **Detonated only the Finance and Brand tiles** (not a full `/detonate` — user was explicit: only those two). Deleted `public/tiles/finance.html` and `public/tiles/brand.html`, did NOT touch `content/site.ts`'s `detonated` flag (that's for full-board blackout only). No live Supabase tile rows existed for those slots (`mcp__vitality__list_slots` confirmed empty), so no DB cleanup was needed. Auto-commit hook fired (`8361f8a`) and it's already pushed to `origin/decorate/laurel-seal`. Full rebuild spec saved to memory: `~/.claude/projects/-Users-asunderrex92679-VS-Code-Singh-Shiesty/memory/project_finance_brand_tiles_detonated.md`.
+2. **Sleep Shortcut debugging saga** (long, iterative, phone-side only — no repo files touched): traced a 31h sleep reading through several wrong theories (summing overlapping stages → two-night calendar-bucket spanning → Sort+Limit ignoring the date filter → Calculate Statistics returning raw Unix epoch numbers instead of dates) before landing on the real fix: use Filter (no Sort/Limit) → Calculate Statistics Minimum/Maximum → reconstruct real dates via `Adjust Date` (Jan 1 1970 epoch + Add Seconds) → Get Hours Between → Round → POST. Full final 12-step spec was given to the user in the prior message — see that message in this transcript if needed, or just ask the user to paste their current shortcut screenshot again.
 
 ## Key files
-- `lib/tiles/evidence.ts` — evidence upload/metadata store, the pattern to follow for the video attach (see project memory `project_pr_portfolio.md`'s Phase 4 section for full architecture: Storage bucket `evidence`, RLS scoped to `${user_id}/...`, `evidenceKey(liftId,date,weightKg,reps)`).
-- `.env.local` — has `OWNER_USER_ID`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SUPABASE_URL/_ANON_KEY` already set from prior phases.
-- `app/app/DashboardGrid.tsx` (~line 58-61, `VeeArt()`) — the new G mark, needs visual confirmation.
+- None touched by me this session for the shortcut work — it all lives in the user's iOS Shortcuts app ("Sleep VS/Vercel" shortcut), not the repo.
+- `app/api/vitals/ingest/route.ts` — the receiving endpoint (unchanged, already correct; just stores whatever `sleepHours` number it's sent, no math).
+- `public/tiles/peak.html:1323` — where `sleepHours` gets displayed ("Synced today · Xh sleep"); also unchanged, just prints the raw value.
+- `public/tiles/finance.html`, `public/tiles/brand.html` — deleted this session (see memory note above for rebuild spec).
 
 ## Watch out
-- Image-reading hit a hard per-turn limit this session (kept failing on both user-pasted images and my own generated test renders, regardless of file size) — if it recurs, don't retry Read repeatedly; ask the user to describe things in words instead, like was done for the V→G icon location.
-- This repo's `Desktop/Claude Dashboard Deliverable /` folder (note trailing space in the name) is where the user drops source assets (photos/videos/mockups) for me to find — check there first for anything referenced by filename.
-- Git identity isn't configured (auto-fills "Amir Eduardo Singh" from the machine) — harmless, don't fix unprompted.
-- Established workflow all session: commit on `decorate/laurel-seal` → `gh pr create --base main` → `gh pr merge --merge --delete-branch=false`. Always run `npx tsc --noEmit -p .` (and usually a quick `npm run dev` + curl compile check) before pushing.
+- The shortcut is meant to run each **morning** shortly after waking, via a Time-of-Day automation (Shortcuts app → Automation → + → Time of Day). A 1-day lookback window only works reliably at that time of day — testing it late at night (as happened this session, after midnight) makes a 1-day window too short (misses part of "last night") and a 2-day window too wide (catches the night before too, reproducing the original bug). Don't re-widen the window as a quick fix without noting this.
+- Shortcuts' "Find Health Samples" Date filter only offers day/week/month/year units (no hours) and only "is on / is today / is between / is in the last" comparisons (no "is after") — worth remembering if similar HealthKit shortcuts come up again.
+- `Calculate Statistics (Minimum/Maximum)` on Date-type values returns a raw Unix epoch number as text, not a formatted date — needs the `Adjust Date` epoch-reconstruction trick (see spec above) to convert back to a usable Date.
+- Detonate command: user's house rule confirmed this session — always ask before running any `/detonate`, and when scoped ("only X and Y tiles"), do exactly that scope, never the full board.
