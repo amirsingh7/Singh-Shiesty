@@ -355,13 +355,12 @@
   <!-- daily check-in (manual source only) -->
   <div id="checkinCard" class="checkinCard" hidden></div>
 
-  <!-- ══════════ ·01 YOUR DAY ══════════ -->
+  <!-- ══════════ ·01 LOG IT ══════════ -->
   <section class="section" style="animation-delay:120ms">
     <div class="eyebrow">
       <span class="ebNum">·01</span>
-      <span class="ebLbl">Your day</span>
+      <span class="ebLbl">Log it</span>
       <span class="ebRule"></span>
-      <button class="ebInfo" id="ebInfo1" aria-label="How your score is built">i</button>
     </div>
 
     <!-- the stack -->
@@ -399,6 +398,26 @@
       <div class="addRow" id="medAddRow" hidden></div>
       <div class="grid" id="medGrid"></div>
       <div id="medReadout"></div>
+    </div>
+
+    <!-- the plan console -->
+    <div class="console">
+      <div class="consoleRow">
+        <span class="chev" aria-hidden="true">&rsaquo;</span>
+        <input class="cInput" id="cInput" spellcheck="false" placeholder="e.g. deep work 9-11 hard, gym 1930, read 30m, big gap email" aria-label="Add to today" />
+        <button type="button" class="cAddBtn" id="cAddBtn"><span aria-hidden="true">&#9166;</span> ADD</button>
+      </div>
+      <div class="cFmt">task &middot; time &middot; difficulty &middot; &ldquo;big gap &hellip;&rdquo; fills free time</div>
+    </div>
+  </section>
+
+  <!-- ══════════ ·02 THE CURVE ══════════ -->
+  <section class="section" style="animation-delay:200ms">
+    <div class="eyebrow">
+      <span class="ebNum">·02</span>
+      <span class="ebLbl">The curve</span>
+      <span class="ebRule"></span>
+      <button class="ebInfo" id="ebInfo1" aria-label="How your score is built">i</button>
     </div>
 
     <!-- the curve -->
@@ -459,16 +478,6 @@
           TELL THE MENTOR &#8212; <i style="color:var(--fg);font-family:var(--font-serif);font-size:14px;letter-spacing:0">&ldquo;log my coffee&rdquo; &middot; &ldquo;add my class schedule&rdquo; &middot; &ldquo;file my recovery&rdquo;</i>
         </div>
       </div>
-    </div>
-
-    <!-- the plan console -->
-    <div class="console">
-      <div class="consoleRow">
-        <span class="chev" aria-hidden="true">&rsaquo;</span>
-        <input class="cInput" id="cInput" spellcheck="false" placeholder="e.g. deep work 9-11 hard, gym 1930, read 30m, big gap email" aria-label="Add to today" />
-        <button type="button" class="cAddBtn" id="cAddBtn"><span aria-hidden="true">&#9166;</span> ADD</button>
-      </div>
-      <div class="cFmt">task &middot; time &middot; difficulty &middot; &ldquo;big gap &hellip;&rdquo; fills free time</div>
     </div>
   </section>
 
