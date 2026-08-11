@@ -20,6 +20,8 @@ import type { EvidenceRecord } from '@/lib/tiles/evidence'
 import type { WitnessRecord } from '@/lib/tiles/witnesses'
 import { reviewKey, type AIReviewRecord } from '@/lib/tiles/aiReview'
 import WitnessForm from './WitnessForm'
+import ViewTabs from './ViewTabs'
+import DashboardView from './DashboardView'
 import styles from '../../profile/profile.module.css'
 
 /**
@@ -122,6 +124,18 @@ export default async function PublicProfilePage({
 
   const timeline = timelineEvents(allLifts(split), competitions, evidence, witnesses).slice(0, 20)
 
+  // Dashboard view's data: same combinedHistory as Featured PRs, but the
+  // full sorted series per lift (not just the best entry) so a line chart
+  // can show progress over time, not a single number.
+  const series = compoundLifts.map((lift) => ({
+    lift,
+    points: combinedHistory(lift, competitions, evidence, witnesses)
+      .filter((h) => !h.off)
+      .slice()
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map((h) => ({ date: h.date, w: h.w })),
+  }))
+
   // Signed URLs, generated server-side with the service-role client — the
   // 'evidence' bucket is private, so a visitor can only ever see one through
   // a URL this page handed them, and this page only runs after the
@@ -179,125 +193,137 @@ export default async function PublicProfilePage({
           </div>
         </div>
 
-        {(p.personalStatement || p.bio) && (
-          <div className={c('section')}>
-            {p.personalStatement && <p className={c('statement')}>&ldquo;{p.personalStatement}&rdquo;</p>}
-            {p.bio && <p className={c('bio')}>{p.bio}</p>}
-          </div>
-        )}
-
-        {!!p.primaryGoals?.length && (
-          <div className={c('section')}>
-            <div className={c('sectionHead')}>Current goals</div>
-            <div className={c('tags')}>
-              {p.primaryGoals.map((g) => (
-                <span key={g} className={c('tag')}>
-                  {g}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className={c('section')}>
-          <div className={c('sectionHead')}>Featured personal records</div>
-          {!featured.length && <p className={c('empty')}>No featured lifts yet.</p>}
-          {!!featured.length && (
-            <div className={c('prGrid')}>
-              {featured.map(({ lift, best }) => {
-                const evidenceRec = best.evidencePath ? evidence.find((e) => e.storagePath === best.evidencePath) : undefined
-                const evidenceUrl = best.evidencePath ? evidenceUrls[best.evidencePath] : undefined
-                return (
-                  <div key={lift.id} className={c('prCard')}>
-                    <div className={c('prName')}>{lift.name}</div>
-                    <div className={c('prVal')}>
-                      {wDisp(best.w, unit)} {unit}
-                      {lift.perHand ? '/ea' : ''}
-                    </div>
-                    <div className={c('prSub')}>
-                      {best.r} rep{best.r === 1 ? '' : 's'} · {dateLabel(best.date)}
-                    </div>
-                    <span className={c('badge')}>{RECORD_STATUS_LABEL[best.recordStatus ?? 'self-reported']}</span>
-                    {!!best.witnessCount && (
-                      <div className={c('hint')}>
-                        Witnessed by {best.witnessCount} {best.witnessCount === 1 ? 'person' : 'people'}
-                      </div>
-                    )}
-                    {evidenceUrl &&
-                      (evidenceRec?.mimeType.startsWith('video/') ? (
-                        <video src={evidenceUrl} controls className={c('evidenceThumb')} />
-                      ) : (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={evidenceUrl} alt="" className={c('evidenceThumb')} />
-                      ))}
-                    <div className={c('witnessRow')}>
-                      <WitnessForm
-                        userId={userId}
-                        token={searchParams.t}
-                        liftId={lift.id}
-                        date={best.date}
-                        weightKg={best.w}
-                        reps={best.r}
-                      />
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-
-        <div className={c('section')}>
-          <div className={c('sectionHead')}>Timeline</div>
-          {!timeline.length && <p className={c('empty')}>No milestones logged yet.</p>}
-          {!!timeline.length && (
-            <div className={c('achList')}>
-              {timeline.map((ev, i) => (
-                <div key={i} className={c('achRow')}>
-                  <span>
-                    New PR — {ev.liftName}: {wDisp(ev.w, unit)} {unit} × {ev.r}
-                    <span className={c('badge')}>{RECORD_STATUS_LABEL[ev.recordStatus]}</span>
-                    {(() => {
-                      // The owner can now Ask AI about any self-reported compound-lift entry,
-                      // not just ones the outlier heuristic flagged — so a cached review can
-                      // exist here even when ev.outlier is false. Mirror ProfilePage.tsx's
-                      // rendering exactly (read-only: no button, this page never triggers a call).
-                      const review = aiReviews.find((r) => r.id === reviewKey(ev.liftId, ev.date, ev.w, ev.r))
-                      if (ev.outlier && !review) {
-                        return (
-                          <span className={c('outlierFlag')} title="Unusually large jump from the previous best — self-reported, unverified.">
-                            ⚠ large jump
-                          </span>
-                        )
-                      }
-                      if (review) {
-                        return (
-                          <span
-                            className={review.verdict === 'plausible' ? `${c('outlierFlag')} ${c('aiVerdictOk')}` : c('outlierFlag')}
-                            title={`AI read: ${review.reasoning}`}
-                          >
-                            {review.verdict === 'plausible'
-                              ? '✓ AI: likely plausible'
-                              : review.verdict === 'implausible'
-                                ? '⚠ AI: worth checking'
-                                : ev.outlier
-                                  ? '⚠ large jump'
-                                  : '• AI: uncertain'}
-                          </span>
-                        )
-                      }
-                      return null
-                    })()}
-                    {!!ev.witnessCount && <span className={c('witnessChip')}>{ev.witnessCount} witness{ev.witnessCount === 1 ? '' : 'es'}</span>}
-                  </span>
-                  <span className={c('achDate')}>{dateLabel(ev.date)}</span>
+        <ViewTabs
+          profile={
+            <>
+              {(p.personalStatement || p.bio) && (
+                <div className={c('section')}>
+                  {p.personalStatement && <p className={c('statement')}>&ldquo;{p.personalStatement}&rdquo;</p>}
+                  {p.bio && <p className={c('bio')}>{p.bio}</p>}
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+              )}
 
-        <p className={c('footnote')}>Evidence and endorsements add context — they’re never official certification.</p>
+              {!!p.primaryGoals?.length && (
+                <div className={c('section')}>
+                  <div className={c('sectionHead')}>Current goals</div>
+                  <div className={c('tags')}>
+                    {p.primaryGoals.map((g) => (
+                      <span key={g} className={c('tag')}>
+                        {g}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className={c('section')}>
+                <div className={c('sectionHead')}>Featured personal records</div>
+                {!featured.length && <p className={c('empty')}>No featured lifts yet.</p>}
+                {!!featured.length && (
+                  <div className={c('prGrid')}>
+                    {featured.map(({ lift, best }) => {
+                      const evidenceRec = best.evidencePath ? evidence.find((e) => e.storagePath === best.evidencePath) : undefined
+                      const evidenceUrl = best.evidencePath ? evidenceUrls[best.evidencePath] : undefined
+                      return (
+                        <div key={lift.id} className={c('prCard')}>
+                          <div className={c('prName')}>{lift.name}</div>
+                          <div className={c('prVal')}>
+                            {wDisp(best.w, unit)} {unit}
+                            {lift.perHand ? '/ea' : ''}
+                          </div>
+                          <div className={c('prSub')}>
+                            {best.r} rep{best.r === 1 ? '' : 's'} · {dateLabel(best.date)}
+                          </div>
+                          <span className={c('badge')}>{RECORD_STATUS_LABEL[best.recordStatus ?? 'self-reported']}</span>
+                          {!!best.witnessCount && (
+                            <div className={c('hint')}>
+                              Witnessed by {best.witnessCount} {best.witnessCount === 1 ? 'person' : 'people'}
+                            </div>
+                          )}
+                          {evidenceUrl &&
+                            (evidenceRec?.mimeType.startsWith('video/') ? (
+                              <video src={evidenceUrl} controls className={c('evidenceThumb')} />
+                            ) : (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={evidenceUrl} alt="" className={c('evidenceThumb')} />
+                            ))}
+                          <div className={c('witnessRow')}>
+                            <WitnessForm
+                              userId={userId}
+                              token={searchParams.t}
+                              liftId={lift.id}
+                              date={best.date}
+                              weightKg={best.w}
+                              reps={best.r}
+                            />
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className={c('section')}>
+                <div className={c('sectionHead')}>Timeline</div>
+                {!timeline.length && <p className={c('empty')}>No milestones logged yet.</p>}
+                {!!timeline.length && (
+                  <div className={c('achList')}>
+                    {timeline.map((ev, i) => (
+                      <div key={i} className={c('achRow')}>
+                        <span>
+                          New PR — {ev.liftName}: {wDisp(ev.w, unit)} {unit} × {ev.r}
+                          <span className={c('badge')}>{RECORD_STATUS_LABEL[ev.recordStatus]}</span>
+                          {(() => {
+                            // The owner can now Ask AI about any self-reported compound-lift entry,
+                            // not just ones the outlier heuristic flagged — so a cached review can
+                            // exist here even when ev.outlier is false. Mirror ProfilePage.tsx's
+                            // rendering exactly (read-only: no button, this page never triggers a call).
+                            const review = aiReviews.find((r) => r.id === reviewKey(ev.liftId, ev.date, ev.w, ev.r))
+                            if (ev.outlier && !review) {
+                              return (
+                                <span className={c('outlierFlag')} title="Unusually large jump from the previous best — self-reported, unverified.">
+                                  ⚠ large jump
+                                </span>
+                              )
+                            }
+                            if (review) {
+                              return (
+                                <span
+                                  className={review.verdict === 'plausible' ? `${c('outlierFlag')} ${c('aiVerdictOk')}` : c('outlierFlag')}
+                                  title={`AI read: ${review.reasoning}`}
+                                >
+                                  {review.verdict === 'plausible'
+                                    ? '✓ AI: likely plausible'
+                                    : review.verdict === 'implausible'
+                                      ? '⚠ AI: worth checking'
+                                      : ev.outlier
+                                        ? '⚠ large jump'
+                                        : '• AI: uncertain'}
+                                </span>
+                              )
+                            }
+                            return null
+                          })()}
+                          {!!ev.witnessCount && <span className={c('witnessChip')}>{ev.witnessCount} witness{ev.witnessCount === 1 ? '' : 'es'}</span>}
+                        </span>
+                        <span className={c('achDate')}>{dateLabel(ev.date)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <p className={c('footnote')}>Evidence and endorsements add context — they’re never official certification.</p>
+            </>
+          }
+          dashboard={
+            <div className={c('section')}>
+              <div className={c('sectionHead')}>Compound lift progress</div>
+              <DashboardView series={series} unit={unit} />
+            </div>
+          }
+        />
       </div>
     </main>
   )
