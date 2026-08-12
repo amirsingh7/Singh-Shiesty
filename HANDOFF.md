@@ -1,7 +1,13 @@
 # RESUME HERE
-- **Working on:** Renaming the Vercel project away from "singh-shiesty" branding (so the public PR Portfolio link doesn't show it) and rebuilding the public profile link with the new domain.
-- **Next step:** User clicked Save on the Vercel rename (Settings → General → Project Name, ignored the irrelevant OIDC warning). My guess `pr-portfolio.vercel.app` 404'd (probably taken globally) while `singh-shiesty.vercel.app` still works. Ask the user what name Vercel actually landed on (Settings → General, or the Domains tab), then `curl -o /dev/null -w "%{http_code}" https://<new-domain>/p/ca85240c-8697-485a-a671-fe9dd1762078?t=2482f7d4-91b2-4a27-8ee5-5d424cb6a7a8` to confirm it resolves, then hand them the rebuilt link.
-- **Waiting on you:** the real final Vercel project name/domain.
+- **Working on:** Nothing in-flight. The Vercel rebrand is done — pick up wherever the user directs next.
+- **Next step:** None queued. If resuming without new direction, ask the user what's next for PR Portfolio (see `project_pr_portfolio.md` memory for Phase 2 ideas) or the Vitality mentor side of this repo.
+- **Waiting on you:** nothing.
+
+## Just finished
+- **Vercel domain rebrand complete.** Renaming the project (Settings → General) did NOT move the `.vercel.app` domain — domain and project name are decoupled once a domain exists. Fix was adding a new domain manually via Domains tab → "Search any domain" box → typed candidate → connected to Production → Save. `pr-portfolio.vercel.app` and a few variants were taken; landed on **`prportfolio1.vercel.app`**, confirmed 200 via curl.
+- **Final public profile link (no singh-shiesty branding):**
+  `https://prportfolio1.vercel.app/p/ca85240c-8697-485a-a671-fe9dd1762078?t=2482f7d4-91b2-4a27-8ee5-5d424cb6a7a8`
+- Old `singh-shiesty.vercel.app` domain is still attached to the project too (both work) — user didn't ask to remove it, left as-is.
 
 -----
 
