@@ -8,13 +8,14 @@ function c(name: keyof typeof styles): string {
 }
 
 /**
- * Toggles between the resume-style Profile view and the progress-chart
- * Dashboard view on the public /p/[userId] page. Both are already rendered
- * server-side in the initial HTML (no refetch on switch) — this just shows
- * one and hides the other, same pattern as any tab UI with no routing need.
+ * Toggles between the resume-style Profile view, the progress-chart
+ * Dashboard view, and the equation-board view on the public /p/[userId] page.
+ * All three are already rendered server-side/client-mounted in the initial
+ * HTML (no refetch on switch) — this just shows one and hides the others,
+ * same pattern as any tab UI with no routing need.
  */
-export default function ViewTabs({ profile, dashboard }: { profile: ReactNode; dashboard: ReactNode }) {
-  const [view, setView] = useState<'profile' | 'dashboard'>('profile')
+export default function ViewTabs({ profile, dashboard, board }: { profile: ReactNode; dashboard: ReactNode; board: ReactNode }) {
+  const [view, setView] = useState<'profile' | 'dashboard' | 'board'>('profile')
 
   return (
     <div>
@@ -37,9 +38,19 @@ export default function ViewTabs({ profile, dashboard }: { profile: ReactNode; d
         >
           Dashboard
         </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={view === 'board'}
+          className={view === 'board' ? `${c('viewTab')} ${c('viewTabActive')}` : c('viewTab')}
+          onClick={() => setView('board')}
+        >
+          Board
+        </button>
       </div>
       <div hidden={view !== 'profile'}>{profile}</div>
       <div hidden={view !== 'dashboard'}>{dashboard}</div>
+      <div hidden={view !== 'board'}>{board}</div>
     </div>
   )
 }

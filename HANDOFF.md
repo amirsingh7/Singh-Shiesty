@@ -1,22 +1,33 @@
 # RESUME HERE
-- **Working on:** Debugging the user's iOS Shortcut ("Sleep VS/Vercel") that POSTs `sleepHours` to `/api/vitals/ingest` — it was reporting 31h instead of a real ~7-8h. This is a phone-side Shortcuts app fix, not a repo code change.
-- **Next step:** User is comparing their live shortcut against the full 12-step spec I gave them (see below) and about to run it. Ask if it matched and what the result was.
-- **Waiting on you:** nothing, keep going — just pick up the shortcut result when they report back.
+- **Working on:** Nothing in-flight. The Vercel rebrand is done — pick up wherever the user directs next.
+- **Next step:** None queued. If resuming without new direction, ask the user what's next for PR Portfolio (see `project_pr_portfolio.md` memory for Phase 2 ideas) or the Vitality mentor side of this repo.
+- **Waiting on you:** nothing.
+
+## Just finished
+- **Vercel domain rebrand complete.** Renaming the project (Settings → General) did NOT move the `.vercel.app` domain — domain and project name are decoupled once a domain exists. Fix was adding a new domain manually via Domains tab → "Search any domain" box → typed candidate → connected to Production → Save. `pr-portfolio.vercel.app` and a few variants were taken; landed on **`prportfolio1.vercel.app`**, confirmed 200 via curl.
+- **Final public profile link (no singh-shiesty branding):**
+  `https://prportfolio1.vercel.app/p/ca85240c-8697-485a-a671-fe9dd1762078?t=2482f7d4-91b2-4a27-8ee5-5d424cb6a7a8`
+- Old `singh-shiesty.vercel.app` domain is still attached to the project too (both work) — user didn't ask to remove it, left as-is.
 
 -----
 
 ## Done so far
-1. **Detonated only the Finance and Brand tiles** (not a full `/detonate` — user was explicit: only those two). Deleted `public/tiles/finance.html` and `public/tiles/brand.html`, did NOT touch `content/site.ts`'s `detonated` flag (that's for full-board blackout only). No live Supabase tile rows existed for those slots (`mcp__vitality__list_slots` confirmed empty), so no DB cleanup was needed. Auto-commit hook fired (`8361f8a`) and it's already pushed to `origin/decorate/laurel-seal`. Full rebuild spec saved to memory: `~/.claude/projects/-Users-asunderrex92679-VS-Code-Singh-Shiesty/memory/project_finance_brand_tiles_detonated.md`.
-2. **Sleep Shortcut debugging saga** (long, iterative, phone-side only — no repo files touched): traced a 31h sleep reading through several wrong theories (summing overlapping stages → two-night calendar-bucket spanning → Sort+Limit ignoring the date filter → Calculate Statistics returning raw Unix epoch numbers instead of dates) before landing on the real fix: use Filter (no Sort/Limit) → Calculate Statistics Minimum/Maximum → reconstruct real dates via `Adjust Date` (Jan 1 1970 epoch + Add Seconds) → Get Hours Between → Round → POST. Full final 12-step spec was given to the user in the prior message — see that message in this transcript if needed, or just ask the user to paste their current shortcut screenshot again.
+1. **Sleep Shortcut fix** (phone-side only, no repo files): iOS Shortcut "Sleep VS/Vercel" was reporting 30090 (seconds, not hours). Fixed by reordering: Get Duration → ÷3600 → Round to Tenths → Set variable, all placed *before* the "Get contents of URL" POST step. Confirmed live — dashboard now shows correct sleep hours.
+2. **Peak tile reorg** (`public/tiles/peak.html`): removed the "Your schedule" open-block card + quick-add console (dead JS/CSS cleaned up too); merged the ·01/·02 sections back into one "Your day" flow. Merged to `main` via PR #36.
+3. **Phase 1 isolation re-verified live**: 8/8 checks passed via a throwaway two-account test against production Supabase (created/seeded/deleted, never touched the real account) before the user shared their public profile link.
+4. **Public profile link generated**: `https://singh-shiesty.vercel.app/p/ca85240c-8697-485a-a671-fe9dd1762078?t=2482f7d4-91b2-4a27-8ee5-5d424cb6a7a8` (visibility=private, token-gated — this is the real link to use until the domain changes).
+5. **New "Dashboard" tab built** on the public `/p/[userId]` page — live per-lift (Tier-1 compound) progress charts (SVG line, current best, gain since first log), derived from the same Train data Featured PRs already reads. New files: `app/p/[userId]/ViewTabs.tsx`, `app/p/[userId]/DashboardView.tsx`; edited `app/p/[userId]/page.tsx` and `app/profile/profile.module.css` (purely additive, 44 new lines, 0 existing rules touched — confirmed via diff, so the owner's private `/profile` page is unaffected). `npx tsc --noEmit` clean. Live-verified via a throwaway Supabase test account. Merged to `main` via PR #37.
+6. **Vercel rename in progress**: confirmed via grep that this codebase has zero OIDC/OpenID Connect federation usage anywhere, so Vercel's rename warning about OIDC token claims doesn't apply — safe to proceed. User saved a new project name; exact final name not yet confirmed (see Next step).
 
 ## Key files
-- None touched by me this session for the shortcut work — it all lives in the user's iOS Shortcuts app ("Sleep VS/Vercel" shortcut), not the repo.
-- `app/api/vitals/ingest/route.ts` — the receiving endpoint (unchanged, already correct; just stores whatever `sleepHours` number it's sent, no math).
-- `public/tiles/peak.html:1323` — where `sleepHours` gets displayed ("Synced today · Xh sleep"); also unchanged, just prints the raw value.
-- `public/tiles/finance.html`, `public/tiles/brand.html` — deleted this session (see memory note above for rebuild spec).
+- `app/p/[userId]/page.tsx`, `ViewTabs.tsx`, `DashboardView.tsx` — new public Dashboard tab, merged to `main`.
+- `app/profile/profile.module.css` — new `.viewTabs`/`.viewTab`/`.viewTabActive`/`.dashGrid`/`.dashChart` classes, additive only.
+- `public/tiles/peak.html` — reorganized, merged to `main`.
+- `lib/tiles/profileDerive.ts` — reused as-is (`allLifts`, `combinedHistory`, `wDisp`, `dateLabel`), no changes needed.
 
 ## Watch out
-- The shortcut is meant to run each **morning** shortly after waking, via a Time-of-Day automation (Shortcuts app → Automation → + → Time of Day). A 1-day lookback window only works reliably at that time of day — testing it late at night (as happened this session, after midnight) makes a 1-day window too short (misses part of "last night") and a 2-day window too wide (catches the night before too, reproducing the original bug). Don't re-widen the window as a quick fix without noting this.
-- Shortcuts' "Find Health Samples" Date filter only offers day/week/month/year units (no hours) and only "is on / is today / is between / is in the last" comparisons (no "is after") — worth remembering if similar HealthKit shortcuts come up again.
-- `Calculate Statistics (Minimum/Maximum)` on Date-type values returns a raw Unix epoch number as text, not a formatted date — needs the `Adjust Date` epoch-reconstruction trick (see spec above) to convert back to a usable Date.
-- Detonate command: user's house rule confirmed this session — always ask before running any `/detonate`, and when scoped ("only X and Y tiles"), do exactly that scope, never the full board.
+- No hardcoded `singh-shiesty` domain references exist anywhere in the codebase (grep-confirmed) — it's purely the Vercel project's auto-assigned name, so once the real new name is confirmed, updating the link is just a URL string, zero code changes.
+- Public profile identifiers (for rebuilding the link): `userId=ca85240c-8697-485a-a671-fe9dd1762078`, `token=2482f7d4-91b2-4a27-8ee5-5d424cb6a7a8`.
+- This repo is both "Vitality" (personal dashboard, per CLAUDE.md's mentor persona) and the in-progress "PR Portfolio" product — see memory `project_pr_portfolio.md` for the full Phase 0–6 history (done/deployed as of ~8 days ago; today added the Dashboard-tab feature on top).
+- Branch `decorate/laurel-seal` → PRs via `gh pr create --base main --head decorate/laurel-seal` then `gh pr merge <n> --merge --delete-branch=false`. An auto-commit hook fires in the background locally — don't manually `git commit` unless asked, but PR create/merge is still manual.
+- `gh` occasionally throws a transient TLS x509 error on the GraphQL endpoint (seen twice this session) — just retry the exact same command, it's not a real cert problem (`curl`/`gh auth status` work fine throughout).
