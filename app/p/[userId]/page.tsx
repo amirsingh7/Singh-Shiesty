@@ -22,6 +22,7 @@ import { reviewKey, type AIReviewRecord } from '@/lib/tiles/aiReview'
 import WitnessForm from './WitnessForm'
 import ViewTabs from './ViewTabs'
 import DashboardView from './DashboardView'
+import BoardView from './BoardView'
 import styles from '../../profile/profile.module.css'
 
 /**
@@ -321,6 +322,12 @@ export default async function PublicProfilePage({
             <div className={c('section')}>
               <div className={c('sectionHead')}>Compound lift progress</div>
               <DashboardView series={series} unit={unit} />
+            </div>
+          }
+          board={
+            <div className={c('section')}>
+              <div className={c('sectionHead')}>Board</div>
+              <BoardView />
             </div>
           }
         />
