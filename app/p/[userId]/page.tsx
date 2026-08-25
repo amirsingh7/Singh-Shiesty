@@ -329,7 +329,7 @@ export default async function PublicProfilePage({
           }
           board={
             <div className={c('section')}>
-              <div className={c('sectionHead')}>Board</div>
+              <div className={c('sectionHead')}>Tiles</div>
               <BoardView />
             </div>
           }
