@@ -23,6 +23,7 @@ import WitnessForm from './WitnessForm'
 import ViewTabs from './ViewTabs'
 import DashboardView from './DashboardView'
 import BoardView from './BoardView'
+import FounderStory from './FounderStory'
 import styles from '../../profile/profile.module.css'
 
 /**
@@ -203,6 +204,8 @@ export default async function PublicProfilePage({
                   {p.bio && <p className={c('bio')}>{p.bio}</p>}
                 </div>
               )}
+
+              <FounderStory profile={p} />
 
               {!!p.primaryGoals?.length && (
                 <div className={c('section')}>
