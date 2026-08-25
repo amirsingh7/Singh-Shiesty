@@ -205,7 +205,6 @@ function OpenTileOverlay({
   id,
   label,
   html,
-  disclaimer,
   register,
   unregister,
   onClose,
@@ -213,7 +212,6 @@ function OpenTileOverlay({
   id: string
   label: string
   html: string
-  disclaimer?: string
   register: (w: Window | null, id: string) => void
   unregister: (w: Window | null) => void
   onClose: () => void
@@ -224,26 +222,10 @@ function OpenTileOverlay({
       <div className="openCard">
         <div className="openTop">
           <button type="button" className="openBack" onClick={onClose}>
-            <span aria-hidden="true">←</span> Board
+            <span aria-hidden="true">←</span> Tiles
           </button>
           <span className="openSlotName">{label}</span>
         </div>
-        {disclaimer && (
-          <div
-            style={{
-              flex: 'none',
-              padding: '8px 20px',
-              background: 'rgba(249,115,22,.12)',
-              borderBottom: '1px solid rgba(249,115,22,.25)',
-              color: '#fdba74',
-              fontSize: 11.5,
-              letterSpacing: '.01em',
-              textAlign: 'center',
-            }}
-          >
-            {disclaimer}
-          </div>
-        )}
         <div className="openStage">
           <iframe
             ref={(el) => {
@@ -268,11 +250,6 @@ function OpenTileOverlay({
       </div>
     </div>
   )
-}
-
-const DISCLAIMERS: Partial<Record<CoreTileId, string>> = {
-  velocity: 'Sample progression shown for demonstration — not this account’s real lift data.',
-  symphony: 'Connect your OWN Spotify to try it — this doesn’t control the profile owner’s account.',
 }
 
 export default function BoardView() {
@@ -406,7 +383,6 @@ export default function BoardView() {
           id={openId}
           label={CORE_TILES[openId].label}
           html={filled[openId]!}
-          disclaimer={DISCLAIMERS[openId]}
           register={register}
           unregister={unregister}
           onClose={() => setOpenId(null)}
