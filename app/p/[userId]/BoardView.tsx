@@ -1,8 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { cloneElement, isValidElement, useCallback, useEffect, useRef, useState } from 'react'
 import { CORE_TILES, type CoreTileId } from '@/lib/tiles/coreTiles'
-import { useTileHost } from '@/lib/tiles/useTileHost'
 import { withBridge } from '@/lib/tiles/tileBridge'
 import { initVeeTiles } from '@/components/veeTilesAnim'
 import '@/components/veeTiles.css'
@@ -10,27 +9,187 @@ import '@/components/veeTiles.css'
 /**
  * The public equation-board view: the same tile visuals as the owner's real
  * dashboard (app/app/DashboardGrid.tsx), trimmed to the three tiles that make
- * sense for a stranger to see (Train, Velocity, Symphony) and — deliberately —
- * never touching the owner's real data.
+ * sense for a stranger to see (Train, Velocity, Symphony).
  *
- * A visitor's browser here has no Supabase session, so useTileHost's
- * save/load calls run with auth.uid() = null. RLS (`auth.uid() = user_id`)
- * already blocks both directions for ANY userId, including the owner's real
- * one — but a fixed, obviously-fake id is used anyway as a second, explicit
- * guarantee that this view can never address the owner's row even if RLS
- * were ever loosened. Every open tile therefore renders its own baked-in
- * placeholder state (the same "demo numbers" a fresh, never-saved tile shows
- * anyone), never a real save landing anywhere.
+ * Deliberately does NOT use the shared useTileHost/tileStore path at all —
+ * load/save/read/write here are answered locally, in this file, and never
+ * reach Supabase. That's stronger than relying on RLS alone (which already
+ * blocks an anonymous visitor from reading/writing any user's row): it means
+ * this view makes zero database calls for tile data, period, so there is no
+ * live path back to the owner's real account no matter how the backend
+ * changes later. Velocity reads Train's history to chart compound-lift
+ * progress (window.Vitality.read('train')) — real accounts have no history
+ * here, so it's handed a small built-in sample split instead of an empty
+ * result, so the tile shows something worth looking at rather than its
+ * "log a session in Train first" dead end. tiktok/youtube/stock don't apply
+ * to these three tiles, so they're not wired up. Spotify IS passed through
+ * to its real API route (same as the real dashboard) — that route already
+ * requires the OWNER's own signed-in session, so an anonymous visitor's call
+ * fails cleanly server-side (Symphony just renders its normal "disconnected"
+ * state, same as it would for a logged-out owner). Mentor chat is answered
+ * locally instead (see MENTOR_DEMO_REPLY below) — forwarding it hit the same
+ * owner-auth wall, but surfaced as a raw "Sign in to chat with Gobind." error
+ * inside the tile, which reads as broken to a stranger opening a shared link.
  */
-const BOARD_USER_ID = 'public-board-demo'
 const BOARD_TILE_IDS: CoreTileId[] = ['train', 'velocity', 'symphony']
 
+const MOCK_TRAIN_DATA = {
+  'vitality.logger.unit': 'kg',
+  'vitality.logger.v4': JSON.stringify({
+    days: [
+      {
+        name: 'Day 1',
+        lifts: [
+          {
+            id: 'squat',
+            name: 'Squat',
+            tier: 1,
+            history: [
+              { w: 100, r: 5, sets: 3, date: '2026-03-02' },
+              { w: 102.5, r: 5, sets: 3, date: '2026-03-30' },
+              { w: 107.5, r: 5, sets: 3, date: '2026-04-27' },
+              { w: 112.5, r: 5, sets: 3, date: '2026-05-25' },
+              { w: 117.5, r: 5, sets: 3, date: '2026-06-22' },
+              { w: 122.5, r: 3, sets: 3, date: '2026-07-20' },
+              { w: 130, r: 1, sets: 1, date: '2026-08-10' },
+            ],
+          },
+          {
+            id: 'bench',
+            name: 'Bench Press',
+            tier: 1,
+            history: [
+              { w: 65, r: 5, sets: 3, date: '2026-03-02' },
+              { w: 67.5, r: 5, sets: 3, date: '2026-03-30' },
+              { w: 70, r: 5, sets: 3, date: '2026-04-27' },
+              { w: 72.5, r: 5, sets: 3, date: '2026-05-25' },
+              { w: 75, r: 5, sets: 3, date: '2026-06-22' },
+              { w: 77.5, r: 3, sets: 3, date: '2026-07-20' },
+              { w: 82.5, r: 1, sets: 1, date: '2026-08-10' },
+            ],
+          },
+          {
+            id: 'deadlift',
+            name: 'Deadlift',
+            tier: 1,
+            history: [
+              { w: 130, r: 5, sets: 3, date: '2026-03-02' },
+              { w: 135, r: 5, sets: 3, date: '2026-03-30' },
+              { w: 140, r: 5, sets: 3, date: '2026-04-27' },
+              { w: 145, r: 3, sets: 3, date: '2026-05-25' },
+              { w: 150, r: 3, sets: 3, date: '2026-06-22' },
+              { w: 157.5, r: 2, sets: 3, date: '2026-07-20' },
+              { w: 167.5, r: 1, sets: 1, date: '2026-08-10' },
+            ],
+          },
+        ],
+      },
+    ],
+  }),
+}
+
 type FilledMap = Partial<Record<CoreTileId, string>>
+
+/** Same fetch-proxy shapes as lib/tiles/useTileHost.ts, scoped to what
+ *  Velocity (mentor) and Symphony (spotify) can send — both routes already
+ *  gate on the OWNER's own session, so an anonymous visitor's call just
+ *  fails cleanly server-side. */
+/** Gobind can't actually chat for an anonymous visitor — the real endpoint
+ *  requires the owner's own signed-in session, and forwarding to it just
+ *  surfaces a raw "Sign in to chat with Gobind" error in the tile, which
+ *  looks broken to a stranger clicking in from a shared link (e.g. LinkedIn).
+ *  So, like Train's MOCK_TRAIN_DATA above, mentor chat on the public board
+ *  is answered locally with a fixed demo reply — no network call, no auth
+ *  error ever reaches the tile. */
+const MENTOR_DEMO_REPLY =
+  "This is a shared, read-only view of the board — Gobind's live chat only runs for the account owner. Everything else here is real."
+
+async function proxyNetworkMessage(msg: { type: string; id?: string; [k: string]: unknown }, src: Window) {
+  if (msg.type === 'mentor') {
+    const message = String(msg.message || '').slice(0, 2000)
+    if (!message) {
+      src.postMessage({ source: 'vitality-host', type: 'mentor:error', id: msg.id, reason: 'no_message' }, '*')
+      return
+    }
+    src.postMessage(
+      { source: 'vitality-host', type: 'mentor:result', id: msg.id, data: { reply: MENTOR_DEMO_REPLY, mood: 'neutral' } },
+      '*',
+    )
+    return
+  }
+
+  if (msg.type === 'spotify') {
+    if (msg.action === 'connect') return // no OAuth popup from a stranger's browser
+    const { source: _s, type: _t, id, action, ...extra } = msg
+    try {
+      const r = await fetch('/api/spotify/player', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, ...extra }),
+      })
+      const j = await r.json()
+      if (r.ok) {
+        src.postMessage({ source: 'vitality-host', type: 'spotify:result', id, data: j }, '*')
+      } else {
+        src.postMessage({ source: 'vitality-host', type: 'spotify:error', id, reason: String(j?.error || 'spotify_failed') }, '*')
+      }
+    } catch {
+      src.postMessage({ source: 'vitality-host', type: 'spotify:error', id: msg.id, reason: 'fetch_failed' }, '*')
+    }
+  }
+}
+
+/** The local, Supabase-free bridge host for the Board demo. */
+function useBoardTileHost() {
+  const reg = useRef<WeakMap<Window, CoreTileId>>(new WeakMap())
+
+  const register = useCallback((win: Window | null, tileId: string) => {
+    if (win) reg.current.set(win, tileId as CoreTileId)
+  }, [])
+  const unregister = useCallback((win: Window | null) => {
+    if (win) reg.current.delete(win)
+  }, [])
+
+  useEffect(() => {
+    function onMessage(e: MessageEvent) {
+      const msg = e.data
+      if (!msg || msg.source !== 'vitality-tile') return
+      const src = e.source as Window | null
+      if (!src || !reg.current.has(src)) return
+
+      if (msg.type === 'load') {
+        src.postMessage({ source: 'vitality-host', type: 'load:result', id: msg.id, data: [] }, '*')
+        return
+      }
+      if (msg.type === 'read') {
+        const data = msg.slot === 'train' ? MOCK_TRAIN_DATA : null
+        src.postMessage({ source: 'vitality-host', type: 'read:result', id: msg.id, data }, '*')
+        return
+      }
+      if (msg.type === 'save') {
+        src.postMessage({ source: 'vitality-host', type: 'save:error', id: msg.id, reason: 'demo_read_only' }, '*')
+        return
+      }
+      if (msg.type === 'write') {
+        src.postMessage({ source: 'vitality-host', type: 'write:error', id: msg.id, reason: 'demo_read_only' }, '*')
+        return
+      }
+      if (msg.type === 'mentor' || msg.type === 'spotify') {
+        proxyNetworkMessage(msg, src)
+      }
+    }
+    window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
+  }, [])
+
+  return { register, unregister }
+}
 
 function OpenTileOverlay({
   id,
   label,
   html,
+  disclaimer,
   register,
   unregister,
   onClose,
@@ -38,6 +197,7 @@ function OpenTileOverlay({
   id: string
   label: string
   html: string
+  disclaimer?: string
   register: (w: Window | null, id: string) => void
   unregister: (w: Window | null) => void
   onClose: () => void
@@ -52,6 +212,22 @@ function OpenTileOverlay({
           </button>
           <span className="openSlotName">{label}</span>
         </div>
+        {disclaimer && (
+          <div
+            style={{
+              flex: 'none',
+              padding: '8px 20px',
+              background: 'rgba(249,115,22,.12)',
+              borderBottom: '1px solid rgba(249,115,22,.25)',
+              color: '#fdba74',
+              fontSize: 11.5,
+              letterSpacing: '.01em',
+              textAlign: 'center',
+            }}
+          >
+            {disclaimer}
+          </div>
+        )}
         <div className="openStage">
           <iframe
             ref={(el) => {
@@ -78,12 +254,16 @@ function OpenTileOverlay({
   )
 }
 
+const DISCLAIMERS: Partial<Record<CoreTileId, string>> = {
+  velocity: 'Sample progression shown for demonstration — not this account’s real lift data.',
+}
+
 export default function BoardView() {
   const ref = useRef<HTMLDivElement>(null)
   const [filled, setFilled] = useState<FilledMap>({})
   const [loaded, setLoaded] = useState(false)
   const [openId, setOpenId] = useState<CoreTileId | null>(null)
-  const { register, unregister } = useTileHost(BOARD_USER_ID)
+  const { register, unregister } = useBoardTileHost()
 
   useEffect(() => {
     let alive = true
@@ -163,6 +343,26 @@ export default function BoardView() {
                 {core.art}
                 <span className="index">{core.index}</span>
                 <span className="glyph">{core.glyph}</span>
+                {/* the same large, faint centered glyph the real dashboard shows
+                    behind each tile's title (app/app/DashboardGrid.tsx TileFace) */}
+                <span
+                  aria-hidden
+                  style={{
+                    position: 'absolute',
+                    top: 52,
+                    left: 0,
+                    right: 0,
+                    zIndex: 5,
+                    display: 'flex',
+                    justifyContent: 'center',
+                    pointerEvents: 'none',
+                    color: 'rgba(255,255,255,.22)',
+                  }}
+                >
+                  {isValidElement(core.glyph)
+                    ? cloneElement(core.glyph as React.ReactElement<{ width?: number; height?: number }>, { width: 44, height: 44 })
+                    : null}
+                </span>
                 <div className="cap">
                   <span className="label">{core.label}</span>
                 </div>
@@ -189,6 +389,7 @@ export default function BoardView() {
           id={openId}
           label={CORE_TILES[openId].label}
           html={filled[openId]!}
+          disclaimer={DISCLAIMERS[openId]}
           register={register}
           unregister={unregister}
           onClose={() => setOpenId(null)}
