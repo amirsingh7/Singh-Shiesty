@@ -155,7 +155,13 @@ export function useTileHost(
       // message event) so the tile knows to re-check its status.
       if (msg.type === 'spotify') {
         if (msg.action === 'connect') {
-          const popup = window.open('/api/spotify/authorize', 'spotify-connect', 'width=480,height=720')
+          // ?return= is this page's own URL — on mobile, window.open()
+          // routinely becomes a plain tab that script can't close, which
+          // strands the owner on a blank "connected" page with the poll
+          // below never firing. callback/route.ts falls back to redirecting
+          // that tab back here once the connection is saved.
+          const returnTo = encodeURIComponent(window.location.pathname + window.location.search)
+          const popup = window.open(`/api/spotify/authorize?return=${returnTo}`, 'spotify-connect', 'width=480,height=720')
           if (!popup) return
           const iv = setInterval(() => {
             if (popup.closed) {
