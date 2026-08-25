@@ -1,6 +1,7 @@
 'use client'
 
 import { cloneElement, isValidElement, useCallback, useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { CORE_TILES, type CoreTileId } from '@/lib/tiles/coreTiles'
 import { withBridge } from '@/lib/tiles/tileBridge'
 import { initVeeTiles } from '@/components/veeTilesAnim'
@@ -147,7 +148,14 @@ async function proxyNetworkMessage(msg: { type: string; id?: string; [k: string]
       // back to redirecting that tab back here once connected (see
       // app/api/spotify/callback/route.ts), rather than stranding the
       // visitor on a blank "connected" page with the poll below never firing.
-      const returnTo = encodeURIComponent(window.location.pathname + window.location.search)
+      // view=board&open=symphony (read by ViewTabs.tsx / this component) put
+      // that redirect back on the Tiles tab with Symphony reopened, instead
+      // of the default Profile tab with the board (and the tile the visitor
+      // was just using) closed.
+      const returnParams = new URLSearchParams(window.location.search)
+      returnParams.set('view', 'board')
+      returnParams.set('open', 'symphony')
+      const returnTo = encodeURIComponent(`${window.location.pathname}?${returnParams.toString()}`)
       const popup = window.open(`/api/spotify/authorize?board=1&return=${returnTo}`, 'spotify-connect', 'width=480,height=720')
       if (!popup) return
       const iv = setInterval(() => {
@@ -280,6 +288,7 @@ export default function BoardView() {
   const [loaded, setLoaded] = useState(false)
   const [openId, setOpenId] = useState<CoreTileId | null>(null)
   const { register, unregister } = useBoardTileHost()
+  const searchParams = useSearchParams()
 
   useEffect(() => {
     let alive = true
@@ -306,6 +315,17 @@ export default function BoardView() {
       alive = false
     }
   }, [])
+
+  // ?open=<tileId> — the Spotify connect flow's mobile redirect-back
+  // (proxyNetworkMessage below / callback/route.ts) lands here wanting the
+  // tile the visitor was using reopened, not the closed board they'd see by
+  // default.
+  useEffect(() => {
+    if (!loaded) return
+    const wanted = searchParams.get('open') as CoreTileId | null
+    if (wanted && filled[wanted]) setOpenId(wanted)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded])
 
   useEffect(() => {
     if (!ref.current || !loaded) return
