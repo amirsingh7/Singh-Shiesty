@@ -23,13 +23,17 @@ import '@/components/veeTiles.css'
  * result, so the tile shows something worth looking at rather than its
  * "log a session in Train first" dead end. tiktok/youtube/stock don't apply
  * to these three tiles, so they're not wired up. Spotify IS passed through
- * to its real API route (same as the real dashboard) — that route already
- * requires the OWNER's own signed-in session, so an anonymous visitor's call
- * fails cleanly server-side (Symphony just renders its normal "disconnected"
- * state, same as it would for a logged-out owner). Mentor chat is answered
- * locally instead (see MENTOR_DEMO_REPLY below) — forwarding it hit the same
- * owner-auth wall, but surfaced as a raw "Sign in to chat with Gobind." error
- * inside the tile, which reads as broken to a stranger opening a shared link.
+ * to its real API route, connect popup included (same as the real dashboard)
+ * — /api/spotify/callback gates on and saves to whoever's signed in in that
+ * popup, so the account owner browsing their own shared link while signed in
+ * connects their own real Spotify correctly, while an anonymous visitor with
+ * no session just sees the callback's "you need to be signed in" page (no
+ * data ever written). Mentor chat is answered locally instead (see
+ * MENTOR_DEMO_REPLY below) — forwarding it hits the same owner-auth wall, but
+ * surfaces as a raw "Sign in to chat with Gobind." error inside the tile,
+ * which reads as broken to a stranger opening a shared link, and unlike
+ * Spotify there's no "owner browsing their own link" case worth unlocking —
+ * Gobind's context there is the visitor's session, not the profile owner's.
  */
 const BOARD_TILE_IDS: CoreTileId[] = ['train', 'velocity', 'symphony']
 
@@ -90,10 +94,6 @@ const MOCK_TRAIN_DATA = {
 
 type FilledMap = Partial<Record<CoreTileId, string>>
 
-/** Same fetch-proxy shapes as lib/tiles/useTileHost.ts, scoped to what
- *  Velocity (mentor) and Symphony (spotify) can send — both routes already
- *  gate on the OWNER's own session, so an anonymous visitor's call just
- *  fails cleanly server-side. */
 /** Gobind can't actually chat for an anonymous visitor — the real endpoint
  *  requires the owner's own signed-in session, and forwarding to it just
  *  surfaces a raw "Sign in to chat with Gobind" error in the tile, which
@@ -119,7 +119,24 @@ async function proxyNetworkMessage(msg: { type: string; id?: string; [k: string]
   }
 
   if (msg.type === 'spotify') {
-    if (msg.action === 'connect') return // no OAuth popup from a stranger's browser
+    if (msg.action === 'connect') {
+      // /api/spotify/callback gates on the popup's own signed-in session and
+      // saves only to that account — so this is safe to open unconditionally:
+      // the account owner, browsing their own shared link while signed in,
+      // gets it connected correctly; an anonymous visitor with no session
+      // just sees the callback's "you need to be signed in" page and nothing
+      // is written. Same popup+poll pattern as the real dashboard's host
+      // (lib/tiles/useTileHost.ts) — a sandboxed tile iframe can't open one.
+      const popup = window.open('/api/spotify/authorize', 'spotify-connect', 'width=480,height=720')
+      if (!popup) return
+      const iv = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(iv)
+          src.postMessage({ source: 'vitality-host', type: 'spotify:connected' }, '*')
+        }
+      }, 500)
+      return
+    }
     const { source: _s, type: _t, id, action, ...extra } = msg
     try {
       const r = await fetch('/api/spotify/player', {
