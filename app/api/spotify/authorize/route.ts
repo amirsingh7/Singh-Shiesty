@@ -1,5 +1,11 @@
 import { randomBytes } from 'node:crypto'
-import { spotifyRedirectUri, secureCookieSuffix, BOARD_SPOTIFY_FLAG_COOKIE } from '../shared'
+import {
+  spotifyRedirectUri,
+  secureCookieSuffix,
+  isSafeReturnPath,
+  BOARD_SPOTIFY_FLAG_COOKIE,
+  SPOTIFY_RETURN_COOKIE,
+} from '../shared'
 
 /**
  * Step 1 of Spotify's Authorization Code flow. The Symphony tile can't do
@@ -41,12 +47,27 @@ export async function GET(req: Request): Promise<Response> {
   const headers = new Headers({ Location: authorizeUrl.toString() })
   headers.append('Set-Cookie', `spotify_state=${state}; Path=/api/spotify; Max-Age=600; HttpOnly; SameSite=Lax${secure}`)
 
+  const params = new URL(req.url).searchParams
+
   // ?board=1 (set by the public board's Symphony tile) means: don't attach
   // this connection to the signed-in owner's account — the visitor is trying
   // Spotify with their OWN account. callback/route.ts reads this flag to
   // branch into the cookie-only path (see shared.ts).
-  if (new URL(req.url).searchParams.get('board') === '1') {
+  if (params.get('board') === '1') {
     headers.append('Set-Cookie', `${BOARD_SPOTIFY_FLAG_COOKIE}=1; Path=/api/spotify; Max-Age=600; HttpOnly; SameSite=Lax${secure}`)
+  }
+
+  // ?return=<path> is the page that opened this popup — mobile browsers
+  // routinely open window.open() as a real tab rather than a closable
+  // popup, and block script-initiated window.close() on it, which leaves a
+  // visitor stranded on a blank "connected" page. callback/route.ts uses
+  // this as a same-tab redirect fallback when close() doesn't take.
+  const returnPath = params.get('return')
+  if (returnPath && isSafeReturnPath(returnPath)) {
+    headers.append(
+      'Set-Cookie',
+      `${SPOTIFY_RETURN_COOKIE}=${encodeURIComponent(returnPath)}; Path=/api/spotify; Max-Age=600; HttpOnly; SameSite=Lax${secure}`,
+    )
   }
 
   return new Response(null, { status: 302, headers })

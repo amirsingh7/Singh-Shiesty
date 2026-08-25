@@ -43,6 +43,18 @@ export interface StoredSpotifyAuth {
  *  disconnect it or just let the cookie expire; nothing persists server-side. */
 export const BOARD_SPOTIFY_COOKIE = 'spotify_board_auth'
 export const BOARD_SPOTIFY_FLAG_COOKIE = 'spotify_board_flag'
+export const SPOTIFY_RETURN_COOKIE = 'spotify_return'
+
+/** Only ever a same-origin relative path (never `//host/...`, which browsers
+ *  treat as protocol-relative to another host) made of ordinary URL
+ *  characters — this value round-trips through a client-supplied query
+ *  param and gets embedded directly into an HTML page (callback/route.ts),
+ *  so it's validated before it's trusted as a redirect target OR rendered:
+ *  no quotes/angle-brackets means no way to break out of the attribute or
+ *  script context it's placed in. */
+export function isSafeReturnPath(path: string): boolean {
+  return path.startsWith('/') && !path.startsWith('//') && /^[A-Za-z0-9/_\-.~%?=&:,]+$/.test(path)
+}
 
 export function boardSpotifyAuthCookie(req: Request, auth: StoredSpotifyAuth | null): string {
   const secure = secureCookieSuffix(req)

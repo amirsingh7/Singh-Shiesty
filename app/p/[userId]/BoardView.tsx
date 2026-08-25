@@ -142,7 +142,13 @@ async function proxyNetworkMessage(msg: { type: string; id?: string; [k: string]
       // can try Symphony with their own Spotify, not the profile owner's.
       // Same popup+poll pattern as the real dashboard's host
       // (lib/tiles/useTileHost.ts) — a sandboxed tile iframe can't open one.
-      const popup = window.open('/api/spotify/authorize?board=1', 'spotify-connect', 'width=480,height=720')
+      // ?return= is this page's own URL — on mobile, window.open() routinely
+      // becomes a plain tab that script can't close, so the callback falls
+      // back to redirecting that tab back here once connected (see
+      // app/api/spotify/callback/route.ts), rather than stranding the
+      // visitor on a blank "connected" page with the poll below never firing.
+      const returnTo = encodeURIComponent(window.location.pathname + window.location.search)
+      const popup = window.open(`/api/spotify/authorize?board=1&return=${returnTo}`, 'spotify-connect', 'width=480,height=720')
       if (!popup) return
       const iv = setInterval(() => {
         if (popup.closed) {
