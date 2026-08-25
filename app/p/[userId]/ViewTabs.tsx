@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, type ReactNode } from 'react'
+import { useSearchParams } from 'next/navigation'
 import styles from '../../profile/profile.module.css'
 
 function c(name: keyof typeof styles): string {
@@ -13,9 +14,16 @@ function c(name: keyof typeof styles): string {
  * /p/[userId] page. All three are already rendered server-side/client-mounted
  * in the initial HTML (no refetch on switch) — this just shows one and hides
  * the others, same pattern as any tab UI with no routing need.
+ *
+ * ?view=board opens straight to the Tiles tab — used by the Spotify connect
+ * flow's mobile redirect-back (BoardView.tsx / callback/route.ts), so a
+ * visitor who connected Spotify lands back on the tile they were using
+ * instead of the default Profile tab.
  */
 export default function ViewTabs({ profile, dashboard, board }: { profile: ReactNode; dashboard: ReactNode; board: ReactNode }) {
-  const [view, setView] = useState<'profile' | 'board' | 'dashboard'>('profile')
+  const params = useSearchParams()
+  const initial = params.get('view') === 'board' ? 'board' : 'profile'
+  const [view, setView] = useState<'profile' | 'board' | 'dashboard'>(initial)
 
   return (
     <div>
