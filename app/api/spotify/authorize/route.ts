@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import { spotifyRedirectUri } from '../shared'
+import { spotifyRedirectUri, secureCookieSuffix, BOARD_SPOTIFY_FLAG_COOKIE } from '../shared'
 
 /**
  * Step 1 of Spotify's Authorization Code flow. The Symphony tile can't do
@@ -37,13 +37,17 @@ export async function GET(req: Request): Promise<Response> {
   authorizeUrl.searchParams.set('scope', SCOPES)
   authorizeUrl.searchParams.set('state', state)
 
-  // Secure only over https — browsers silently refuse to store a Secure
-  // cookie on plain http, and Spotify's own redirect-URI rules force local
-  // dev onto http://127.0.0.1 (no https), so a hardcoded Secure would have
-  // meant the cookie never gets set locally at all.
-  const secure = req.url.startsWith('https://') ? '; Secure' : ''
+  const secure = secureCookieSuffix(req)
   const headers = new Headers({ Location: authorizeUrl.toString() })
   headers.append('Set-Cookie', `spotify_state=${state}; Path=/api/spotify; Max-Age=600; HttpOnly; SameSite=Lax${secure}`)
+
+  // ?board=1 (set by the public board's Symphony tile) means: don't attach
+  // this connection to the signed-in owner's account — the visitor is trying
+  // Spotify with their OWN account. callback/route.ts reads this flag to
+  // branch into the cookie-only path (see shared.ts).
+  if (new URL(req.url).searchParams.get('board') === '1') {
+    headers.append('Set-Cookie', `${BOARD_SPOTIFY_FLAG_COOKIE}=1; Path=/api/spotify; Max-Age=600; HttpOnly; SameSite=Lax${secure}`)
+  }
 
   return new Response(null, { status: 302, headers })
 }

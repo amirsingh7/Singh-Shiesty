@@ -1,4 +1,9 @@
-import { spotifyRedirectUri } from '../shared'
+import {
+  spotifyRedirectUri,
+  readSpotifyCookie,
+  boardSpotifyAuthCookie,
+  BOARD_SPOTIFY_FLAG_COOKIE,
+} from '../shared'
 import { supabaseServer } from '@/lib/auth/supabaseServer'
 
 /**
@@ -14,12 +19,6 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 const TILE_ID = 'spotify_auth'
-
-function readCookie(req: Request, name: string): string | null {
-  const header = req.headers.get('cookie') || ''
-  const match = header.match(new RegExp('(?:^|; )' + name + '=([^;]+)'))
-  return match ? decodeURIComponent(match[1]) : null
-}
 
 function pageHtml(message: string): string {
   return `<!doctype html><html><body style="background:#0A0D14;color:#f5ede2;font-family:-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center;padding:20px">
@@ -37,7 +36,8 @@ export async function GET(req: Request): Promise<Response> {
   const code = url.searchParams.get('code')
   const state = url.searchParams.get('state')
   const error = url.searchParams.get('error')
-  const expectedState = readCookie(req, 'spotify_state')
+  const expectedState = readSpotifyCookie(req, 'spotify_state')
+  const isBoard = readSpotifyCookie(req, BOARD_SPOTIFY_FLAG_COOKIE) === '1'
 
   if (error) return closePage(`Spotify connection cancelled (${error}).`)
   if (!code || !state || !expectedState || state !== expectedState) {
@@ -71,6 +71,20 @@ export async function GET(req: Request): Promise<Response> {
     return closePage('Could not reach Spotify. Try again.')
   }
 
+  const expiresAt = Date.now() + (tokenJson.expires_in ?? 3600) * 1000
+  const auth = { accessToken: tokenJson.access_token, refreshToken: tokenJson.refresh_token, expiresAt }
+
+  // Board flow: a visitor trying Spotify with their OWN account from the
+  // public board — never touches Supabase or any Vitality account, just a
+  // cookie scoped to their browser (see shared.ts).
+  if (isBoard) {
+    const headers = new Headers({ 'Content-Type': 'text/html' })
+    headers.append('Set-Cookie', 'spotify_state=; Path=/api/spotify; Max-Age=0')
+    headers.append('Set-Cookie', `${BOARD_SPOTIFY_FLAG_COOKIE}=; Path=/api/spotify; Max-Age=0`)
+    headers.append('Set-Cookie', boardSpotifyAuthCookie(req, auth))
+    return new Response(pageHtml('Spotify connected.'), { status: 200, headers })
+  }
+
   const c = await supabaseServer()
   if (!c) return closePage('Supabase is not configured — cannot save the connection.')
 
@@ -79,14 +93,8 @@ export async function GET(req: Request): Promise<Response> {
   } = await c.auth.getUser()
   if (!user) return closePage('You need to be signed in to connect Spotify. Sign in, then try again.')
 
-  const expiresAt = Date.now() + (tokenJson.expires_in ?? 3600) * 1000
   const { error: writeErr } = await c.from('tile_data').upsert(
-    {
-      user_id: user.id,
-      tile_id: TILE_ID,
-      data: { accessToken: tokenJson.access_token, refreshToken: tokenJson.refresh_token, expiresAt },
-      updated_at: new Date().toISOString(),
-    },
+    { user_id: user.id, tile_id: TILE_ID, data: auth, updated_at: new Date().toISOString() },
     { onConflict: 'user_id,tile_id' },
   )
   if (writeErr) return closePage('Connected, but saving failed. Try again.')
