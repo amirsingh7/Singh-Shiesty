@@ -92,6 +92,22 @@ const MOCK_TRAIN_DATA = {
   }),
 }
 
+/** Per-tile CSS injected only into the public board's copy of that tile's
+ *  HTML (never touches public/tiles/*.html itself, so the owner's real
+ *  dashboard is unaffected). Velocity's "Style this chat box" panel lets the
+ *  OWNER restyle their own chat box and persist it — meaningless for a
+ *  visitor on a demo tile, so it's hidden here. */
+const BOARD_TILE_CSS_OVERRIDES: Partial<Record<CoreTileId, string>> = {
+  velocity: '#coachStyleBtn,#coachPanel{display:none!important}',
+}
+
+function applyBoardOverrides(id: CoreTileId, html: string): string {
+  const css = BOARD_TILE_CSS_OVERRIDES[id]
+  if (!css) return html
+  const tag = `<style>${css}</style>`
+  return html.includes('</head>') ? html.replace('</head>', `${tag}</head>`) : tag + html
+}
+
 type FilledMap = Partial<Record<CoreTileId, string>>
 
 /** Gobind can't actually chat for an anonymous visitor — the real endpoint
@@ -268,7 +284,7 @@ export default function BoardView() {
             const res = await fetch(`/tiles/${id}.html`, { cache: 'no-store' })
             if (!res.ok) return null
             const html = await res.text()
-            return html.trim() ? ([id, html] as const) : null
+            return html.trim() ? ([id, applyBoardOverrides(id, html)] as const) : null
           } catch {
             return null
           }
