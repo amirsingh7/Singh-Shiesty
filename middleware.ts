@@ -14,6 +14,11 @@ export async function middleware(request: NextRequest) {
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!url || !key) return NextResponse.next()
 
+  // Signed-out visitors (most public profile views) have no session to
+  // refresh — skip the Supabase round-trip entirely.
+  const hasSession = request.cookies.getAll().some(c => c.name.startsWith('sb-'))
+  if (!hasSession) return NextResponse.next()
+
   let response = NextResponse.next({ request })
 
   const supabase = createServerClient(url, key, {
@@ -29,7 +34,16 @@ export async function middleware(request: NextRequest) {
     },
   })
 
-  await supabase.auth.getUser()
+  // Never let a slow or unreachable Supabase (e.g. a paused free project)
+  // hang the whole site — Vercel kills middleware that runs too long.
+  try {
+    await Promise.race([
+      supabase.auth.getUser(),
+      new Promise(resolve => setTimeout(resolve, 1500)),
+    ])
+  } catch {
+    // Auth refresh is best-effort; the page still renders.
+  }
 
   return response
 }
